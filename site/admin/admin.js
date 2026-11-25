@@ -1,12 +1,9 @@
 const ADMIN_API = "";
-const ADMIN_SESSION_KEY = "clipviet.admin.session.v1";
-let adminToken = "";
-try { adminToken = sessionStorage.getItem(ADMIN_SESSION_KEY) || ""; } catch { /* storage may be unavailable */ }
 async function adminRequest(path, options = {}) {
   const response = await fetch(ADMIN_API + path, {
-    credentials: "omit",
+    credentials: "same-origin",
     ...options,
-    headers: { "content-type": "application/json", ...(adminToken ? { authorization: "Bearer " + adminToken } : {}), ...(options.headers || {}) },
+    headers: { "content-type": "application/json", ...(options.headers || {}) },
     cache: "no-store",
     redirect: "error"
   });
@@ -29,69 +26,31 @@ function setAdminAccess(allowed, message) {
   window.dispatchEvent(new CustomEvent("clipviet-admin-auth", { detail: { allowed, message } }));
 }
 const $ = (selector) => document.querySelector(selector);
-const loginGate = $("#admin-login-gate");
-const loginForm = $("#admin-login-form");
-const loginStatus = $("#admin-login-status");
-const logoutButton = $("#admin-logout");
-function showLogin(message = "Đăng nhập lần đầu bằng PIN để tạo phiên Admin.") {
-  setAdminAccess(false, message);
-  if (loginGate) loginGate.hidden = false;
-  if (loginStatus) loginStatus.textContent = message;
-}
+const accessStatus = $("#admin-access-status-message");
 function showAdmin() {
-  setAdminAccess(true, "Auto Admin: phiên hợp lệ đã được máy chủ xác nhận.");
-  if (loginGate) loginGate.hidden = true;
+  setAdminAccess(true, "Cloudflare Access đã xác minh danh tính; quyền Admin được xác thực lại tại máy chủ.");
+  if (accessStatus) accessStatus.textContent = "ACCESS VERIFIED · ADMIN WORKSPACE UNLOCKED";
+}
+function showAccessDenied(message) {
+  setAdminAccess(false, message);
+  if (accessStatus) accessStatus.textContent = message;
 }
 let sessionVerification = null;
 async function verifyAdminSession() {
   if (sessionVerification) return sessionVerification;
   sessionVerification = (async () => {
-    if (!adminToken) { showLogin(); return false; }
     try {
       await adminRequest("/api/admin/session");
       showAdmin();
       return true;
     } catch {
-      adminToken = "";
-      try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
-      showLogin("Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại bằng PIN.");
+      showAccessDenied("Cloudflare Access chưa xác thực hoặc phiên đã hết hạn. Làm mới trang sau khi xác thực Access.");
       return false;
     }
   })();
   try { return await sessionVerification; }
   finally { sessionVerification = null; }
 }
-if (loginForm) loginForm.addEventListener("submit", async event => {
-  event.preventDefault();
-  const pin = String(new FormData(loginForm).get("pin") || "");
-  if (!/^\d{6}$/.test(pin)) { if (loginStatus) loginStatus.textContent = "PIN phải gồm đúng 6 chữ số."; return; }
-  const submit = loginForm.querySelector('button[type="submit"]');
-  if (submit) submit.disabled = true;
-  if (loginStatus) loginStatus.textContent = "Đang xác thực với máy chủ…";
-  try {
-    const response = await fetch(ADMIN_API + "/api/admin/login", {
-      method: "POST", credentials: "omit", cache: "no-store", redirect: "error",
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ pin })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || typeof data.token !== "string" || !data.token) throw new Error(data.error || "Đăng nhập không thành công.");
-    adminToken = data.token;
-    try { sessionStorage.setItem(ADMIN_SESSION_KEY, adminToken); } catch { throw new Error("Không thể lưu phiên an toàn trong sessionStorage."); }
-    loginForm.reset();
-    await verifyAdminSession();
-  } catch (error) {
-    adminToken = "";
-    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
-    showLogin(error.message || "Đăng nhập không thành công.");
-  } finally { if (submit) submit.disabled = false; }
-});
-if (logoutButton) logoutButton.addEventListener("click", async () => {
-  try { if (adminToken) await adminRequest("/api/admin/logout", { method: "POST" }); } catch { /* always clear local session */ }
-  adminToken = "";
-  try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
-  showLogin("Đã đăng xuất.");
-});
 window.clipvietVerifyAdminSession = verifyAdminSession;
 window.addEventListener("clipviet-admin-gesture", () => { void verifyAdminSession(); });
 void verifyAdminSession();

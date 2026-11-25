@@ -24,3 +24,64 @@
 .community-footer{min-height:72px;padding:16px clamp(16px,6vw,90px);border-top:1px solid var(--cv-line);display:flex;align-items:center;justify-content:space-between;gap:16px}.community-footer>span,.community-footer>a:last-child{font-size:8px;letter-spacing:1px;color:#9295a1;text-decoration:none}
 @media(max-width:760px){.community-topbar{height:60px;padding:0 14px;gap:15px}.community-topbar nav{gap:12px}.community-topbar nav a,.community-home-link{font-size:8px;letter-spacing:.6px}.community-home-link{display:none}.community-hero{grid-template-columns:1fr;gap:25px;padding:42px 17px}.community-hero h1{font-size:clamp(40px,11vw,58px);letter-spacing:-2px}.community-lead{font-size:12px}.community-status{padding:16px}.community-toolbar{padding:17px 14px}.community-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.community-filters button{min-height:40px}.community-section{padding:34px 14px 42px}.community-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.community-card{min-height:190px;padding:13px}.community-card strong{font-size:13px}.community-card p{font-size:10px}.community-card-status{font-size:7px;line-height:1.5}.community-feature-row{grid-template-columns:1fr;padding:34px 16px;gap:20px}.policy-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.policy-grid article{padding:13px}.community-footer{padding:16px;flex-wrap:wrap}.community-footer>span{order:3;width:100%}}
 @media(max-width:360px){.community-topbar nav{gap:8px}.community-topbar nav a{font-size:7px}.community-grid{grid-template-columns:1fr}.community-card{min-height:160px}.policy-grid{grid-template-columns:1fr}}
+
+
+/* Brand 1.0 + mobile layout hardening. */
+:root{
+  --cv-bg:#121212;
+  --cv-panel:#1E1E1E;
+  --cv-line:#333333;
+  --cv-text:#F5F5F5;
+  --cv-muted:#A0A0A0;
+  --cv-accent:#E62020;
+}
+.community-page{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:hidden;
+  background:var(--cv-bg);
+  color:var(--cv-text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.community-page main,
+.community-page section,
+.community-page header,
+.community-page footer,
+.community-grid,
+.community-card{
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+}
+.community-page main{display:block;width:100%}
+.community-grid{
+  display:grid;
+  width:100%;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+}
+.community-card{
+  display:flex;
+  width:100%;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+.community-card p,
+.community-card strong,
+.community-card-status{overflow-wrap:anywhere;word-break:normal}
+.community-card p{max-width:none}
+@media(max-width:760px){
+  .community-topbar{width:100%;max-width:100%;min-width:0;overflow:hidden}
+  .community-topbar nav{min-width:0;flex-wrap:wrap}
+  .community-hero,.community-toolbar,.community-section,.community-feature-row,.community-policy,.community-footer{width:100%;max-width:100%;min-width:0}
+  .community-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .community-card{min-height:185px;padding:14px 12px}
+  .community-card strong{font-size:clamp(12px,3.4vw,14px)}
+  .community-card p{font-size:11px;line-height:1.65}
+  .community-card-status{font-size:8px;line-height:1.5;letter-spacing:.65px}
+}
+@media(max-width:380px){
+  .community-grid{grid-template-columns:1fr}
+  .community-card{min-height:150px}
+}

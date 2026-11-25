@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08090d">
+<meta name="robots" content="noindex,nofollow">
+<title>Safari Preview Diagnostics — ClipViet.live</title>
+<style>
+:root{color-scheme:dark;--bg:#08090d;--panel:#11131a;--line:#30323b;--fg:#f3f4f6;--muted:#9ca3af;--red:#ef3340;--green:#35c98a;--amber:#f5b942}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:#fff;text-decoration:underline;text-underline-offset:3px}.wrap{max-width:920px;margin:auto;padding:24px 16px 64px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:16px}
+.brand{font:800 14px ui-monospace,monospace;letter-spacing:1px;text-decoration:none}.brand span{color:var(--red)}
+.eyebrow{color:var(--muted);font:10px ui-monospace,monospace;letter-spacing:2px;text-transform:uppercase}
+h1{font-size:clamp(30px,7vw,48px);line-height:1.08;letter-spacing:-1.8px;margin:26px 0 10px}
+h2{font-size:17px;margin:0 0 10px}.muted{color:var(--muted);font-size:12px}
+.panel{border:1px solid var(--line);background:var(--panel);padding:18px;margin:16px 0}
+label{display:flex;gap:10px;align-items:flex-start;margin:12px 0;color:#ddd;font-size:13px}
+input[type=checkbox]{width:18px;height:18px;flex:0 0 18px;accent-color:var(--red);margin:1px 0 0}
+button{width:100%;min-height:48px;border:1px solid var(--red);background:var(--red);color:white;font:800 11px ui-monospace,monospace;letter-spacing:1px;padding:12px;cursor:pointer}
+button:disabled{opacity:.35;cursor:not-allowed}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.secondary{background:transparent;border-color:#555}
+.results{list-style:none;margin:0;padding:0}.results li{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.state{font:800 10px ui-monospace,monospace;letter-spacing:1px}.pass{color:var(--green)}.warn{color:var(--amber)}.fail{color:#ff6d76}.pending{color:var(--muted)}
+video{display:block;width:100%;max-height:360px;background:#000;border:1px solid var(--line);margin-top:14px}
+iframe{display:block;width:100%;height:720px;border:1px solid var(--line);background:#000}
+.links{display:flex;flex-wrap:wrap;gap:18px}.small{font-size:11px;color:var(--muted)}
+@media(max-width:520px){.wrap{padding:18px 12px 48px}.panel{padding:14px}.actions{grid-template-columns:1fr}.results li{grid-template-columns:64px 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="brand" href="../">CLIP<span>VIET</span>.LIVE</a><span class="eyebrow">PREVIEW / DEVICE QA</span></header>
+<p class="eyebrow">IPHONE SAFARI ACCEPTANCE</p>
+<h1>Kiểm tra Safari<br><span style="color:#777">Preview API & Player</span></h1>
+<p class="muted">Trang kiểm tra chạy ngay trên thiết bị đang mở. Kết quả phản ánh trình duyệt thật, CORS thật và kết nối mạng hiện tại; không thay thế xác nhận quyền phân phối nội dung.</p>
+
+<section class="panel" id="consent-panel">
+<h2>Trước khi chạy kiểm tra</h2>
+<p class="muted">Quy trình sẽ gọi API catalog, đọc metadata video và gửi HTTP Range 1 byte tới URL media đầu tiên. Trình phát chỉ tải dữ liệu để kiểm tra khung hình; không tự động phát âm thanh.</p>
+<label><input id="age-confirm" type="checkbox"> Tôi xác nhận đã đủ 18 tuổi.</label>
+<label><input id="rights-confirm" type="checkbox"> Tôi có quyền kiểm thử metadata và URL media do provider đã cấu hình trả về.</label>
+<button id="run" type="button" disabled>BẮT ĐẦU KIỂM TRA TRÊN THIẾT BỊ NÀY</button>
+</section>
+
+<section class="panel">
+<div class="eyebrow">01 / LIVE TEST RESULTS</div>
+<h2>API · CORS · MIME · BYTE-RANGE · PLAYER</h2>
+<ul id="results" class="results"><li><span class="state pending">WAIT</span><span>Chưa chạy kiểm tra.</span></li></ul>
+<video id="test-video" controls playsinline preload="none"></video>
+<p id="summary" class="muted">Chờ người dùng bắt đầu kiểm tra.</p>
+</section>
+
+<section class="panel">
+<div class="eyebrow">02 / FORM EMBED</div>
+<h2>Clipform — Đề xuất video</h2>
+<p class="muted">Kiểm tra hiển thị và thao tác form ngay trên Safari. Nếu iframe không hiển thị, mở form độc lập.</p>
+<p><a href="https://clipform.io/3d76a8c57" target="_blank" rel="noopener noreferrer">MỞ CLIPFORM RIÊNG ↗</a></p>
+<iframe id="clipform" title="Biểu mẫu đề xuất video ClipViet.live" src="https://clipform.io/3d76a8c57" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<p id="form-status" class="small">Iframe đang chờ tải. Nội dung bên trong thuộc Clipform và không thể đọc từ trang này do bảo mật cross-origin.</p>
+</section>
+
+<section class="panel">
+<div class="eyebrow">03 / ADMIN ACCESS</div>
+<h2>Khu vực quản trị</h2>
+<p class="muted">Mở trang admin trong tab mới để kiểm tra giao diện đăng nhập. Diagnostics cũng kiểm tra API session và login; chỉ xác nhận bảo vệ khi backend từ chối phiên không hợp lệ.</p>
+<div class="links"><a href="../admin/" target="_blank" rel="noopener noreferrer">MỞ /admin/ ↗</a><a href="../" >TRANG CHỦ ↗</a></div>
+</section>
+<p class="small">ClipViet.live · Preview only · Không thay đổi Production hoặc DNS.</p>
+</div>
+<script type="module" src="./diagnostics.js"></script>
+</body></html>

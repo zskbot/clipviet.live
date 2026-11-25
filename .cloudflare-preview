@@ -1,0 +1,6 @@
+ClipViet Cloudflare Pages Preview branch.
+
+- Preview deployments only.
+- Production deployments are disabled in the Cloudflare Pages project.
+- Custom domains and DNS are unchanged.
+- Build generates site/data/catalog.json from the configured AppleCMS providers.

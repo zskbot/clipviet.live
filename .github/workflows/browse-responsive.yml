@@ -1,0 +1,55 @@
+name: Browse responsive browser regression
+
+on:
+  push:
+    branches: ["fix/browse-responsive-regression"]
+  pull_request:
+    branches: [main]
+    paths:
+      - "site/browse/**"
+      - "site/styles.css"
+      - "tests/browser/**"
+      - ".github/workflows/browse-responsive.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-responsive:
+    name: Chromium responsive acceptance (360 / 390 / desktop)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install temporary Playwright test runner
+        run: npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Serve static Preview files
+        run: |
+          python3 -m http.server 4173 --directory site > /tmp/clipviet-preview-server.log 2>&1 &
+          echo $! > /tmp/clipviet-preview-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/browse/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/clipviet-preview-server.log
+          exit 1
+      - name: Run viewport and interaction checks
+        env:
+          BASE_URL: http://127.0.0.1:4173
+        run: node tests/browser/browse-responsive.mjs
+      - name: Upload viewport screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipviet-browse-responsive-screenshots
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

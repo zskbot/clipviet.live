@@ -1,0 +1,78 @@
+[
+  {
+    "id": "kaigecai-live",
+    "name": "KaigeCai/live",
+    "kind": "Live playlist / IPTV",
+    "status": "REVIEW REQUIRED",
+    "role": "Tham khảo định dạng playlist M3U/M3U8 và cấu trúc nguồn live.",
+    "readiness": "Repository không có README và không công bố license trong metadata đã kiểm tra. Chưa nhập playlist, chưa xác minh quyền phát hoặc độ ổn định từng stream.",
+    "url": "https://github.com/KaigeCai/live"
+  },
+  {
+    "id": "porn-description-generator",
+    "name": "YYYIKES/porn-description-generator",
+    "kind": "Metadata / Python + Flask",
+    "status": "REFERENCE ONLY",
+    "role": "Tham khảo mô-đun sinh mô tả metadata dựa trên Markovify.",
+    "readiness": "Dữ liệu được mô tả trong README thuộc giai đoạn 2007–2016. Không phải video provider; cần rà soát license, nguồn dữ liệu và chất lượng nội dung trước khi tái sử dụng.",
+    "url": "https://github.com/YYYIKES/porn-description-generator"
+  },
+  {
+    "id": "uncensored-ai",
+    "name": "HertzAdvisor78/Uncensored-ai",
+    "kind": "AI tools directory",
+    "status": "EMPTY REPOSITORY",
+    "role": "Chưa xác định được mô-đun phần mềm để kết nối.",
+    "readiness": "GitHub báo repository có size 0; README chỉ có tiêu đề. Không có code/API để tích hợp hoặc kiểm thử.",
+    "url": "https://github.com/HertzAdvisor78/Uncensored-ai"
+  },
+  {
+    "id": "pornhub-api",
+    "name": "JustalK/PORNHUB-API",
+    "kind": "Search / metadata scraper",
+    "status": "LEGAL & TERMS REVIEW",
+    "role": "Có thể tham khảo schema metadata và adapter tìm kiếm nếu được phép.",
+    "readiness": "README mô tả scraper và download links. Không tích hợp crawler/downloader hoặc tự động phát nội dung; cần xác minh license, điều khoản nền tảng và quyền sử dụng dữ liệu trước.",
+    "url": "https://github.com/JustalK/PORNHUB-API"
+  },
+  {
+    "id": "phar",
+    "name": "rlleshi/phar",
+    "kind": "Video AI / Python + PyTorch",
+    "status": "BACKEND SERVICE REQUIRED",
+    "role": "Mô-đun phân loại hành động, gắn tag và tạo timestamp cho video đã được phép xử lý.",
+    "readiness": "Cần model weights, GPU/runtime và endpoint dịch vụ riêng. Chưa được triển khai trong frontend hoặc Cloudflare Worker.",
+    "url": "https://github.com/rlleshi/phar"
+  },
+  {
+    "id": "pornsearch",
+    "name": "LucasLeandro1204/pornsearch",
+    "kind": "Search library / TypeScript",
+    "status": "ARCHIVED",
+    "role": "Tham khảo cấu trúc kết quả tìm kiếm đa provider.",
+    "readiness": "Repository đã archive. Không nên thêm dependency production; cần kiểm thử tương thích và rà soát license trước khi fork hoặc tái sử dụng mã.",
+    "url": "https://github.com/LucasLeandro1204/pornsearch"
+  },
+  {
+    "id": "adultembed",
+    "name": "AdultEmbed",
+    "kind": "External adult-video metadata and embed API",
+    "status": "PENDING",
+    "integrationMode": "PREVIEW_ONLY",
+    "apiBaseUrl": "https://adultembed.com/api/v1/",
+    "apiDocs": "https://adultembed.com/api/docs/",
+    "openApi": "https://adultembed.com/api/v1/openapi.json",
+    "role": "Search and normalize metadata for technical evaluation only.",
+    "readiness": "Written permission to embed/distribute on clipviet.live, per-title content rights, performer age and consent records, and complaint/takedown procedures have not been independently verified. No public listing or playback is allowed.",
+    "rights": {
+      "distributionPermission": "UNVERIFIED",
+      "contentRights": "UNVERIFIED",
+      "performerAge": "UNVERIFIED",
+      "performerConsent": "UNVERIFIED",
+      "complaintsProcess": "UNVERIFIED",
+      "takedownProcess": "UNVERIFIED"
+    },
+    "publicPlaybackEnabled": false,
+    "url": "https://adultembed.com/"
+  }
+]

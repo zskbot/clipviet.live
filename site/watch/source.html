@@ -1,0 +1,38 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#08090d"><title>Phát video — ClipViet.live</title><link rel="manifest" href="../manifest.webmanifest"><link rel="stylesheet" href="../styles.css"><script src="../pwa-register.js" defer></script><style>
+.player-page{max-width:1200px;margin:auto;padding:36px 18px 70px}.player-frame{background:#000;border:1px solid #292a31;aspect-ratio:16/9;display:grid;place-items:center}.player-frame video{width:100%;height:100%;max-height:75vh;background:#000}.player-meta{padding:20px 0;border-bottom:1px solid #292a31}.player-meta h1{font-size:clamp(22px,4vw,38px);letter-spacing:-1px}.player-meta p{font-size:12px;color:#999;line-height:1.8}
+.player-resolution{color:#999;font-size:9px;letter-spacing:.8px}
+.player-settings{display:grid;gap:13px;padding:16px;margin:12px 0;border:1px solid #393c47;background:#0c0e14}
+.player-settings[hidden]{display:none!important}
+.settings-head{display:flex;align-items:center;justify-content:space-between;color:#f4f4f5;font-size:11px;letter-spacing:1px}
+.settings-head button{width:30px;height:30px;background:transparent;border:1px solid #393c47;color:#fff;font-size:19px}
+.player-settings>label{display:grid;grid-template-columns:minmax(130px,1fr) minmax(150px,1.2fr);gap:12px;align-items:center;color:#c8cad2;font-size:11px}
+.player-settings select{min-height:38px;padding:0 10px;background:#151821;border:1px solid #383b46;color:#fff;border-radius:0}
+.image-tuning{display:grid;gap:12px}
+.image-tuning label{display:grid;grid-template-columns:1fr auto;gap:8px;color:#c8cad2;font-size:11px}
+.image-tuning output{color:#fff;font-variant-numeric:tabular-nums}
+.image-tuning input{grid-column:1/-1;width:100%;accent-color:#ef3340}
+.settings-actions{display:flex;flex-wrap:wrap;gap:8px}
+.settings-actions button{min-height:38px;padding:0 12px;background:transparent;border:1px solid #484b56;color:#eee;border-radius:0;font-size:9px;font-weight:850;letter-spacing:.8px}
+.settings-note{margin:0;color:#858995;font-size:10px;line-height:1.6}
+@media(max-width:700px){.player-settings{padding:12px}.player-settings>label{grid-template-columns:1fr;gap:7px}.player-settings select{min-height:42px}.settings-actions button{flex:1 1 130px;min-height:42px}}
+.player-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0}.player-controls label{display:flex;gap:8px;align-items:center;color:#999;font-size:10px}.player-controls select{padding:10px;background:#11131a;color:#fff;border:1px solid #444;border-radius:0}.episode-list{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}.episode-list button,.switch-line,.external{padding:10px 12px;background:#11131a;color:#eee;border:1px solid #393b45;border-radius:0;font-size:10px}.episode-list button[aria-pressed=true]{border-color:#ef3340;background:#ef334018}.switch-line{background:#ef3340;border-color:#ef3340}.play-status{min-height:24px;color:#aaa;font-size:11px;line-height:1.7}.back{display:inline-block;margin-top:18px;border-bottom:1px solid #555;padding-bottom:6px;font-size:10px;letter-spacing:1px}
+</style></head><body><header class="topbar"><a class="brand" href="../browse/"><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><nav><a href="../">Trang chủ</a><a href="../browse/">Khám phá</a><a href="../api-docs/">API Docs</a></nav></header><main class="player-page"><p class="eyebrow">CLIPVIET / DIRECT SOURCE PLAYER</p><div class="player-frame"><video id="video" controls playsinline preload="metadata"></video></div><section class="player-meta"><h1 id="title">Đang tải thông tin video…</h1><p id="meta"></p><p id="description"></p></section><div class="player-controls">
+<label>Đường phát<select id="line"></select></label>
+<label>Chất lượng<select id="quality"><option value="auto">Tự động · Adaptive</option></select></label>
+<span id="resolution" class="player-resolution">ĐỘ PHÂN GIẢI: —</span>
+<button id="settings-toggle" class="switch-line" type="button" aria-expanded="false" aria-controls="player-settings">⚙ CÀI ĐẶT</button>
+<button id="switch" class="switch-line" type="button" hidden>ĐỔI ĐƯỜNG PHÁT</button>
+<a id="external" class="external" target="_blank" rel="noopener noreferrer" hidden>MỞ LINK NGOÀI ↗</a>
+</div>
+<section id="player-settings" class="player-settings" aria-label="Cài đặt trình phát" hidden>
+<div class="settings-head"><strong>HÌNH ẢNH & PHÁT VIDEO</strong><button id="settings-close" type="button" aria-label="Đóng">×</button></div>
+<label>Tốc độ phát<select id="speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1× · Bình thường</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+<label>Hiển thị khung hình<select id="fit"><option value="contain">Vừa khung · Không cắt</option><option value="cover">Lấp đầy · Có thể cắt viền</option></select></label>
+<div class="image-tuning">
+<label for="brightness">Độ sáng <output id="brightness-value">100%</output><input id="brightness" type="range" min="60" max="140" value="100"></label>
+<label for="contrast">Tương phản <output id="contrast-value">100%</output><input id="contrast" type="range" min="60" max="140" value="100"></label>
+<label for="saturation">Bão hòa màu <output id="saturation-value">100%</output><input id="saturation" type="range" min="0" max="180" value="100"></label>
+</div>
+<div class="settings-actions"><button id="reset-image" type="button">ĐẶT LẠI HÌNH ẢNH</button><button id="fullscreen" type="button">TOÀN MÀN HÌNH ↗</button><button id="pip" type="button">HÌNH TRONG HÌNH</button></div>
+<p id="quality-note" class="settings-note">Chất lượng chỉ hiển thị các mức mà nguồn video thực sự cung cấp. Không upscale giả lên 4K.</p>
+</section><h2 style="font-size:13px">Danh sách tập</h2><div id="episodes" class="episode-list"></div><p id="status" class="play-status" role="status">Đang kết nối provider…</p><a class="back" href="../browse/">← QUAY LẠI THƯ VIỆN</a></main><script src="https://cdn.jsdelivr.net/npm/hls.js@1" defer></script><script type="module" src="./source-player.js"></script></body></html>

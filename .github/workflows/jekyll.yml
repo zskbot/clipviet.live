@@ -1,0 +1,35 @@
+name: Build Pages Preview Artifact
+
+on:
+  # Manual-only build for validation; deliberately no automatic production deployment.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-preview-artifact
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@4a9ddd6f338a97768b8006bf671dfbad383215f4
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          cache-version: 0
+      - name: Build with Jekyll
+        run: bundle exec jekyll build
+        env:
+          JEKYLL_ENV: production
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipviet-pages-preview
+          path: _site/
+          if-no-files-found: error

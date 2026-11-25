@@ -26,3 +26,5 @@ Preview branch: `preview/integrate-media-text-modules`
 - Obtain and document upstream licenses before copying or redistributing any source code or text.
 - Admin authentication and provider registry are unchanged in this integration.
 - No GitHub Actions workflow is invoked. Cloudflare Pages Preview is the deployment target; Production deployments remain disabled.
+
+Preview deployment is triggered by Cloudflare Pages Git integration for this explicitly allowlisted preview branch. GitHub Actions are not used.

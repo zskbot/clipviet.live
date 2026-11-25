@@ -33,3 +33,6 @@ Run on a physical iPhone using Safari after a successful Preview deployment:
 
 ## Explicitly not verified by this document
 No legal rights evidence has been supplied or reviewed for any individual URL in the original source list. This checklist is not a legal approval. No physical iPhone Safari session has been run by this commit.
+
+
+Preview routing note: this branch is explicitly allowlisted in the isolated Pages project's custom Preview branch filter.

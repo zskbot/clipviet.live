@@ -691,3 +691,119 @@ body.menu-open{overflow:hidden;touch-action:none}
   .player-setting-row select { min-height: 42px; }
   .player-settings-actions button { flex: 1 1 130px; min-height: 42px; }
 }
+
+
+/* iPhone layout pass: tighter vertical rhythm and consistent touch targets. */
+@media (max-width: 760px) {
+  .live-featured {
+    gap: 14px;
+    padding: 18px 14px 22px;
+  }
+  .live-featured .eyebrow {
+    margin: 0 0 7px;
+    font-size: 9px;
+    letter-spacing: 1.8px;
+  }
+  .live-featured h1 {
+    max-width: 14ch;
+    font-size: clamp(29px, 7.4vw, 36px);
+    line-height: 1.08;
+    letter-spacing: -1.1px;
+    margin: 7px 0 9px;
+  }
+  .live-featured-title {
+    font-size: clamp(18px, 4.8vw, 22px);
+    line-height: 1.22;
+    margin: 0 0 7px;
+  }
+  .live-featured-description {
+    margin: 0 0 7px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .live-featured-meta {
+    margin: 6px 0 0;
+    font-size: 8px;
+    line-height: 1.45;
+  }
+  .live-featured-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .live-featured-actions .primary-button,
+  .live-featured-actions .secondary-button {
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 10px 8px;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+  }
+  .live-featured-counter {
+    margin: 10px 0 0;
+    font-size: 8px;
+    line-height: 1.4;
+  }
+  .featured-player-toolbar {
+    gap: 8px;
+    padding: 7px 0;
+  }
+  .featured-player-toolbar > * {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .catalog {
+    padding-top: 18px;
+    padding-bottom: 38px;
+  }
+  .catalog > * + * {
+    margin-top: 14px;
+  }
+  .section-heading {
+    padding-bottom: 12px;
+  }
+  .section-heading h2 {
+    font-size: clamp(20px, 5.5vw, 23px);
+    line-height: 1.2;
+  }
+  .home-category-grid {
+    gap: 8px;
+    margin: 12px 0 14px;
+  }
+  .home-category-card {
+    min-height: 56px;
+  }
+  .video-grid {
+    gap: 9px;
+  }
+  .card-info {
+    padding: 8px;
+  }
+  .card-info h3 {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+}
+@media (max-width: 380px) {
+  .live-featured-actions {
+    grid-template-columns: 1fr;
+  }
+  .live-featured-actions .primary-button,
+  .live-featured-actions .secondary-button {
+    min-height: 44px;
+  }
+}
+
+/* Keep every control square-edged, including appended mobile overrides. */
+.live-featured-actions button,
+.featured-player-toolbar button {
+  border-radius: 0;
+}

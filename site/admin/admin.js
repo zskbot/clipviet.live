@@ -152,19 +152,53 @@ function textElement(tag, value, className) {
   return node;
 }
 
+function mediaCapability(url) {
+  const pathname = new URL(url).pathname.toLowerCase();
+  if (pathname.endsWith(".m3u8")) {
+    const supported = player.canPlayType("application/vnd.apple.mpegurl") ||
+      player.canPlayType("application/x-mpegURL");
+    return { format: "HLS", supported: Boolean(supported), detail: supported
+      ? "Safari native HLS khả dụng."
+      : "Trình duyệt không báo hỗ trợ native HLS; Admin player chưa nạp HLS.js." };
+  }
+  if (pathname.endsWith(".webm")) {
+    const vp9 = player.canPlayType('video/webm; codecs="vp9,opus"');
+    const generic = player.canPlayType("video/webm");
+    return { format: "WebM", supported: Boolean(vp9 || generic), detail: (vp9 || generic)
+      ? "Trình duyệt báo hỗ trợ WebM; codec thực tế còn phụ thuộc file."
+      : "Trình duyệt không báo hỗ trợ WebM." };
+  }
+  if (pathname.endsWith(".mp4")) {
+    const supported = player.canPlayType('video/mp4; codecs="avc1.42E01E,mp4a.40.2"') ||
+      player.canPlayType("video/mp4");
+    return { format: "MP4", supported: Boolean(supported), detail: supported
+      ? "Trình duyệt báo hỗ trợ MP4; codec thực tế còn phụ thuộc file."
+      : "Trình duyệt không báo hỗ trợ MP4." };
+  }
+  return { format: "MEDIA", supported: true, detail: "Định dạng chưa nhận diện theo phần mở rộng; kiểm tra MIME từ máy chủ." };
+}
+
 function playMedia(rawUrl, title) {
   let mediaUrl;
   try { mediaUrl = safeHttpsUrl(rawUrl, parseAllowedHosts(mediaAllowedHosts.value), "Media URL"); }
   catch (error) { playerMessage.textContent = error.message; playerState.textContent = "INVALID URL"; return; }
+  const capability = mediaCapability(mediaUrl);
   player.pause();
   player.removeAttribute("src");
   player.load();
   player.src = mediaUrl;
   playerTitle.textContent = title || "Video URL";
-  playerState.textContent = "READY";
-  playerMessage.textContent = "Đang tải metadata video. Nếu không phát được, kiểm tra định dạng, CORS và quyền truy cập media.";
+  playerState.textContent = capability.supported ? "READY · " + capability.format : "CHECK · " + capability.format;
+  playerMessage.textContent = capability.detail + " Đang tải metadata; nếu không phát được, kiểm tra MIME, codec, CORS và quyền truy cập media.";
   player.load();
-  player.play().then(() => { playerState.textContent = "PLAYING"; }).catch(() => { playerState.textContent = "READY"; });
+  player.play().then(() => {
+    playerState.textContent = "PLAYING · " + capability.format;
+  }).catch((error) => {
+    playerState.textContent = "READY · " + capability.format;
+    playerMessage.textContent = error?.name === "NotAllowedError"
+      ? capability.detail + " Safari yêu cầu chạm nút Play trên thanh điều khiển."
+      : capability.detail + " Không tự phát được; hãy nhấn Play và kiểm tra lỗi media nếu vẫn thất bại.";
+  });
 }
 
 function renderVideos(videos) {

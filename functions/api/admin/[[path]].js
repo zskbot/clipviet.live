@@ -2,7 +2,7 @@
 // Only the server-side request uses the legacy allowlisted Pages origin;
 // browser traffic remains same-origin and no credentials are stored here.
 const UPSTREAM = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
-const TRUSTED_ORIGIN = "https://clipviet-live-preview.pages.dev";
+const TRUSTED_ORIGIN = "https://3e1ad354.clipviet-live-qa.pages.dev";
 const ALLOWED_METHODS = new Set(["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"]);
 
 export async function onRequest({ request }) {

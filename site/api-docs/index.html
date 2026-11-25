@@ -1,57 +1,141 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#08090d"><meta name="robots" content="noindex,nofollow">
-<title>Preview API Documentation — ClipViet.live</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<meta name="description" content="Tài liệu API ClipViet.live: Catalog API, Provider API, xác thực, CORS, ví dụ tích hợp và playback có kiểm soát quyền.">
+<title>API Documentation — ClipViet.live</title>
 <link rel="stylesheet" href="../styles.css">
 <style>
-.docs{max-width:1120px;margin:auto;padding:48px 18px 80px}
-.docs h1{font-size:clamp(34px,6vw,62px);letter-spacing:-2.5px;line-height:1.1}
-.docs h2{margin:34px 0 12px;font-size:21px}
-.docs p,.docs li{color:#aaa;font-size:13px;line-height:1.85}
-.docs code,.docs pre{font-family:ui-monospace,SFMono-Regular,monospace}
-.docs code{color:#ffb9bd;overflow-wrap:anywhere}
-.docs pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#101219;border:1px solid #292a31;padding:16px;color:#ddd;font-size:11px;line-height:1.8}
-.endpoint{border:1px solid #292a31;padding:16px;margin:12px 0;background:#101219}
-.method{display:inline-block;border:1px solid #555;padding:5px 8px;font-size:9px;letter-spacing:1px;margin-right:10px}
-.note{border-left:2px solid #ef3340;padding:12px 16px;background:#141015}
+:root{color-scheme:dark;--doc-bg:#050505;--doc-panel:#0b0b0b;--doc-line:#292929;--doc-text:#f5f5f5;--doc-muted:#a3a3a3;--doc-red:#ef4444}
+html{scroll-behavior:smooth;scroll-padding-top:82px}
+.docs{max-width:1180px;margin:auto;padding:44px 18px 84px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:38px}
+.sidebar{position:sticky;top:24px;align-self:start;border:1px solid var(--doc-line);padding:18px;background:var(--doc-panel)}
+.sidebar strong{display:block;font-size:11px;letter-spacing:.14em;margin-bottom:14px}
+.sidebar a{display:block;padding:8px 0;color:#aaa;text-decoration:none;font-size:11px;border-bottom:1px solid #1d1d1d}
+.sidebar a:hover{color:#fff}.content{min-width:0}
+.eyebrow{font-size:10px;letter-spacing:.2em;color:var(--doc-red)}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.05;letter-spacing:-2px;margin:12px 0}
+h2{font-size:22px;margin:44px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--doc-line)}
+h3{font-size:14px;margin:22px 0 8px}
+p,li{font-size:13px;line-height:1.85;color:var(--doc-muted)}
+a{color:#fff}.lead{font-size:15px;max-width:760px}
+.callout{border:1px solid #593033;border-left:3px solid var(--doc-red);padding:14px 16px;background:#120b0c;margin:22px 0}
+.callout strong{color:#fff}.callout p{margin:6px 0 0}
+.endpoint{border:1px solid var(--doc-line);background:var(--doc-panel);padding:16px;margin:12px 0}
+.method{display:inline-block;min-width:48px;text-align:center;border:1px solid #555;padding:5px 8px;font-size:10px;font-weight:700;letter-spacing:.08em;margin-right:10px}
+.path{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;color:#fff}
+.endpoint p{margin:10px 0 0}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#080808;border:1px solid #303030;padding:15px;color:#ddd;font:11px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace;overflow:auto}
+code{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#ffb7bd;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+th,td{text-align:left;vertical-align:top;padding:11px;border:1px solid var(--doc-line)}
+th{background:#111;color:#eee}td{color:#aaa}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-@media(max-width:650px){.docs{padding:32px 14px 60px}.grid{grid-template-columns:1fr}}
+.card{border:1px solid var(--doc-line);padding:14px;background:var(--doc-panel)}
+.card b{font:12px ui-monospace,monospace}.card p{margin:6px 0 0}
+.pill{display:inline-block;border:1px solid #444;padding:4px 7px;font-size:9px;letter-spacing:.1em;color:#ccc}
+.toc-mobile{display:none}
+@media(max-width:760px){.docs{display:block;padding:30px 14px 60px}.sidebar{display:none}.toc-mobile{display:block;border:1px solid var(--doc-line);padding:12px;margin:20px 0}.toc-mobile summary{font-size:12px;cursor:pointer}.toc-mobile a{display:block;padding:8px 0;font-size:11px}.grid{grid-template-columns:1fr}h2{margin-top:34px}}
 </style>
 </head>
 <body>
 <header class="topbar"><a class="brand" href="../"><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><nav><a href="../">Trang chủ</a><a href="../browse/">Khám phá</a><a href="../admin/">Quản trị</a></nav></header>
 <main class="docs">
-<p class="eyebrow">CLIPVIET / PREVIEW DEVELOPER PORTAL</p>
-<h1>Catalog API <span style="color:#777">Preview</span></h1>
-<p>Worker chỉ đọc cho Cloudflare Pages Preview. API lấy metadata từ các AppleCMS provider đã cấu hình; trình duyệt nhận JSON trực tiếp qua HTTPS/CORS.</p>
-<div class="note"><strong>Giới hạn triển khai:</strong> Đây là API Preview, không phải <code>api.clipviet.live</code>. Không có DNS/custom domain, không có endpoint ghi/xóa video, không có media proxy hoặc relay. Không sử dụng endpoint này cho Production.</div>
-<h2>Base URL</h2>
+<aside class="sidebar" aria-label="Điều hướng tài liệu">
+<strong>API REFERENCE</strong>
+<a href="#overview">Tổng quan</a><a href="#environments">Môi trường & Base URL</a><a href="#catalog">Catalog API</a><a href="#providers">Provider API</a><a href="#auth">Xác thực</a><a href="#cors">CORS & lỗi</a><a href="#playback">Playback & quyền</a><a href="#examples">Ví dụ tích hợp</a><a href="#limits">Giới hạn Preview</a>
+</aside>
+<section class="content">
+<p class="eyebrow">CLIPVIET / DEVELOPER DOCUMENTATION</p>
+<h1>API Reference</h1>
+<p class="lead">Tài liệu tích hợp cho ClipViet.live. Tra cứu endpoint, query parameters, phản hồi JSON, CORS và các ranh giới bảo mật của hệ thống.</p>
+<div class="callout"><strong>Trạng thái dịch vụ: Preview</strong><p>Các địa chỉ Worker bên dưới là endpoint Preview. Chưa công bố API Production tại <code>api.clipviet.live</code>. Không dùng URL Preview làm endpoint Production hoặc lưu credentials trong mã frontend.</p></div>
+<details class="toc-mobile"><summary>Mục lục tài liệu</summary><a href="#overview">Tổng quan</a><a href="#environments">Môi trường & Base URL</a><a href="#catalog">Catalog API</a><a href="#providers">Provider API</a><a href="#auth">Xác thực</a><a href="#cors">CORS & lỗi</a><a href="#playback">Playback & quyền</a><a href="#examples">Ví dụ tích hợp</a><a href="#limits">Giới hạn Preview</a></details>
+
+<h2 id="overview">1. Tổng quan</h2>
+<p>ClipViet cung cấp giao diện catalog và các dịch vụ Worker tách biệt. Catalog API phục vụ đọc metadata; Provider Registry quản lý trạng thái nguồn, quyền nội dung, connector và kiểm tra playback. API không đồng nghĩa với quyền phân phối nội dung.</p>
+<div class="grid"><div class="card"><span class="pill">READ-ONLY CATALOG</span><p>Danh mục, tìm kiếm, phân trang và thông tin video.</p></div><div class="card"><span class="pill">PROVIDER REGISTRY</span><p>Trạng thái provider, kiểm duyệt quyền và chẩn đoán.</p></div></div>
+
+<h2 id="environments">2. Môi trường & Base URL</h2>
+<h3>Catalog API Preview</h3>
 <pre>https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev</pre>
-<h2>Endpoints</h2>
-<div class="endpoint"><span class="method">GET</span><code>/health</code><p>Health status, môi trường và trạng thái cấu hình provider. Không trả secret.</p></div>
-<div class="endpoint"><span class="method">GET</span><code>/api/providers</code><p>Danh sách provider được cấu hình, cờ <code>configured</code> và tên hiển thị.</p><pre>{ "data": [{ "id": "souavzy", "name": "Souavzy · Main", "configured": true }] }</pre></div>
-<div class="endpoint"><span class="method">GET</span><code>/api/catalog/categories?sourceId=souavzy</code><p>Lấy danh mục. Bỏ <code>sourceId</code> để thử nguồn chính và failover khi upstream lỗi.</p></div>
-<div class="endpoint"><span class="method">GET</span><code>/api/catalog/videos?page=1&amp;sourceId=souavzy</code><p>Danh sách video phân trang. Hỗ trợ <code>keyword</code>, <code>categoryId</code>, <code>sourceId</code>. Nếu bỏ source, Worker thử nguồn chính trước rồi mới failover.</p><pre>{ "provider": { "id": "souavzy", "name": "Souavzy · Main" }, "items": [{ "id": "62843", "sourceId": "souavzy", "title": "..." }], "page": 1, "pageCount": 6537, "total": 130740, "limit": 20 }</pre></div>
-<div class="endpoint"><span class="method">GET</span><code>/api/providers/{sourceId}/categories</code><p>Danh mục của một provider cụ thể.</p></div>
-<div class="endpoint"><span class="method">GET</span><code>/api/providers/{sourceId}/videos?page=1</code><p>Video list của provider cụ thể, hỗ trợ lọc danh mục và từ khóa.</p></div>
-<div class="endpoint"><span class="method">GET</span><code>/api/providers/{sourceId}/videos/{videoId}</code><p>Chi tiết video, bao gồm danh sách đường phát HTTPS nếu provider trả về.</p></div>
-<h2>Provider IDs</h2>
-<div class="grid"><div class="endpoint"><code>souavzy</code><p>Souavzy · Main</p></div><div class="endpoint"><code>apiyutu</code><p>ApiYutu · Backup 1</p></div><div class="endpoint"><code>lbapi9</code><p>LBApi9 · Backup 2</p></div><div class="endpoint"><code>slapibf</code><p>Slapibf · Backup 3</p></div><div class="endpoint"><code>jipinvip1</code><p>JipinVIP1 · Backup 4</p></div></div>
-<h2>CORS & playback</h2>
-<ul>
-<li>CORS chỉ cho phép các hostname Cloudflare Pages Preview được khai báo trong Worker.</li>
-<li>Preflight hỗ trợ <code>GET</code>, <code>OPTIONS</code>, header <code>Accept</code> và <code>Range</code>.</li>
-<li>Worker expose <code>Accept-Ranges</code>, <code>Content-Range</code>, <code>Content-Length</code> cho kiểm tra range.</li>
-<li>MP4/HLS được phát trực tiếp từ media host của provider. Safari/iPhone dùng native HLS khi có hỗ trợ.</li>
-<li>API không proxy, không relay segment, không tạo endpoint tải xuống.</li>
-</ul>
-<h2>Kiểm thử trên iPhone Safari</h2>
-<p>Mở trang chẩn đoán để kiểm tra JSON/CORS, MP4 MIME, HLS manifest/segment, HTTP Range 206 và <code>HTMLVideoElement.loadeddata</code> ngay trên thiết bị đang dùng.</p>
-<p><a class="primary-link" href="../diagnostics/">MỞ SAFARI DIAGNOSTICS ↗</a></p>
-<p class="note">Các kết quả build upstream không thay thế kiểm thử HTTP thực tế trên Safari. Chỉ coi một endpoint hoặc media URL là đạt sau khi trang Diagnostics ghi nhận kết quả thành công.</p>
+<h3>Provider Registry Preview</h3>
+<pre>https://clipviet-provider-registry-preview.huynhthuongg2505-f9b.workers.dev</pre>
+<p>Trang web Cloudflare Pages Preview: <code>https://3e1ad354.clipviet-live-qa.pages.dev</code>. Hostname này chỉ được phép gọi API nếu đã nằm trong CORS allowlist của Worker.</p>
+
+<h2 id="catalog">3. Catalog API</h2>
+<div class="endpoint"><span class="method">GET</span><code class="path">/health</code><p>Kiểm tra trạng thái dịch vụ và cấu hình. Health response không phải bằng chứng rằng upstream provider hoặc video playback đang hoạt động.</p></div>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/providers</code><p>Liệt kê provider đã cấu hình và trạng thái cấu hình công khai. Không trả API key hoặc secret.</p></div>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/catalog/categories?sourceId={sourceId}</code><p>Lấy danh mục từ provider. Có thể bỏ <code>sourceId</code> để Worker áp dụng lựa chọn nguồn mặc định/failover theo cấu hình Preview.</p></div>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/catalog/videos?page=1&amp;sourceId={sourceId}&amp;keyword={keyword}&amp;categoryId={categoryId}</code><p>Truy vấn catalog có phân trang và bộ lọc tùy chọn. Tham số <code>page</code> bắt đầu từ 1.</p><pre>{
+  "provider": { "id": "souavzy", "name": "Souavzy · Main" },
+  "items": [],
+  "page": 1,
+  "pageCount": 0,
+  "total": 0,
+  "limit": 20
+}</pre></div>
+
+<h2 id="providers">4. Provider API</h2>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/providers/{sourceId}/categories</code><p>Lấy danh mục của một provider cụ thể.</p></div>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/providers/{sourceId}/videos?page=1&amp;keyword={keyword}&amp;categoryId={categoryId}</code><p>Lấy danh sách video của provider, hỗ trợ phân trang và lọc.</p></div>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/providers/{sourceId}/videos/{videoId}</code><p>Lấy metadata chi tiết video từ provider đã cấu hình. Không đảm bảo mọi video đều có URL phát hợp lệ.</p></div>
+<h3>Provider IDs đã khai báo trong tài liệu Preview</h3>
+<div class="grid">
+<div class="card"><b>souavzy</b><p>Souavzy · Main</p></div><div class="card"><b>apiyutu</b><p>ApiYutu · Backup 1</p></div><div class="card"><b>lbapi9</b><p>LBApi9 · Backup 2</p></div><div class="card"><b>slapibf</b><p>Slapibf · Backup 3</p></div><div class="card"><b>jipinvip1</b><p>JipinVIP1 · Backup 4</p></div>
+</div>
+
+<h2 id="auth">5. Xác thực & quản trị</h2>
+<p>Provider Registry Preview cung cấp luồng đăng nhập quản trị bằng session cookie HttpOnly. Không gửi token bootstrap hoặc mật khẩu qua query string, URL, log frontend hay kho mã nguồn.</p>
+<table><thead><tr><th>Method</th><th>Path</th><th>Mô tả</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/auth/status</code></td><td>Cho biết có cần khởi tạo Admin ban đầu hay không.</td></tr>
+<tr><td>POST</td><td><code>/auth/bootstrap</code></td><td>Khởi tạo Admin đầu tiên; yêu cầu bootstrap token, Gmail và mật khẩu riêng.</td></tr>
+<tr><td>POST</td><td><code>/auth/login</code></td><td>Đăng nhập và tạo session cookie.</td></tr>
+<tr><td>GET</td><td><code>/auth/me</code></td><td>Kiểm tra session hiện tại.</td></tr>
+<tr><td>POST</td><td><code>/auth/logout</code></td><td>Hủy session hiện tại.</td></tr>
+</tbody></table>
+<p>API quản trị yêu cầu role phù hợp. Các thao tác duyệt connector/quyền nội dung cần vai trò và bằng chứng tương ứng; không sử dụng endpoint quản trị như API catalog công khai.</p>
+
+<h2 id="cors">6. CORS, HTTP và lỗi</h2>
+<ul><li>Chỉ dùng HTTPS.</li><li>Browser cross-origin request cần Origin khớp allowlist; preflight sử dụng <code>OPTIONS</code>.</li><li>Không thêm path, query hoặc fragment vào CORS origin.</li><li>Không đưa Authorization token hoặc bootstrap secret vào URL.</li><li>Client cần xử lý tối thiểu các mã <code>400</code>, <code>401</code>, <code>403</code>, <code>404</code>, <code>409</code>, <code>429</code> và <code>5xx</code>.</li></ul>
+<table><thead><tr><th>Status</th><th>Ý nghĩa</th></tr></thead><tbody><tr><td>400</td><td>Tham số hoặc request không hợp lệ.</td></tr><tr><td>401</td><td>Chưa xác thực hoặc session không hợp lệ.</td></tr><tr><td>403</td><td>Origin, role hoặc policy không cho phép.</td></tr><tr><td>404</td><td>Không tìm thấy tài nguyên/route.</td></tr><tr><td>409</td><td>Xung đột trạng thái hoặc điều kiện nghiệp vụ chưa đạt.</td></tr><tr><td>429</td><td>Vượt giới hạn thử đăng nhập.</td></tr><tr><td>5xx</td><td>Lỗi dịch vụ hoặc upstream.</td></tr></tbody></table>
+
+<h2 id="playback">7. Playback & quyền phân phối</h2>
+<p>Catalog API chỉ cung cấp metadata/đường dẫn do upstream trả về. Trình phát phải kiểm tra HTTPS, MIME, HLS/MP4 và khả năng tương thích thiết bị. Không proxy hoặc relay media nếu chưa có thiết kế và quyền phù hợp.</p>
+<div class="callout"><strong>Rights gate</strong><p>Provider hoặc nội dung ở trạng thái <code>PENDING</code> không được coi là đã được cấp quyền. Chỉ phát nội dung có bằng chứng sở hữu/cấp phép, phạm vi sử dụng, khu vực và thời hạn còn hiệu lực được xác minh.</p></div>
+<p>Safari trên iPhone có thể phát HLS native khi media server hỗ trợ. Cần kiểm thử thiết bị thực tế; tài liệu này không tuyên bố playback đã được nghiệm thu.</p>
+
+<h2 id="examples">8. Ví dụ tích hợp</h2>
+<h3>Fetch danh sách video</h3>
+<pre>const API = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
+
+const url = new URL("/api/catalog/videos", API);
+url.searchParams.set("page", "1");
+url.searchParams.set("sourceId", "souavzy");
+
+const response = await fetch(url, {
+  method: "GET",
+  headers: { "Accept": "application/json" }
+});
+
+if (!response.ok) {
+  throw new Error(`Catalog API error: ${response.status}`);
+}
+
+const catalog = await response.json();
+console.log(catalog.items);</pre>
+<h3>Kiểm tra API health</h3>
+<pre>curl -i \
+  -H "Accept: application/json" \
+  "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev/health"</pre>
+
+<h2 id="limits">9. Giới hạn và trạng thái phát hành</h2>
+<ul><li>Tài liệu này mô tả API Preview, không phải cam kết SLA hoặc API Production.</li><li>Không có Production API base URL được xác nhận trong bản phát hành này.</li><li>Provider status và rights status phải được kiểm tra trực tiếp; không suy luận từ việc provider xuất hiện trong danh sách.</li><li>Không công bố API key, Telegram token, bootstrap token hoặc thông tin đăng nhập.</li><li>Đường dẫn API có thể thay đổi khi Worker contract được cập nhật; hãy đối chiếu với bản triển khai thực tế trước khi tích hợp Production.</li></ul>
+<p><a class="primary-link" href="../diagnostics/">MỞ TRANG KIỂM TRA TRÌNH DUYỆT ↗</a></p>
+</section>
 </main>
-<footer><a class="brand footer-brand" href="../"><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><p>© <span id="year"></span> ClipViet.live · Preview API only</p></footer>
+<footer><a class="brand footer-brand" href="../"><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><p>© <span id="year"></span> ClipViet.live · API Developer Documentation</p></footer>
 <script>document.querySelector("#year").textContent=new Date().getFullYear()</script>
 </body></html>

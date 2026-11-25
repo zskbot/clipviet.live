@@ -1,0 +1,29 @@
+name: GitHub Pages Static Preview Checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages-preview.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-static-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate required files
+        run: |
+          test -s site/index.html
+          test -s site/app.js
+          test -s site/data.js
+          test -s site/styles.css
+          test "$(cat site/CNAME)" = "clipviet.live"
+      - name: Check JavaScript module syntax
+        run: |
+          node --input-type=module --check < site/app.js
+          node --input-type=module --check < site/data.js

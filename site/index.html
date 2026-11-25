@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08090d">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="ClipViet.live — khám phá video nổi bật, video hot và thư viện video được tuyển chọn.">
+  <link rel="canonical" href="https://clipviet.live/">
+  <link rel="icon" href="./clipviet-logo.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest"><link rel="stylesheet" href="./styles.css"><script src="./pwa-register.js" defer></script>
+  <title>ClipViet.live — Video Streaming</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="ClipViet.live trang chủ"><img src="./clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
+    <nav aria-label="Điều hướng" class="primary-nav"><a href="./browse/">Khám phá video</a><a href="#catalog">Mới nhất</a><a href="#about">Giới thiệu</a><a href="./watch/">Trình phát</a><a href="./api-docs/">API Docs</a><a href="./sources.html">Nguồn liên kết</a></nav>
+    <form id="search-form" role="search" aria-label="Tìm kiếm thư viện"><input id="search" type="search" placeholder="Tìm video..." aria-label="Tìm video"><button type="submit">TÌM</button></form>
+    <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Mở menu điều hướng" aria-expanded="false" aria-controls="filter-menu"><span></span><span></span><span></span></button>
+    <aside id="filter-menu" class="filter-menu" role="dialog" aria-modal="true" aria-label="Menu điều hướng và bộ lọc" tabindex="-1" hidden>
+      <div class="filter-menu-head"><div><p class="eyebrow">CLIPVIET / MENU</p><h2>Điều hướng</h2></div><button id="menu-close" class="menu-close" type="button" aria-label="Đóng menu">×</button></div>
+      <nav class="drawer-nav" aria-label="Điều hướng chính">
+        <a href="./"><span class="drawer-nav-icon" aria-hidden="true">⌂</span><span>Trang chủ</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="./browse/"><span class="drawer-nav-icon" aria-hidden="true">⌕</span><span>Khám phá video · Nguồn thật</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="#about"><span class="drawer-nav-icon" aria-hidden="true">◎</span><span>Giới thiệu</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="./sources.html"><span class="drawer-nav-icon" aria-hidden="true">↗</span><span>Nguồn liên kết</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="./api-docs/"><span class="drawer-nav-icon" aria-hidden="true">⌘</span><span>API Documentation</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="./watch/"><span class="drawer-nav-icon" aria-hidden="true">▶</span><span>Trình phát video</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="./admin/sources/"><span class="drawer-nav-icon" aria-hidden="true">▤</span><span>Quản lý nguồn video</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="./telegram/"><span class="drawer-nav-icon" aria-hidden="true">➤</span><span>Telegram Studio</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="#video-suggestion"><span class="drawer-nav-icon" aria-hidden="true">＋</span><span>Đề xuất video</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="./admin/"><span class="drawer-nav-icon" aria-hidden="true">▣</span><span>Quản trị viên</span><span class="drawer-nav-arrow" aria-hidden="true">↗</span></a>
+      </nav>
+      <section class="filter-group" aria-label="Bộ lọc catalog"><h3>DANH MỤC / TÌM KIẾM</h3><p class="filter-note">Bộ lọc danh mục và từ khóa được xử lý ở API. Bộ lọc quốc gia và thể loại sẽ chỉ bật khi nguồn cung cấp metadata lọc toàn bộ catalog chính xác.</p></section>
+      <section class="suggestion-panel" id="video-suggestion" aria-labelledby="suggestion-title"><p class="eyebrow">COMMUNITY / CLIPVIET</p><h3 id="suggestion-title">Đề xuất video</h3><p class="suggestion-intro">Gửi tên video và URL nguồn chính thức. Đề xuất được kiểm tra thủ công về quyền phân phối.</p><form id="suggestion-form"><label for="suggest-title">TÊN VIDEO</label><input id="suggest-title" name="title" type="text" maxlength="160" placeholder="Nhập tên video" required><label for="suggest-url">URL NGUỒN HTTPS</label><input id="suggest-url" name="url" type="url" inputmode="url" placeholder="https://..." required><label for="suggest-reason">LÝ DO ĐỀ XUẤT (KHÔNG BẮT BUỘC)</label><textarea id="suggest-reason" name="reason" rows="2" maxlength="400" placeholder="Mô tả ngắn..."></textarea><button class="suggestion-submit" type="submit">SAO CHÉP ĐỀ XUẤT ↗</button>
+<a class="suggestion-submit suggestion-external" href="https://clipform.io/3d76a8c57" target="_blank" rel="noopener noreferrer">GỬI TRỰC TIẾP QUA CLIPFORM ↗</a><p id="suggestion-status" class="suggestion-status" role="status">Có thể gửi trực tiếp qua Clipform; nút phía trên chỉ sao chép nội dung để dán.</p></form></section>
+      <div class="filter-menu-foot"><button id="reset-filters" class="reset-filters" type="button">XÓA TẤT CẢ BỘ LỌC</button><p>Chỉ hiển thị nội dung có metadata phù hợp và quyền phân phối được xác minh.</p></div>
+    </aside>
+  </header>
+  <main>
+    <!-- Intro hero moved out of the homepage; discovery remains in the navigation drawer. -->
+
+    <section class="catalog" id="catalog" aria-labelledby="catalog-title">
+      <div class="section-heading"><div><p class="eyebrow">THƯ VIỆN</p><h2 id="catalog-title">Danh sách video</h2></div><span id="result-count">0 VIDEO</span></div>
+      <div class="home-category-grid" aria-label="Khám phá danh mục video">
+        <a class="home-category-card" href="./browse/?quick=actors"><span class="home-category-mark" aria-hidden="true">01</span><span class="home-category-copy"><strong>Diễn viên</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=genres"><span class="home-category-mark" aria-hidden="true">02</span><span class="home-category-copy"><strong>Thể loại</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=vietnam"><span class="home-category-mark" aria-hidden="true">03</span><span class="home-category-copy"><strong>Việt Nam</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=vietsub"><span class="home-category-mark" aria-hidden="true">04</span><span class="home-category-copy"><strong>Vietsub</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=china"><span class="home-category-mark" aria-hidden="true">05</span><span class="home-category-copy"><strong>Trung Quốc</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=europe"><span class="home-category-mark" aria-hidden="true">06</span><span class="home-category-copy"><strong>Âu - Mỹ</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=uncensored"><span class="home-category-mark" aria-hidden="true">07</span><span class="home-category-copy"><strong>Không Che</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=jav"><span class="home-category-mark" aria-hidden="true">08</span><span class="home-category-copy"><strong>JAV HD</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=beauty"><span class="home-category-mark" aria-hidden="true">09</span><span class="home-category-copy"><strong>Gái Xinh</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=amateur"><span class="home-category-mark" aria-hidden="true">10</span><span class="home-category-copy"><strong>Nghiệp Dư</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=xvideos"><span class="home-category-mark" aria-hidden="true">11</span><span class="home-category-copy"><strong>Xvideos</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+        <a class="home-category-card" href="./browse/?quick=xnxx"><span class="home-category-mark" aria-hidden="true">12</span><span class="home-category-copy"><strong>Xnxx</strong><small>KHÁM PHÁ DANH MỤC</small></span><span class="home-category-arrow" aria-hidden="true">↗</span></a>
+      </div>
+      <div class="active-filters" id="active-filters" aria-live="polite"></div>
+      <div class="filters"><div id="categories" class="category-list" aria-label="Lọc thể loại"></div><span class="sort-label">SẮP XẾP · THEO NGUỒN</span></div>
+      <div id="video-grid" class="video-grid" aria-live="polite"></div>
+      <p id="empty-state" class="empty-state" hidden>Không tìm thấy video phù hợp.</p>
+      <p class="data-note">APPLECMS V10 · 5 PROVIDER · MỞ KHÁM PHÁ ĐỂ DUYỆT NGUỒN</p>
+    </section>
+    <section class="about" id="about"><p class="eyebrow">ABOUT CLIPVIET.LIVE</p><h2>Một điểm đến.<br><span>Nhiều câu chuyện.</span></h2><p>ClipViet chạy trực tiếp trên GitHub Pages. GitHub Actions đồng bộ catalog AppleCMS thành JSON tĩnh theo lịch 6 giờ; trang web đọc catalog này và trình duyệt phát HLS/MP4 trực tiếp từ CDN nguồn. Không có API server, không proxy video và không cần dịch vụ hosting ứng dụng khác.</p></section>
+  </main>
+  <footer class="site-footer">
+    <section class="footer-search" aria-labelledby="footer-search-title">
+      <div class="footer-section-heading"><p class="eyebrow">DISCOVER / SEARCH</p><h2 id="footer-search-title">Top tìm kiếm</h2><p class="footer-intro">Các chủ đề được quan tâm trong thư viện nội dung dành riêng cho người trưởng thành (18+).</p></div>
+      <nav class="footer-search-tags" aria-label="Top tìm kiếm">
+        <a href="./?q=video%20nguoi%20lon">Video người lớn</a>
+        <a href="./?q=JAV%20Vietsub">JAV Vietsub</a>
+        <a href="./?q=video%2018%2B">Video 18+</a>
+        <a href="./?q=video%20Viet%20Nam">Video Việt Nam</a>
+        <a href="./?q=dien%20vien">Diễn viên</a>
+        <a href="./?q=hot%20girl%20truong%20thanh">Hot girl trưởng thành</a>
+        <a href="./?q=video%20HD">Video HD</a>
+        <a href="./?q=clip%20moi%20cap%20nhat">Clip mới cập nhật</a>
+        <a href="./?q=video%20chau%20A">Video châu Á</a>
+        <a href="./?q=video%20Au%20My">Video Âu - Mỹ</a>
+        <a href="./?q=noi%20dung%20co%20ban%20quyen">Nội dung có bản quyền</a>
+        <a href="./?q=video%20tu%20nguyen">Video tự nguyện</a>
+      </nav>
+    </section>
+    <div class="footer-about">
+      <a class="brand footer-brand" href="./"><img src="./clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
+      <p>CLIP VIET — Thư viện khám phá video dành cho người trưởng thành. Nội dung được tuyển chọn và cập nhật theo dữ liệu nguồn; chỉ tiếp nhận, hiển thị nội dung có sự đồng thuận của người tham gia và quyền phân phối hợp pháp. Không đăng tải nội dung riêng tư bị phát tán trái phép hoặc nội dung liên quan đến người dưới 18 tuổi.</p>
+      <p class="footer-copyright">© <span id="year"></span> ClipViet.live · Bảo lưu mọi quyền.</p>
+    </div>
+  </footer>
+  <dialog id="detail-dialog" class="detail-dialog"><button id="close-detail" class="close-button" aria-label="Đóng">×</button><div id="detail-content"></div></dialog>
+  <dialog id="age-dialog" class="age-dialog"><div class="age-mark">18+</div><p class="eyebrow">XÁC NHẬN ĐỘ TUỔI</p><h2>Bạn đã đủ 18 tuổi?</h2><p>Một số nội dung có thể không phù hợp với người dưới 18 tuổi. Đây là xác nhận tự khai, không thay thế xác minh danh tính.</p><div class="age-actions"><button id="leave-button" class="secondary-button">RỜI KHỎI</button><button id="confirm-age" class="primary-button">TÔI ĐÃ ĐỦ 18 TUỔI</button></div></dialog>
+  <script type="module" src="./navigation.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

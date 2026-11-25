@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ClipViet Desktop</title><link rel="stylesheet" href="style.css"></head>
+<body><header><div class="brand">CLIPVIET<span> / DESKTOP</span></div><div class="tag">PREVIEW · LOCAL DOWNLOAD CLIENT</div></header>
+<main>
+<section class="panel"><h1>Media Downloader</h1><p class="muted">N_m3u8DL-RE · HLS / DASH · xử lý trên máy của bạn</p>
+<label>Executable N_m3u8DL-RE</label><div class="inline"><input id="binary" placeholder="/path/to/N_m3u8DL-RE"><button id="pickBinary">CHỌN FILE</button></div>
+<label>ClipViet API Base URL (tùy chọn)</label><input id="apiBase" placeholder="https://preview.example.pages.dev">
+<label>Admin API token (được mã hóa bằng OS khi lưu)</label><input id="token" type="password" placeholder="Để trống nếu API không yêu cầu">
+<div class="inline"><button id="saveSettings">LƯU CẤU HÌNH</button><button id="loadCatalog" class="secondary">TẢI DANH MỤC CLIPVIET</button></div><div id="catalog" class="muted small"></div>
+</section>
+<section class="panel"><h2>Tạo tác vụ tải</h2>
+<label>Media URL (HTTPS)</label><input id="mediaUrl" placeholder="https://media.example.com/stream/master.m3u8">
+<label>Tên file</label><input id="mediaName" value="clipviet-media">
+<label>Thư mục lưu</label><div class="inline"><input id="outputDir" placeholder="Mặc định: Downloads/ClipViet"><button id="pickFolder">CHỌN THƯ MỤC</button></div>
+<label>Allowlist hostname (cục bộ)</label><div class="inline"><input id="host" placeholder="media.example.com"><button id="addHost">THÊM HOST</button></div><div id="hosts" class="chips"></div>
+<label class="check"><input id="rights" type="checkbox"> Tôi có quyền tải xuống và lưu trữ nội dung này, và việc tải không vi phạm DRM, paywall hoặc kiểm soát truy cập.</label>
+<button id="start" class="primary">BẮT ĐẦU TẢI</button><p class="muted small">Chỉ HTTPS và hostname đã được thêm vào allowlist trên thiết bị. Không có URL/provider nào được bật sẵn.</p>
+</section>
+<section class="panel"><h2>Tác vụ</h2><div id="jobs" class="jobs"><p class="muted">Chưa có tác vụ.</p></div></section>
+</main><footer>ClipViet Desktop Preview · Không kết nối Production · Không tự động phát hành nội dung</footer><script src="app.js"></script></body></html>

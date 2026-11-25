@@ -29,7 +29,7 @@
     <span class="top-label">ADMIN / VIDEO API</span>
     <a class="back" href="../api-docs/">API DOCS</a><a class="back" href="../">← TRANG CHỦ</a>
   </header>
-  <nav class="admin-nav" aria-label="Điều hướng quản trị"><p class="nav-caption">WORKSPACE</p><a href="#overview">Tổng quan</a><a href="#clipform-inbox">Đề xuất video</a><a href="#api-connection">Nguồn API</a><a href="#provider-validator">Kiểm tra nguồn</a><a href="#adultembed-preview">Provider Preview</a><a href="#direct-play">Phát bằng URL</a><a href="#library">Thư viện API</a><a href="#preview-player">Trình phát</a><a href="#cms-panel">Quản lý bài viết</a><a href="./sources/">Source Manager ↗</a></nav>
+  <nav class="admin-nav" aria-label="Điều hướng quản trị"><p class="nav-caption">WORKSPACE</p><a href="#overview">Tổng quan</a><a href="#clipform-inbox">Đề xuất video</a><a href="#api-connection">Nguồn API</a><a href="#provider-validator">Kiểm tra nguồn</a><a href="#adultembed-preview">Provider Preview</a><a href="#vdclip-workflow">VDClip Workflow</a><a href="#direct-play">Phát bằng URL</a><a href="#library">Thư viện API</a><a href="#preview-player">Trình phát</a><a href="#cms-panel">Quản lý bài viết</a><a href="./sources/">Source Manager ↗</a></nav>
   <main>
     <section class="intro" id="overview">
       <p class="eyebrow">VIDEO SOURCE CONTROL</p>
@@ -109,6 +109,21 @@
       <section class="ae-box" style="margin-top:16px"><div class="ae-head"><h3>NHẬT KÝ PHIÊN PREVIEW</h3><button id="adultembed-clear-logs" class="secondary" type="button">XÓA NHẬT KÝ</button></div><ol id="adultembed-logs" class="ae-log-list"></ol></section>
       <p class="ae-note">Các request chỉ đọc API JSON; không tải file, không proxy media, không nhúng iframe. Nhật ký lưu tạm trong sessionStorage của tab. API có thể trả về hostname player/thumbnail khác theo tài liệu; adapter chỉ chấp nhận adultembed.com và pornalizer.app ở allowlist cố định.</p>
     </section>
+    <section class="panel" id="vdclip-workflow" data-admin-protected inert aria-disabled="true">
+      <div class="panel-head"><div><p class="eyebrow">VDCLIP / RIGHTS-GATED HANDOFF</p><h2>VDClip Processing Bridge</h2></div><span class="local-tag">REVIEW REQUIRED</span></div>
+      <p class="hint block">Chuẩn bị gói bàn giao thủ công sang VDClip. Không scrape trang nguồn, không tải/proxy media và không tự động xuất bản. Chỉ dùng URL media trực tiếp mà bên cấp quyền cho phép xử lý.</p>
+      <form id="vdclip-intake-form" class="form-grid">
+        <label class="wide">Tiêu đề nội dung<input id="vdclip-title" maxlength="180" required placeholder="Tên nội dung đã được cấp phép"></label>
+        <label class="wide">Direct media URL (HTTPS)<input id="vdclip-source-url" type="url" inputmode="url" required placeholder="https://media.example.com/authorized-video.mp4"></label>
+        <label class="wide">URL hồ sơ bằng chứng quyền (HTTPS)<input id="vdclip-evidence-url" type="url" inputmode="url" required placeholder="https://rights.example.com/records/…"></label>
+        <label class="wide">Mã hồ sơ quyền trong Provider Registry<input id="vdclip-rights-record" maxlength="120" required placeholder="rights-record-id"></label>
+        <label class="wide" style="display:flex;gap:10px;align-items:flex-start"><input id="vdclip-rights-attested" type="checkbox" required style="width:18px;min-height:18px;flex:0 0 18px"><span>Tôi đã đối chiếu hồ sơ nguồn cụ thể, quyền chỉnh sửa và phân phối, giấy tờ độ tuổi, sự đồng thuận và quyền sử dụng thumbnail/metadata.</span></label>
+        <div class="actions wide"><button class="primary" type="submit">TẠO GÓI BÀN GIAO</button><button class="secondary" id="vdclip-copy-packet" type="button" disabled>SAO CHÉP JSON</button><button class="secondary" id="vdclip-open-app" type="button" disabled>MỞ VDCLIP ↗</button></div>
+      </form>
+      <p id="vdclip-status" class="status" role="status" aria-live="polite">Chưa tạo gói bàn giao. Provider vẫn PENDING.</p>
+      <pre id="vdclip-packet" class="provider-result" aria-label="VDClip handoff packet">Chưa tạo gói bàn giao.</pre>
+      <p class="notice">Giới hạn: checkbox chỉ là xác nhận của operator, không phải xác minh pháp lý độc lập. Công cụ này không cập nhật Provider Registry, không gọi API VDClip, không bật phát công khai. Reviewer phải xác minh quyền trước khi nhập URL vào VDClip.</p>
+    </section>
     <section class="panel">
       <div class="panel-head"><div><p class="eyebrow">03 / DIRECT PLAY</p><h2>Phát bằng URL</h2></div></div>
       <form id="direct-form" class="direct-form">
@@ -146,6 +161,7 @@
   </main>
   <script type="module" src="./admin.js"></script>
   <script type="module" src="./adultembed-admin.mjs"></script>
+  <script type="module" src="./vdclip-workflow.mjs"></script>
   <script type="module" src="./cms.js"></script>
 </body>
 </html>

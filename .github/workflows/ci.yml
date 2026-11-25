@@ -30,6 +30,18 @@ jobs:
           test "$(cat site/CNAME)" = "clipviet.live"
           test ! -e site/package.json
           echo "Static website is self-contained in site/."
+      - name: Verify rights-gated catalog defaults
+        run: |
+          env -u CATALOG_DISTRIBUTION_AUTHORIZED node scripts/sync-pages-catalog.mjs
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const catalog = JSON.parse(fs.readFileSync('site/data/catalog.json', 'utf8'));
+          if (!Array.isArray(catalog.providers) || catalog.providers.length !== 5) throw new Error('expected exactly five providers');
+          if (catalog.providers.some(provider => provider.status !== 'PENDING' || provider.rightsStatus !== 'PENDING')) throw new Error('provider rights state must remain PENDING');
+          if (!Array.isArray(catalog.videos) || catalog.videos.length !== 0) throw new Error('unlicensed video records must not enter the public catalog');
+          if (catalog.providers.some(provider => (provider.mediaHosts || []).length !== 0)) throw new Error('media allowlists must remain empty');
+          console.log('PASS: five providers PENDING; zero public videos; empty media allowlists.');
+          NODE
       - name: Check all static JavaScript modules
         run: |
           node --input-type=module --check < scripts/sync-pages-catalog.mjs

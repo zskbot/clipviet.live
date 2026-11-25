@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><title>ClipViet.live</title><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff424f"/><stop offset="1" stop-color="#b5122b"/></linearGradient></defs><rect width="128" height="128" fill="#090a0f"/><path d="M70 22a43 43 0 1 0 36 65l-18-11a22 22 0 1 1-1-26l18-11A43 43 0 0 0 70 22Z" fill="url(#g)"/><path d="m57 46 29 18-29 18z" fill="#fff"/><circle cx="105" cy="103" r="8" fill="#ff424f"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">ClipViet.live</title>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff424f"/><stop offset="1" stop-color="#b5122b"/></linearGradient></defs>
+  <rect width="128" height="128" rx="26" fill="#090a0f"/>
+  <path d="M70 22a43 43 0 1 0 36 65l-18-11a22 22 0 1 1-1-26l18-11A43 43 0 0 0 70 22Z" fill="url(#g)"/>
+  <path d="m57 46 29 18-29 18z" fill="#fff"/>
+  <circle cx="105" cy="103" r="8" fill="#ff424f"/>
+</svg>

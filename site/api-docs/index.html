@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050505">
 <meta name="description" content="Tài liệu API ClipViet.live: Catalog API, Provider API, xác thực, CORS, ví dụ tích hợp và playback có kiểm soát quyền.">
-<title>API Documentation — ClipViet.live</title>
+<link rel="icon" href="../clipviet-logo.svg" type="image/svg+xml">
+  <title>API Documentation — ClipViet.live</title>
 <link rel="stylesheet" href="../styles.css">
 <style>
 :root{color-scheme:dark;--doc-bg:#050505;--doc-panel:#0b0b0b;--doc-line:#292929;--doc-text:#f5f5f5;--doc-muted:#a3a3a3;--doc-red:#ef4444}
@@ -39,9 +40,10 @@ th{background:#111;color:#eee}td{color:#aaa}
 .toc-mobile{display:none}
 @media(max-width:760px){.docs{display:block;padding:30px 14px 60px}.sidebar{display:none}.toc-mobile{display:block;border:1px solid var(--doc-line);padding:12px;margin:20px 0}.toc-mobile summary{font-size:12px;cursor:pointer}.toc-mobile a{display:block;padding:8px 0;font-size:11px}.grid{grid-template-columns:1fr}h2{margin-top:34px}}
 </style>
+<style>.brand-logo{display:block;width:34px;height:34px;flex:0 0 34px;object-fit:contain}.brand,.community-brand{display:inline-flex;align-items:center;gap:9px}.brand>span,.community-brand>span{display:inline-flex;align-items:baseline;white-space:nowrap}.community-brand .brand-logo{width:34px;height:34px}.community-brand .brand-accent{color:#f06472}</style>
 </head>
 <body>
-<header class="topbar"><a class="brand" href="../"><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><nav><a href="../">Trang chủ</a><a href="../browse/">Khám phá</a><a href="../admin/">Quản trị</a></nav></header>
+<header class="topbar"><a class="brand" href="../"><img class="brand-logo" src="../clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><nav><a href="../">Trang chủ</a><a href="../browse/">Khám phá</a><a href="../admin/">Quản trị</a></nav></header>
 <main class="docs">
 <aside class="sidebar" aria-label="Điều hướng tài liệu">
 <strong>API REFERENCE</strong>
@@ -137,6 +139,6 @@ console.log(catalog.items);</pre>
 <p><a class="primary-link" href="../diagnostics/">MỞ TRANG KIỂM TRA TRÌNH DUYỆT ↗</a></p>
 </section>
 </main>
-<footer><a class="brand footer-brand" href="../"><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><p>© <span id="year"></span> ClipViet.live · API Developer Documentation</p></footer>
+<footer><a class="brand footer-brand" href="../"><img class="brand-logo" src="../clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><p>© <span id="year"></span> ClipViet.live · API Developer Documentation</p></footer>
 <script>document.querySelector("#year").textContent=new Date().getFullYear()</script>
 </body></html>

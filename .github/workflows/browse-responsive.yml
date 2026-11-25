@@ -7,7 +7,10 @@ on:
     branches: [main]
     paths:
       - "site/browse/**"
-      - "site/styles.css"\n      - "site/admin/**"\n      - "worker/catalog-api-preview/**"\n      - "tests/provider-admin-ui.test.mjs"
+      - "site/styles.css"
+      - "site/admin/**"
+      - "worker/catalog-api-preview/**"
+      - "tests/provider-admin-ui.test.mjs"
       - "tests/browser/**"
       - ".github/workflows/browse-responsive.yml"
 
@@ -30,7 +33,7 @@ jobs:
       - name: Install temporary Playwright test runner
         run: npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.56.1
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - name: Serve static Preview files
         run: |
           python3 -m http.server 4173 --directory site > /tmp/clipviet-preview-server.log 2>&1 &
@@ -44,6 +47,11 @@ jobs:
       - name: Run viewport and interaction checks
         env:
           BASE_URL: http://127.0.0.1:4173
+        run: node tests/browser/browse-responsive.mjs
+      - name: Run Safari-engine WebKit viewport and interaction checks
+        env:
+          BASE_URL: http://127.0.0.1:4173
+          BROWSER: webkit
         run: node tests/browser/browse-responsive.mjs
       - name: Upload viewport screenshots
         if: always()

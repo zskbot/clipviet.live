@@ -1,0 +1,26 @@
+{
+  "name": "clipviet-desktop-downloader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Preview desktop client for authorized ClipViet media downloads",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --dir",
+    "pack": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "live.clipviet.desktop.downloader",
+    "productName": "ClipViet Desktop",
+    "directories": { "output": "release" },
+    "files": ["src/**/*", "package.json"],
+    "asar": true,
+    "linux": { "target": ["AppImage"], "category": "Network" },
+    "win": { "target": ["nsis"] },
+    "mac": { "target": ["dmg"] }
+  }
+}

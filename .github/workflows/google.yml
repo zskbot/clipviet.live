@@ -1,0 +1,14 @@
+name: Legacy Google Cloud deployment (disabled)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disabled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment intentionally disabled
+        run: echo "ClipViet is published only through GitHub Pages site/. No GKE or external application deployment is permitted by this workflow."

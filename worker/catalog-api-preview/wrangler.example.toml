@@ -1,0 +1,20 @@
+name = "clipviet-catalog-api-preview"
+main = "src/index.js"
+compatibility_date = "2026-11-25"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ENVIRONMENT = "preview"
+ALLOWED_ORIGINS = "https://feat-clipviet-preview-accept.clipviet-live-preview.pages.dev,https://preview-admin-password-gate.clipviet-live-preview.pages.dev"
+APPLECMS_SOUAVZY_URL = "https://api.souavzy.vip/api.php/provide/vod/"
+APPLECMS_APIYUTU_URL = "https://apiyutu.com/api.php/provide/vod/"
+APPLECMS_LBAPI9_URL = "https://lbapi9.com/api.php/provide/vod/"
+APPLECMS_SLAPIBF_URL = "https://slapibf.com/api.php/provide/vod/"
+APPLECMS_JIPINVIP1_URL = "https://jipinvip1.com/api.php/provide/vod/"
+
+# Preview-only D1 binding. Replace the placeholder after creating the Preview database.
+[[d1_databases]]
+binding = "DB"
+database_name = "clipviet-cms-preview"
+database_id = "1e613e7b-5aa3-4927-bf78-552f383c9dce"

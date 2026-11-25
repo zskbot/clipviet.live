@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08090d">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="ClipViet.live — thư viện khám phá video.">
+  <link rel="canonical" href="https://clipviet.live/">
+  <link rel="icon" href="./site/clipviet-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./site/styles.css">
+  <title>ClipViet.live — Video Streaming</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="ClipViet.live trang chủ"><img src="./site/clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
+    <nav aria-label="Điều hướng" class="primary-nav"><a href="#catalog">Khám phá</a><a href="#about">Giới thiệu</a><a href="./sources.html">Nguồn liên kết</a></nav>
+    <form id="search-form" role="search" aria-label="Tìm kiếm thư viện"><input id="search" type="search" placeholder="Tìm video..." aria-label="Tìm video"><button type="submit">TÌM</button></form>
+  </header>
+  <main>
+    <section class="hero" id="hero" aria-labelledby="hero-title">
+      <div class="hero-copy"><p class="eyebrow">CLIPVIET.LIVE / VIDEO LIBRARY</p><h1 id="hero-title">Khám phá.<br><span>Kết nối.</span></h1><p class="hero-description">Thư viện video được tuyển chọn. Tìm kiếm theo tên, thể loại và khám phá nội dung mới.</p><a class="primary-link" href="#catalog">KHÁM PHÁ THƯ VIỆN <span>↗</span></a></div>
+      <div class="hero-art" aria-hidden="true"><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><div class="art-mark">C<span>▶</span></div><p>CLIPVIET / 001</p></div>
+    </section>
+    <section class="catalog" id="catalog" aria-labelledby="catalog-title">
+      <div class="section-heading"><div><p class="eyebrow">THƯ VIỆN</p><h2 id="catalog-title">Danh sách video</h2></div><span id="result-count">0 VIDEO</span></div>
+      <div class="filters"><div id="categories" class="category-list" aria-label="Lọc thể loại"></div><label class="sort-label">SẮP XẾP <select id="sort"><option value="new">Mới nhất</option><option value="title">Tên A–Z</option></select></label></div>
+      <div id="video-grid" class="video-grid" aria-live="polite"></div>
+      <p id="empty-state" class="empty-state" hidden>Không tìm thấy video phù hợp.</p>
+      <p class="data-note">DỮ LIỆU DEMO TĨNH · API/ADMIN ĐỘNG CHƯA ĐƯỢC HOST TRÊN GITHUB PAGES</p>
+    </section>
+    <section class="about" id="about"><p class="eyebrow">ABOUT CLIPVIET.LIVE</p><h2>Một điểm đến.<br><span>Nhiều câu chuyện.</span></h2><p>Phiên bản GitHub Pages là frontend tĩnh để kiểm tra giao diện và trải nghiệm duyệt thư viện. Các chức năng cần máy chủ — API video, quản trị, webhook và lưu trữ — vẫn nằm ngoài phạm vi Pages.</p></section>
+  </main>
+  <footer><a class="brand footer-brand" href="./"><img src="./site/clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><p>© <span id="year"></span> ClipViet.live · Chỉ đăng tải nội dung bạn sở hữu hoặc có quyền phân phối.</p></footer>
+  <dialog id="detail-dialog" class="detail-dialog"><button id="close-detail" class="close-button" aria-label="Đóng">×</button><div id="detail-content"></div></dialog>
+  <dialog id="age-dialog" class="age-dialog"><div class="age-mark">18+</div><p class="eyebrow">XÁC NHẬN ĐỘ TUỔI</p><h2>Bạn đã đủ 18 tuổi?</h2><p>Một số nội dung có thể không phù hợp với người dưới 18 tuổi. Đây là xác nhận tự khai, không thay thế xác minh danh tính.</p><div class="age-actions"><button id="leave-button" class="secondary-button">RỜI KHỎI</button><button id="confirm-age" class="primary-button">TÔI ĐÃ ĐỦ 18 TUỔI</button></div></dialog>
+  <script type="module" src="./site/app.js"></script>
+</body>
+</html>

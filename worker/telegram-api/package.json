@@ -1,0 +1,8 @@
+{
+  "name": "clipviet-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:providers": "node --test src/applecms.test.mjs"
+  }
+}

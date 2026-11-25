@@ -36,16 +36,16 @@
       <h1>API Video <span>Player</span></h1>
       <p>Kết nối JSON API của bạn hoặc dán URL phát trực tiếp để kiểm tra video ngay trên trình duyệt.</p>
     </section>
-    <section id="admin-login-gate" class="admin-login-gate" aria-labelledby="admin-login-title">
+    <section id="admin-login-gate" class="admin-login-gate" aria-labelledby="admin-login-title" hidden>
       <p class="eyebrow">SERVER AUTHENTICATION</p>
       <h2 id="admin-login-title">Đăng nhập quản trị</h2>
-      <p>Worker xác minh PIN và cấp session. Toàn bộ khu vực quản trị mặc định bị khóa.</p>
+      <p>Auto Admin tự khôi phục phiên hợp lệ. Chỉ yêu cầu PIN khi đăng nhập lần đầu hoặc phiên đã hết hạn; API luôn xác minh quyền ở máy chủ.</p>
       <form id="admin-login-form" autocomplete="on">
         <label for="admin-pin">ADMIN PIN · 6 chữ số</label>
         <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="current-password" required>
         <button class="primary" type="submit">ĐĂNG NHẬP</button>
       </form>
-      <p id="admin-login-status" role="status" aria-live="polite">Chưa xác thực.</p>
+      <p id="admin-login-status" role="status" aria-live="polite">Đang kiểm tra phiên quản trị…</p>
       <button id="admin-logout" class="secondary" type="button">ĐĂNG XUẤT</button>
     </section>
     <div id="admin-workspace" data-admin-protected inert aria-disabled="true" class="admin-locked">

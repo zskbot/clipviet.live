@@ -33,27 +33,33 @@ const loginGate = $("#admin-login-gate");
 const loginForm = $("#admin-login-form");
 const loginStatus = $("#admin-login-status");
 const logoutButton = $("#admin-logout");
-function showLogin(message = "Đăng nhập để mở khu vực quản trị.") {
+function showLogin(message = "Đăng nhập lần đầu bằng PIN để tạo phiên Admin.") {
   setAdminAccess(false, message);
   if (loginGate) loginGate.hidden = false;
   if (loginStatus) loginStatus.textContent = message;
 }
 function showAdmin() {
-  setAdminAccess(true, "Phiên Admin đã được máy chủ xác nhận.");
+  setAdminAccess(true, "Auto Admin: phiên hợp lệ đã được máy chủ xác nhận.");
   if (loginGate) loginGate.hidden = true;
 }
+let sessionVerification = null;
 async function verifyAdminSession() {
-  if (!adminToken) { showLogin(); return false; }
-  try {
-    await adminRequest("/api/admin/session");
-    showAdmin();
-    return true;
-  } catch {
-    adminToken = "";
-    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
-    showLogin("Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.");
-    return false;
-  }
+  if (sessionVerification) return sessionVerification;
+  sessionVerification = (async () => {
+    if (!adminToken) { showLogin(); return false; }
+    try {
+      await adminRequest("/api/admin/session");
+      showAdmin();
+      return true;
+    } catch {
+      adminToken = "";
+      try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
+      showLogin("Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại bằng PIN.");
+      return false;
+    }
+  })();
+  try { return await sessionVerification; }
+  finally { sessionVerification = null; }
 }
 if (loginForm) loginForm.addEventListener("submit", async event => {
   event.preventDefault();

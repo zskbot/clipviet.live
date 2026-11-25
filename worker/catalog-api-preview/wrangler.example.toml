@@ -6,9 +6,6 @@ preview_urls = false
 
 [vars]
 ENVIRONMENT = "preview"
-ACCESS_TEAM_DOMAIN = "dark-snow-8a68.cloudflareaccess.com"
-ACCESS_AUD = "3df3c80811b8acd91282d0d7a68e7eefc1a74ccba3fcabf4d2d04406d3833d81"
-ADMIN_EMAILS = "huynhthuongg2505@gmail.com,huynhthuongg25052002@gmail.com"
 ALLOWED_ORIGINS = "https://feat-clipviet-preview-accept.clipviet-live-preview.pages.dev,https://preview-admin-password-gate.clipviet-live-preview.pages.dev"
 APPLECMS_SOUAVZY_URL = "https://api.souavzy.vip/api.php/provide/vod/"
 APPLECMS_APIYUTU_URL = "https://apiyutu.com/api.php/provide/vod/"

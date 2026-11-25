@@ -24,58 +24,43 @@ function corsHeaders(origin) {
     "vary":"Origin"
   } : {};
 }
-function decodeBase64Url(value) {
-  const normalized=String(value||"").replace(/-/g,"+").replace(/_/g,"/");
-  const padded=normalized.padEnd(Math.ceil(normalized.length/4)*4,"=");
-  const binary=atob(padded);
-  return Uint8Array.from(binary,character=>character.charCodeAt(0));
+function safeSecretCompare(candidate, expected) {
+  const a=new TextEncoder().encode(String(candidate||""));
+  const b=new TextEncoder().encode(String(expected||""));
+  if(a.length!==b.length) return false;
+  let diff=0; for(let i=0;i<a.length;i++) diff|=a[i]^b[i];
+  return diff===0;
 }
-function decodeJwtPart(value) {
-  return JSON.parse(new TextDecoder().decode(decodeBase64Url(value)));
+function b64url(bytes) {
+  let binary="";
+  for(let i=0;i<bytes.length;i++) binary+=String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
 }
-let accessJwksCache={expiresAt:0,keys:[]};
-async function getAccessJwks(teamDomain) {
-  if(accessJwksCache.expiresAt>Date.now()&&accessJwksCache.keys.length) return accessJwksCache.keys;
-  const response=await fetch("https://"+teamDomain+"/cdn-cgi/access/certs",{
-    headers:{accept:"application/json"},
-    cf:{cacheTtl:600,cacheEverything:true}
-  });
-  if(!response.ok) throw new Error("Cloudflare Access signing keys unavailable");
-  const payload=await response.json();
-  if(!Array.isArray(payload.keys)||!payload.keys.length) throw new Error("Cloudflare Access signing keys missing");
-  accessJwksCache={expiresAt:Date.now()+10*60*1000,keys:payload.keys};
-  return accessJwksCache.keys;
+async function signSession(payload, secret) {
+  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  return b64url(new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(payload))));
 }
-async function accessIdentity(request,env) {
-  const teamDomain=String(env.ACCESS_TEAM_DOMAIN||"").trim().toLowerCase();
-  const audience=String(env.ACCESS_AUD||"").trim();
-  const allowedEmails=new Set(String(env.ADMIN_EMAILS||"").split(",").map(value=>value.trim().toLowerCase()).filter(Boolean));
-  if(!/^[a-z0-9-]+\.cloudflareaccess\.com$/.test(teamDomain)||!audience||!allowedEmails.size) return null;
-  const token=request.headers.get("cf-access-jwt-assertion")||"";
+async function issueSession(env) {
+  const exp=Math.floor(Date.now()/1000)+14400;
+  const nonce=b64url(crypto.getRandomValues(new Uint8Array(18)));
+  const payload=exp+"."+nonce;
+  return "v1."+payload+"."+await signSession(payload,env.ADMIN_SESSION_SECRET);
+}
+async function validSession(request, env) {
+  if(!env.ADMIN_SESSION_SECRET) return false;
+  const header=request.headers.get("Authorization")||"";
+  const token=header.startsWith("Bearer ")?header.slice(7):"";
   const parts=token.split(".");
-  if(parts.length!==3) return null;
-  try {
-    const header=decodeJwtPart(parts[0]);
-    const claims=decodeJwtPart(parts[1]);
-    if(header.alg!=="RS256"||typeof header.kid!=="string") return null;
-    const now=Math.floor(Date.now()/1000);
-    if(claims.iss!=="https://"+teamDomain) return null;
-    const audiences=Array.isArray(claims.aud)?claims.aud:[claims.aud];
-    if(!audiences.includes(audience)) return null;
-    if(!Number.isFinite(claims.exp)||claims.exp<=now) return null;
-    if(claims.nbf!==undefined&&(!Number.isFinite(claims.nbf)||claims.nbf>now+30)) return null;
-    const email=String(claims.email||"").trim().toLowerCase();
-    if(!allowedEmails.has(email)) return null;
-    const jwks=await getAccessJwks(teamDomain);
-    const jwk=jwks.find(key=>key.kid===header.kid&&key.kty==="RSA"&&(!key.use||key.use==="sig")&&(!key.alg||key.alg==="RS256"));
-    if(!jwk) return null;
-    const publicKey=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
-    const valid=await crypto.subtle.verify("RSASSA-PKCS1-v1_5",publicKey,decodeBase64Url(parts[2]),new TextEncoder().encode(parts[0]+"."+parts[1]));
-    return valid?{email,subject:String(claims.sub||"")}:null;
-  } catch {
-    return null;
-  }
+  if(parts.length!==4||parts[0]!=="v1") return false;
+  const exp=Number(parts[1]);
+  if(!Number.isSafeInteger(exp)||exp<Math.floor(Date.now()/1000)||exp>Math.floor(Date.now()/1000)+14400) return false;
+  const payload=parts[1]+"."+parts[2];
+  const expected=await signSession(payload,env.ADMIN_SESSION_SECRET);
+  if(expected.length!==parts[3].length) return false;
+  let diff=0; for(let i=0;i<expected.length;i++) diff|=expected.charCodeAt(i)^parts[3].charCodeAt(i);
+  return diff===0;
 }
+const failedLogins=new Map();
 async function handle(request, env) {
   const url=new URL(request.url), path=url.pathname.replace(/\/$/,"")||"/";
   const origin=allowedOrigin(request,env);
@@ -83,13 +68,28 @@ async function handle(request, env) {
   const headers=corsHeaders(origin);
   if(path.startsWith("/api/admin/")&&!origin) return json({error:"Origin required"},403);
   if(request.method==="OPTIONS") return new Response(null,{status:204,headers});
-  let adminIdentity=null;
-  if(path.startsWith("/api/admin/")&&request.method!=="OPTIONS") {
-    adminIdentity=await accessIdentity(request,env);
-    if(!adminIdentity) return json({error:"Cloudflare Access authentication required"},401,headers);
+  if(path==="/api/admin/login"&&request.method==="POST") {
+    if(!env.ADMIN_PIN || !/^\d{6}$/.test(String(env.ADMIN_PIN))) return json({error:"Admin PIN is not configured as a six-digit Worker Secret."},503,headers);
+    const ip=request.headers.get("CF-Connecting-IP")||"unknown";
+    const now=Date.now(), attempt=failedLogins.get(ip)||{count:0,first:now,blockedUntil:0};
+    if(attempt.blockedUntil>now) return json({error:"Too many attempts. Try again later."},429,{"retry-after":String(Math.ceil((attempt.blockedUntil-now)/1000)),...headers});
+    let body={}; try { body=await request.json(); } catch { return json({error:"Invalid request."},400,headers); }
+    const pin=String(body.pin||"");
+    if(!/^\d{6}$/.test(pin)||!safeSecretCompare(pin,env.ADMIN_PIN)) {
+      const next=attempt.first+900000<now?{count:1,first:now,blockedUntil:0}:{...attempt,count:attempt.count+1};
+      if(next.count>=5) next.blockedUntil=now+900000;
+      failedLogins.set(ip,next);
+      return json({error:next.blockedUntil>now?"Too many attempts. Try again in 15 minutes.":"Incorrect PIN."},next.blockedUntil>now?429:401,headers);
+    }
+    failedLogins.delete(ip);
+    if(!env.ADMIN_SESSION_SECRET) return json({error:"Admin session signing secret is not configured."},503,headers);
+    return json({ok:true,token:await issueSession(env),expiresIn:14400},200,headers);
   }
   if(path==="/api/admin/session"&&request.method==="GET") {
-    return json({ok:true,role:"admin"},200,headers);
+    return await validSession(request,env)?json({ok:true,role:"admin"},200,headers):json({error:"Admin session required"},401,headers);
+  }
+  if(path==="/api/admin/logout"&&request.method==="POST") {
+    return await validSession(request,env)?json({ok:true},200,headers):json({error:"Admin session required"},401,headers);
   }
   if(path==="/api/public/articles"&&request.method==="GET") {
     if(!env.DB) return json({error:"CMS database is not configured"},503,headers);
@@ -102,6 +102,7 @@ async function handle(request, env) {
     return json({data:rows.results||[],count:rows.results?.length||0},200,headers);
   }
   if(path==="/api/admin/articles"&&(request.method==="GET"||request.method==="POST")) {
+    if(!await validSession(request,env)) return json({error:"Admin session required"},401,headers);
     if(!env.DB) return json({error:"CMS database is not configured"},503,headers);
     if(request.method==="GET") {
       const rows=await env.DB.prepare("SELECT id,slug,title,excerpt,body,status,created_at,updated_at,published_at FROM articles ORDER BY updated_at DESC LIMIT 200").all();
@@ -122,6 +123,7 @@ async function handle(request, env) {
   }
   const articleMatch=path.match(/^\/api\/admin\/articles\/([0-9a-f-]{36})$/i);
   if(articleMatch&&(request.method==="PUT"||request.method==="DELETE")) {
+    if(!await validSession(request,env)) return json({error:"Admin session required"},401,headers);
     if(!env.DB) return json({error:"CMS database is not configured"},503,headers);
     const id=articleMatch[1];
     if(request.method==="DELETE") {
@@ -145,6 +147,7 @@ async function handle(request, env) {
     return json({ok:true,data:{id,slug,title,excerpt,body:content,status,updated_at:now,published_at:publishedAt}},200,headers);
   }
   if(path.startsWith("/api/admin/")) {
+    if(!await validSession(request,env)) return json({error:"Admin session required"},401,headers);
     return json({error:"Admin endpoint not implemented"},404,headers);
   }
   if(request.method!=="GET") return json({error:"Method not allowed"},405,{"allow":"GET, OPTIONS",...headers});

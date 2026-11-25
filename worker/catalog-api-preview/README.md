@@ -47,22 +47,12 @@ Do not bind a Production database to this Preview Worker. Do not apply migration
 
 
 
-## Cloudflare Access authentication (Preview)
+## Admin PIN authentication (Preview)
 
-The Admin workspace has no application PIN, password form, local bearer token, or app-level logout control. Preview requests are protected by a Cloudflare Access self-hosted application:
+The Admin page is available at `/admin/`. Management tools remain locked until a six-digit PIN is verified by the Worker.
 
-- Access application: `ClipViet.live Admin Preview — Cloudflare Access`
-- Application ID: `415c240a-5a41-48f5-ada5-28cbdef4f513`
-- Audience: `3df3c80811b8acd91282d0d7a68e7eefc1a74ccba3fcabf4d2d04406d3833d81`
-- Protected hostname pattern: `*.clipviet-live-independent-preview.pages.dev`
-- Access policy: `ClipViet Provider Registry Preview Admin` identity group with MFA required (TOTP, security key, or biometrics).
-- Allowed owner identities are defined in that Cloudflare Access group, not in browser code.
+Configure these as Cloudflare Worker Secrets on `clipviet-catalog-api-preview`:
+- `ADMIN_PIN`: exactly six digits. The initial owner-selected value is set outside Git as a Worker Secret.
+- `ADMIN_SESSION_SECRET`: unique random secret of at least 32 bytes.
 
-The Pages Function forwards only the signed `Cf-Access-Jwt-Assertion` header to this Worker. The Worker independently verifies RS256 signature against the configured Cloudflare Access JWKS, exact issuer, application audience, expiry/not-before, and the `ADMIN_EMAILS` allowlist. The server fails closed if any Access setting is missing or invalid. Every `/api/admin/*` request is covered by the same authorization gate before route dispatch; CORS and UI state are not treated as authentication.
-
-Preview Worker variables (non-secret):
-- `ACCESS_TEAM_DOMAIN=dark-snow-8a68.cloudflareaccess.com`
-- `ACCESS_AUD=3df3c80811b8acd91282d0d7a68e7eefc1a74ccba3fcabf4d2d04406d3833d81`
-- `ADMIN_EMAILS=huynhthuongg2505@gmail.com,huynhthuongg25052002@gmail.com`
-
-Legacy `/api/admin/login` and `/api/admin/logout` routes are removed. The old `ADMIN_PIN` and `ADMIN_SESSION_SECRET` Worker Secrets are obsolete and should be deleted from this Preview Worker after the Access-backed code is deployed and verified. Do not delete or change secrets on any other Worker. No Production Worker or database is modified.
+The Worker issues a signed 4-hour bearer session. The six-digit PIN is never embedded in the static site or repository. The browser stores it in `sessionStorage`. The login endpoint applies a best-effort per-isolate limit of five failed attempts followed by a 15-minute cooldown; configure Cloudflare edge rate limiting for durable distributed enforcement before Production use. Never commit the PIN or signing secret.

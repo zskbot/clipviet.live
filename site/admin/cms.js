@@ -1,10 +1,15 @@
+const API="https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
+const KEY="clipviet.admin.session.v1";
 const $=s=>document.querySelector(s);
 const form=$("#cms-form"),list=$("#cms-list"),message=$("#cms-status-message");
 let rows=[];
-let loadPending=false;
+function token(){try{return sessionStorage.getItem(KEY)||""}catch{return ""}}
 async function request(path,options={}){
- if(typeof window.clipvietAdminRequest!=="function") throw new Error("Admin API chưa khởi tạo.");
- return window.clipvietAdminRequest(path,options);
+ const t=token(); if(!t) throw new Error("Dashboard đã bỏ màn PIN. API D1 vẫn giữ quyền ghi ở máy chủ; cần cơ chế quản trị hợp lệ để tạo, sửa hoặc xóa bài viết.");
+ const response=await fetch(API+path,{...options,headers:{"content-type":"application/json",authorization:"Bearer "+t,...(options.headers||{})},cache:"no-store"});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok) throw new Error(data.error||"CMS request failed");
+ return data;
 }
 function text(tag,value,cls){const n=document.createElement(tag);n.textContent=value||"";if(cls)n.className=cls;return n}
 function reset(){form.reset();$("#cms-id").value="";$("#cms-status").value="draft";message.textContent="Đang tạo bài viết mới."}
@@ -33,10 +38,5 @@ form.addEventListener("submit",async e=>{
  catch(err){message.textContent=err.message}
 });
 $("#cms-new").addEventListener("click",reset);
-window.addEventListener("clipviet-admin-auth",event=>{
- if(event.detail?.allowed){if(!loadPending){loadPending=true;load().finally(()=>{loadPending=false})}}
- else{rows=[];render();message.textContent="Quyền Admin chưa được Cloudflare Access xác minh."}
-});
-if(window.clipvietVerifyAdminSession){
- window.clipvietVerifyAdminSession().then(allowed=>{if(allowed&&!loadPending){loadPending=true;load().finally(()=>{loadPending=false})}});
-}
+window.addEventListener("clipviet-admin-auth",event=>{if(event.detail?.allowed)load();else{rows=[];render();message.textContent="Đăng nhập Admin để tải CMS."}});
+if(token())load();

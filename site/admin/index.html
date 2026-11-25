@@ -9,14 +9,11 @@
   <link rel="icon" href="../clipviet-logo.svg" type="image/svg+xml">
   <title>ClipViet.live — Admin Workspace</title>
   <link rel="stylesheet" href="./admin.css">
-  <style>
-    .admin-login-gate{max-width:560px;margin:24px auto;padding:20px;border:1px solid #333;background:#090909}
-    .admin-login-gate[hidden]{display:none}
-    .admin-login-gate form{display:grid;gap:12px;margin:16px 0}
-    .admin-login-gate label{font:12px ui-monospace,monospace;color:#aaa}
-    .admin-login-gate input{width:100%;min-height:48px;border:1px solid #555;border-radius:0;background:#050505;color:#fff;padding:12px;font:16px ui-monospace,monospace}
-    .admin-login-gate button{border-radius:0;min-height:44px}
-    .admin-login-gate #admin-login-status{min-height:24px;color:#aaa}
+<style>
+    .admin-access-panel{max-width:760px;margin:24px auto;padding:20px;border:1px solid #333;background:#090909}
+    .admin-access-panel h2{margin:8px 0 12px;font:700 22px ui-monospace,monospace}
+    .admin-access-panel p{color:#aaa;line-height:1.7}
+    .admin-access-panel #admin-access-status-message{min-height:24px;color:#fff;font:700 11px ui-monospace,monospace;letter-spacing:1px}
     #admin-workspace.admin-locked{opacity:.42;pointer-events:none;user-select:none}
   </style>
   <link rel="stylesheet" href="./adultembed.css">
@@ -36,17 +33,11 @@
       <h1>API Video <span>Player</span></h1>
       <p>Kết nối JSON API của bạn hoặc dán URL phát trực tiếp để kiểm tra video ngay trên trình duyệt.</p>
     </section>
-    <section id="admin-login-gate" class="admin-login-gate" aria-labelledby="admin-login-title" hidden>
-      <p class="eyebrow">SERVER AUTHENTICATION</p>
-      <h2 id="admin-login-title">Đăng nhập quản trị</h2>
-      <p>Auto Admin tự khôi phục phiên hợp lệ. Chỉ yêu cầu PIN khi đăng nhập lần đầu hoặc phiên đã hết hạn; API luôn xác minh quyền ở máy chủ.</p>
-      <form id="admin-login-form" autocomplete="on">
-        <label for="admin-pin">ADMIN PIN · 6 chữ số</label>
-        <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="current-password" required>
-        <button class="primary" type="submit">ĐĂNG NHẬP</button>
-      </form>
-      <p id="admin-login-status" role="status" aria-live="polite">Đang kiểm tra phiên quản trị…</p>
-      <button id="admin-logout" class="secondary" type="button">ĐĂNG XUẤT</button>
+    <section id="admin-access-panel" class="admin-access-panel" aria-labelledby="admin-access-title">
+      <p class="eyebrow">CLOUDFLARE ACCESS</p>
+      <h2 id="admin-access-title">Admin Workspace</h2>
+      <p>Cloudflare Access xác minh danh tính và MFA. Mỗi API quản trị tiếp tục xác minh chữ ký JWT, audience và email được cấp quyền tại máy chủ.</p>
+      <p id="admin-access-status-message" role="status" aria-live="polite">Đang xác minh quyền truy cập…</p>
     </section>
     <div id="admin-workspace" data-admin-protected inert aria-disabled="true" class="admin-locked">
 
@@ -128,7 +119,7 @@
     </section>
     <section class="panel cms-panel" id="cms-panel" data-admin-protected inert aria-disabled="true">
       <div class="panel-head"><div><p class="eyebrow">06 / CONTENT MANAGEMENT</p><h2>CMS · Quản lý bài viết</h2></div><span class="local-tag">D1 PERSISTENT STORAGE</span></div>
-      <p class="hint block">Bài viết lưu trong Cloudflare D1. Dashboard không có màn PIN; API máy chủ vẫn chặn thao tác ghi khi chưa có quyền quản trị.</p>
+      <p class="hint block">Bài viết lưu trong Cloudflare D1. Quyền quản trị được xác minh qua Cloudflare Access; API máy chủ kiểm tra JWT trước mọi thao tác đọc/ghi.</p>
       <form id="cms-form" class="form-grid">
         <input id="cms-id" type="hidden">
         <label>Tiêu đề<input id="cms-title" maxlength="160" required placeholder="Tiêu đề bài viết"></label>

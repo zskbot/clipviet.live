@@ -58,7 +58,7 @@ async function verifyAdminSession() {
 if (loginForm) loginForm.addEventListener("submit", async event => {
   event.preventDefault();
   const pin = String(new FormData(loginForm).get("pin") || "");
-  if (!/^\\d{6}$/.test(pin)) { if (loginStatus) loginStatus.textContent = "PIN phải gồm đúng 6 chữ số."; return; }
+  if (!/^\d{6}$/.test(pin)) { if (loginStatus) loginStatus.textContent = "PIN phải gồm đúng 6 chữ số."; return; }
   const submit = loginForm.querySelector('button[type="submit"]');
   if (submit) submit.disabled = true;
   if (loginStatus) loginStatus.textContent = "Đang xác thực với máy chủ…";

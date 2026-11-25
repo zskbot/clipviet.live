@@ -1,4 +1,4 @@
-const ADMIN_API = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
+const ADMIN_API = "";
 const ADMIN_SESSION_KEY = "clipviet.admin.session.v1";
 let adminToken = "";
 try { adminToken = sessionStorage.getItem(ADMIN_SESSION_KEY) || ""; } catch { /* storage may be unavailable */ }

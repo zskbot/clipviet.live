@@ -222,7 +222,7 @@ async function transitionProvider(db, id, to, role, evidence) {
 export default {
   async fetch(request, env, ctx) {
     if (!previewRequest(request, env)) return json({ error: "Preview-only registry is disabled." }, 404);
-    const requestPath = new URL(request.url).pathname.replace(/\\/+$/, "") || "/";
+    const requestPath = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
     // Gmail/password authentication is served by this same Preview Worker so the
     // HttpOnly session cookie and protected Admin console share one origin.
     if (requestPath === "/login" || requestPath.startsWith("/auth/")) {

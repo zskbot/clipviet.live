@@ -24,7 +24,8 @@ const videos = Array.from({ length: 35 }, (_, index) => ({
   tags: [],
 }));
 
-const engine = process.env.BROWSER === "webkit" ? "webkit" : "chromium";\nconst browser = await (engine === "webkit" ? webkit : chromium).launch({ headless: true });
+const engine = process.env.BROWSER === "webkit" ? "webkit" : "chromium";
+const browser = await (engine === "webkit" ? webkit : chromium).launch({ headless: true });
 const failures = [];
 await mkdir("artifacts", { recursive: true });
 

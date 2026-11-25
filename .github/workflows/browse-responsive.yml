@@ -7,7 +7,7 @@ on:
     branches: [main]
     paths:
       - "site/browse/**"
-      - "site/styles.css"
+      - "site/styles.css"\n      - "site/admin/**"\n      - "worker/catalog-api-preview/**"\n      - "tests/provider-admin-ui.test.mjs"
       - "tests/browser/**"
       - ".github/workflows/browse-responsive.yml"
 

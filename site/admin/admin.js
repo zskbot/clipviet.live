@@ -1,11 +1,14 @@
 const ADMIN_API = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
+const ADMIN_SESSION_KEY = "clipviet.admin.session.v1";
 let adminToken = "";
+try { adminToken = sessionStorage.getItem(ADMIN_SESSION_KEY) || ""; } catch { /* storage may be unavailable */ }
 async function adminRequest(path, options = {}) {
   const response = await fetch(ADMIN_API + path, {
     credentials: "omit",
     ...options,
     headers: { "content-type": "application/json", ...(adminToken ? { authorization: "Bearer " + adminToken } : {}), ...(options.headers || {}) },
-    cache: "no-store"
+    cache: "no-store",
+    redirect: "error"
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Yêu cầu quản trị không thành công.");
@@ -14,14 +17,76 @@ async function adminRequest(path, options = {}) {
 window.clipvietAdminRequest = adminRequest;
 function setAdminAccess(allowed, message) {
   document.querySelectorAll("[data-admin-protected]").forEach(node => {
-    node.inert = false;
-    node.removeAttribute("aria-disabled");
-    node.classList.remove("admin-locked");
+    node.inert = !allowed;
+    if (allowed) {
+      node.removeAttribute("aria-disabled");
+      node.classList.remove("admin-locked");
+    } else {
+      node.setAttribute("aria-disabled", "true");
+      node.classList.add("admin-locked");
+    }
   });
-  window.dispatchEvent(new CustomEvent("clipviet-admin-auth", { detail: { allowed: true } }));
+  window.dispatchEvent(new CustomEvent("clipviet-admin-auth", { detail: { allowed, message } }));
 }
-setAdminAccess(true, "Admin workspace đã mở.");
 const $ = (selector) => document.querySelector(selector);
+const loginGate = $("#admin-login-gate");
+const loginForm = $("#admin-login-form");
+const loginStatus = $("#admin-login-status");
+const logoutButton = $("#admin-logout");
+function showLogin(message = "Đăng nhập để mở khu vực quản trị.") {
+  setAdminAccess(false, message);
+  if (loginGate) loginGate.hidden = false;
+  if (loginStatus) loginStatus.textContent = message;
+}
+function showAdmin() {
+  setAdminAccess(true, "Phiên Admin đã được máy chủ xác nhận.");
+  if (loginGate) loginGate.hidden = true;
+}
+async function verifyAdminSession() {
+  if (!adminToken) { showLogin(); return false; }
+  try {
+    await adminRequest("/api/admin/session");
+    showAdmin();
+    return true;
+  } catch {
+    adminToken = "";
+    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
+    showLogin("Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.");
+    return false;
+  }
+}
+if (loginForm) loginForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const pin = String(new FormData(loginForm).get("pin") || "");
+  if (!/^\d{6}$/.test(pin)) { if (loginStatus) loginStatus.textContent = "PIN phải gồm đúng 6 chữ số."; return; }
+  const submit = loginForm.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
+  if (loginStatus) loginStatus.textContent = "Đang xác thực với máy chủ…";
+  try {
+    const response = await fetch(ADMIN_API + "/api/admin/login", {
+      method: "POST", credentials: "omit", cache: "no-store", redirect: "error",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ pin })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || typeof data.token !== "string" || !data.token) throw new Error(data.error || "Đăng nhập không thành công.");
+    adminToken = data.token;
+    try { sessionStorage.setItem(ADMIN_SESSION_KEY, adminToken); } catch { throw new Error("Không thể lưu phiên an toàn trong sessionStorage."); }
+    loginForm.reset();
+    await verifyAdminSession();
+  } catch (error) {
+    adminToken = "";
+    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
+    showLogin(error.message || "Đăng nhập không thành công.");
+  } finally { if (submit) submit.disabled = false; }
+});
+if (logoutButton) logoutButton.addEventListener("click", async () => {
+  try { if (adminToken) await adminRequest("/api/admin/logout", { method: "POST" }); } catch { /* always clear local session */ }
+  adminToken = "";
+  try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
+  showLogin("Đã đăng xuất.");
+});
+void verifyAdminSession();
 const apiForm = $("#api-form");
 const apiUrl = $("#api-url");
 const apiToken = $("#api-token");

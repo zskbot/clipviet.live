@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
-import { chromium } from "playwright";
+import { chromium, webkit } from "playwright";
 
 const baseURL = process.env.BASE_URL || "http://127.0.0.1:4173";
 const viewports = [
@@ -24,7 +24,8 @@ const videos = Array.from({ length: 35 }, (_, index) => ({
   tags: [],
 }));
 
-const browser = await chromium.launch({ headless: true });
+const engine = process.env.BROWSER === "webkit" ? "webkit" : "chromium";
+const browser = await (engine === "webkit" ? webkit : chromium).launch({ headless: true });
 const failures = [];
 await mkdir("artifacts", { recursive: true });
 
@@ -94,8 +95,8 @@ try {
     await page.locator("#prev").click();
     await page.getByText("Fixture video 1", { exact: true }).waitFor();
 
-    await page.screenshot({ path: `artifacts/browse-${viewport.name}.png`, fullPage: true });
-    console.log(`PASS ${viewport.name}px: no page overflow, no filter overlap, square controls, ${layout.cardColumns} card columns, pagination works`);
+    await page.screenshot({ path: `artifacts/browse-${engine}-${viewport.name}.png`, fullPage: true });
+    console.log(`PASS ${engine} ${viewport.name}px: no page overflow, no filter overlap, square controls, ${layout.cardColumns} card columns, pagination works`);
     await page.close();
   }
 } catch (error) {

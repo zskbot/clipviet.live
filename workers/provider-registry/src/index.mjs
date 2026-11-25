@@ -1,4 +1,6 @@
 import { resolveRole, encryptCredential, rotateCredentials } from "./security.mjs";
+import { handleAuth, sessionRole } from "./auth.mjs";
+import { adminPage } from "./admin-ui.mjs";
 const MAX_BODY = 16 * 1024;
 const STATES = new Set(["PENDING", "VERIFIED", "APPROVED", "ENABLED"]);
 const HOST_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
@@ -220,6 +222,17 @@ async function transitionProvider(db, id, to, role, evidence) {
 export default {
   async fetch(request, env, ctx) {
     if (!previewRequest(request, env)) return json({ error: "Preview-only registry is disabled." }, 404);
+    const requestPath = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
+    // Gmail/password authentication is served by this same Preview Worker so the
+    // HttpOnly session cookie and protected Admin console share one origin.
+    if (requestPath === "/login" || requestPath.startsWith("/auth/")) {
+      return handleAuth(request, env);
+    }
+    if (requestPath === "/admin") {
+      const session = await sessionRole(request, env);
+      if (!session) return Response.redirect(new URL("/login", request.url), 302);
+      return adminPage();
+    }
     const allowedOrigins = (env.CORS_ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean);
     const origin = request.headers.get("origin") || "";
     const sameOrigin = origin === new URL(request.url).origin;

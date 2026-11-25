@@ -1,5 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
 
+const pendingProviderRecords = [
+  { id: "souavzy", name: "Souavzy · Main" },
+  { id: "apiyutu", name: "ApiYutu · Backup 1" },
+  { id: "lbapi9", name: "LBApi9 · Backup 2" },
+  { id: "slapibf", name: "Slapibf · Backup 3" },
+  { id: "jipinvip1", name: "JipinVIP1 · Backup 4" }
+].map(provider => ({ ...provider, status: "PENDING", rightsStatus: "PENDING", state: "not_checked", count: 0, total: 0, pageCount: 0, pagesFetched: 0, mediaHosts: [] }));
+
 // Bulk catalog ingestion is disabled unless distribution rights are explicitly verified.
 // The homepage reads the read-only Cloudflare Preview API directly; this build step must
 // not crawl provider catalogs or copy playback URLs into a static artifact by default.
@@ -10,7 +18,7 @@ if (process.env.CATALOG_DISTRIBUTION_AUTHORIZED !== "true") {
     updatedAt: new Date().toISOString(),
     refreshHours: 6,
     pageSize: 30,
-    providers: [],
+    providers: pendingProviderRecords,
     categories: [],
     videos: []
   }));
@@ -149,7 +157,7 @@ async function syncProvider(provider) {
     }
     const unique = [...new Map(collected.map((item) => [item.uid, item])).values()];
     return {
-      provider: { id: provider.id, name: provider.name, state: unique.length ? "online" : "empty", count: unique.length, total: Number(firstPage.total) || 0, pageCount: reportedPages, pagesFetched: pagesToFetch, limit: Number(firstPage.limit) || 0, categoryCount: categories.length, latencyMs: Date.now() - started },
+      provider: { id: provider.id, name: provider.name, status: "PENDING", rightsStatus: "PENDING", state: unique.length ? "online" : "empty", count: unique.length, total: Number(firstPage.total) || 0, pageCount: reportedPages, pagesFetched: pagesToFetch, limit: Number(firstPage.limit) || 0, categoryCount: categories.length, latencyMs: Date.now() - started },
       categories,
       videos: unique,
       error: null

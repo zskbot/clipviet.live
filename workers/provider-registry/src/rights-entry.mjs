@@ -3,7 +3,7 @@ import { resolveRole } from "./security.mjs";
 import { validateConnectorContract, validateContentRights, canApproveContentRights, playbackDecision } from "./rights-gate.mjs";
 import { runProviderDiagnostic, listProviderDiagnostics } from "./diagnostics.mjs";
 import { adminPage } from "./admin-ui.mjs";
-import { handleAuth } from "./auth.mjs";
+import { handleAuth, sessionRole } from "./auth.mjs";
 
 const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), {
   status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...headers }
@@ -59,7 +59,9 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     if (parts[0] === "login" || parts[0] === "auth") return handleAuth(request, env);
 
-    const role = await resolveRole(request, env, equalSecret);
+    const role = parts.length === 1 && parts[0] === "admin"
+      ? await sessionRole(request, env)
+      : await resolveRole(request, env, equalSecret);
     if (!role && parts.length === 1 && parts[0] === "admin") return Response.redirect(new URL("/login", url).toString(), 302);
     if (!role) return json({ error: "Unauthorized" }, 401, cors);
     if (!env.PROVIDER_DB) return json({ error: "Preview D1 binding is not configured." }, 503, cors);

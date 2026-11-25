@@ -58,12 +58,12 @@ jobs:
           import fs from 'node:fs';
           const catalog = JSON.parse(fs.readFileSync('site/data/catalog.json', 'utf8'));
           const discovery = JSON.parse(fs.readFileSync('site/data/provider-discovery.json', 'utf8'));
-          if (!Array.isArray(catalog.videos) || catalog.videos.length === 0) throw new Error('catalog.videos is empty');
-          if (!Array.isArray(catalog.providers) || catalog.providers.length !== 5) throw new Error('expected five configured catalog provider health records');
+          if (!Array.isArray(catalog.videos)) throw new Error('catalog.videos must be an array');
+          if (!Array.isArray(catalog.providers) || catalog.providers.length !== 5) throw new Error('expected exactly five provider registry records');
+          if (catalog.providers.some(provider => provider.status !== 'PENDING' || provider.rightsStatus !== 'PENDING')) throw new Error('all five providers must remain PENDING until rights evidence is reviewed');
+          if (catalog.videos.length > 0) throw new Error('public catalog must remain empty while all providers are PENDING');
           if (!Array.isArray(discovery.results) || discovery.results.length < 1) throw new Error('provider discovery report is missing');
-          if (catalog.videos.some(v => !v.uid || !v.sourceId || !v.id || !v.title)) throw new Error('catalog contains an invalid video record');
-          if (catalog.videos.some(v => (v.lines || []).some(line => line.episodes.some(ep => !ep.url.startsWith('https://'))))) throw new Error('catalog contains a non-HTTPS playback URL');
-          console.log('Validated', catalog.videos.length, 'catalog videos; discovered', discovery.results.length, 'official provider documentation candidates.');
+          console.log('Validated five PENDING providers and', catalog.videos.length, 'public videos; discovered', discovery.results.length, 'official provider documentation candidates.');
           NODE
           test -s site/index.html
           test -s site/browse/index.html

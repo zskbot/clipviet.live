@@ -14,6 +14,8 @@
     .admin-access-panel h2{margin:8px 0 12px;font:700 22px ui-monospace,monospace}
     .admin-access-panel p{color:#aaa;line-height:1.7}
     .admin-access-panel #admin-access-status-message{min-height:24px;color:#fff;font:700 11px ui-monospace,monospace;letter-spacing:1px}
+    .cloudflare-login-button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;margin:8px 0 12px;padding:0 20px;border:1px solid #f06472;background:#f06472;color:#090909;font:800 11px ui-monospace,monospace;letter-spacing:1px;text-decoration:none}
+    .cloudflare-login-button:hover,.cloudflare-login-button:focus{background:#fff;border-color:#fff;color:#090909;outline:2px solid #f06472;outline-offset:2px}
     #admin-workspace.admin-locked{opacity:.42;pointer-events:none;user-select:none}
   </style>
   <link rel="stylesheet" href="./adultembed.css">
@@ -36,8 +38,9 @@
     <section id="admin-access-panel" class="admin-access-panel" aria-labelledby="admin-access-title">
       <p class="eyebrow">CLOUDFLARE ACCESS</p>
       <h2 id="admin-access-title">Admin Workspace</h2>
-      <p>Cloudflare Access xác minh danh tính và MFA. Mỗi API quản trị tiếp tục xác minh chữ ký JWT, audience và email được cấp quyền tại máy chủ.</p>
-      <p id="admin-access-status-message" role="status" aria-live="polite">Đang xác minh quyền truy cập…</p>
+      <p>Đăng nhập bằng tài khoản quản trị đã được cấp quyền. Cloudflare Access sẽ xác minh danh tính và MFA trước khi mở các chức năng Admin.</p>
+      <a class="cloudflare-login-button" href="https://dark-snow-8a68.cloudflareaccess.com/cdn-cgi/access/login/cd8cd451.clipviet-live-independent-preview.pages.dev?redirect_url=https%3A%2F%2Fcd8cd451.clipviet-live-independent-preview.pages.dev%2Fadmin%2F" rel="noopener">LOGIN WITH CLOUDFLARE ↗</a>
+      <p id="admin-access-status-message" role="status" aria-live="polite">Chưa xác minh phiên Cloudflare Access. Sau khi đăng nhập, tải lại trang Admin.</p>
     </section>
     <div id="admin-workspace" data-admin-protected inert aria-disabled="true" class="admin-locked">
 

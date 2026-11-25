@@ -136,5 +136,34 @@
   <dialog id="age-dialog" class="age-dialog"><div class="age-mark">18+</div><p class="eyebrow">XÁC NHẬN ĐỘ TUỔI</p><h2>Bạn đã đủ 18 tuổi?</h2><p>Một số nội dung có thể không phù hợp với người dưới 18 tuổi. Đây là xác nhận tự khai, không thay thế xác minh danh tính.</p><div class="age-actions"><button id="leave-button" class="secondary-button">RỜI KHỎI</button><button id="confirm-age" class="primary-button">TÔI ĐÃ ĐỦ 18 TUỔI</button></div></dialog>
   <script type="module" src="./navigation.js"></script>
   <script type="module" src="./app.js"></script>
+  <script>/* Seven-tap Admin shortcut. The gesture only opens the route; the server still authorizes every Admin request. */
+(() => {
+  const brand = document.querySelector("header .brand");
+  if (!brand || !/^\/(?:index\.html)?$/.test(location.pathname) && !/\/index\.html$/.test(location.pathname)) return;
+  let taps = 0;
+  let startedAt = 0;
+  let resetTimer = 0;
+  brand.addEventListener("click", (event) => {
+    event.preventDefault();
+    const now = Date.now();
+    if (!startedAt || now - startedAt > 3000) {
+      taps = 0;
+      startedAt = now;
+    }
+    taps += 1;
+    if (taps >= 7 && now - startedAt <= 3000) {
+      clearTimeout(resetTimer);
+      taps = 0;
+      startedAt = 0;
+      location.assign(new URL("/admin/", location.origin));
+      return;
+    }
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => {
+      taps = 0;
+      startedAt = 0;
+    }, Math.max(0, 3000 - (Date.now() - startedAt)));
+  }, { passive: false });
+})();</script>
 </body>
 </html>

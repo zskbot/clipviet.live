@@ -86,6 +86,8 @@ if (logoutButton) logoutButton.addEventListener("click", async () => {
   try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
   showLogin("Đã đăng xuất.");
 });
+window.clipvietVerifyAdminSession = verifyAdminSession;
+window.addEventListener("clipviet-admin-gesture", () => { void verifyAdminSession(); });
 void verifyAdminSession();
 const apiForm = $("#api-form");
 const apiUrl = $("#api-url");

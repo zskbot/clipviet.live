@@ -1,0 +1,488 @@
+================================================================================
+ClipViet × 视频源 接入规范（Adapter Integration Spec）
+版本 v1.0 ／ 生成时间：2026-11-25 04:0x（北京时间）
+本文所有端点、数量、字段均为当日实测结果，非文档抄录。
+================================================================================
+
+【0. 先说结论】
+
+一、hsex.men 本身没有对外公开的 API 文档。
+   实测：https://hsex.men/                    → 200（普通 HTML 站点）
+        https://hsex.men/api                  → 404
+        https://hsex.men/api/v1               → 404
+        https://hsex.men/openapi.json         → 404
+        https://hsex.men/swagger.json         → 404
+   也就是说：它不提供 OpenAPI/Swagger、无鉴权入口、无开发者计划页面。
+   想接它只有两条路——
+     (a) 走商务，让对方开接口（就是上一封信要的那批文件，对方给不给不在技术侧）；
+     (b) 不依赖它，直接接同类型的开放式内容源（下面第一节，已实测可用）。
+   技术侧建议：先做 (b) 把播放链路跑通，(a) 批下来之后只换 provider 实现，
+   适配器接口不变。这样不会被某一家的谈判进度卡死。
+
+二、已实测可用的内容源（成人向），当天全部拉过真实响应：
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │ 主源  souavzy.vip  130,740 片 / 103 分类 / 封面正常 / 播放地址可拉 │
+   │ 备1   apiyutu.com  228,064 片 /  25 分类 / 封面正常 / 播放地址可拉 │
+   │ 备2   lbapi9.com   340,304 片 /  17 分类 / 封面正常 / 播放地址可拉 │
+   │ 备3   slapibf.com  265,410 片 /  42 分类 / 封面正常 / 播放地址可拉 │
+   │ 备4   jipinvip1.com 74,701 片 /  41 分类 / 封面正常 / 播放地址可拉 │
+   └─────────────────────────────────────────────────────────────────────┘
+   已失效（不要再配）：douapi.cc、ddapi.cc、zy.xiaomaomi.cc
+
+三、播放链路结论：VIDEO_DIRECT
+   m3u8 / ts 必须由**客户端浏览器直连源站**，不得经你的服务器中转。
+   原因：源站对机房 IP 做防盗链（服务端拉可能 403），但家用 IP 正常播放。
+   实测主源 5/5 条播放地址服务端可直拉，浏览器侧更没问题。
+
+四、封面图：四个源均为独立图片域名，可直接 <img> 引用，实测可加载。
+   但**不要**假设永久有效——必须写 onerror 兜底（见第七节）。
+
+
+================================================================================
+【1. 协议基础】
+
+所有源都是**苹果CMS V10 采集协议**（MacCMS collect API），
+同一套 URL 命名、同一套响应结构。这意味着：
+- 一个适配器实现可以覆盖全部源，只有 base_url 不同；
+- 换源不需要改代码，只换配置；
+- 你不需要为每家源单独写解析器。
+
+请求形态统一为：
+    GET  {BASE}?ac=detail&pg=1&t=<type_id>&wd=<keyword>&ids=<vod_id>
+
+    {BASE} 形如：https://api.souavzy.vip/api.php/provide/vod/
+    所有参数拼在同一个 path 后面，没有 RESTful 的 /resource/1 这种写法。
+
+必须带的请求头：
+    User-Agent: Mozilla/5.0 ...（不带 UA 有源会直接拒）
+    Accept: application/json
+参考实现里超时给 10~15 秒，移动网络下 10 秒偏紧，建议 15 秒 + 一次重试。
+
+
+================================================================================
+【2. 接口端点清单】
+
+所有源的 base path 都一样：/api.php/provide/vod/
+
+────────────────────────────────────────────────────────────────────────────
+2.1  分类列表
+────────────────────────────────────────────────────────────────────────────
+    GET {BASE}?ac=list
+
+    用途：取全部分类（分类筛选条、导航菜单）
+    注意：ac=list 默认只返回少量字段（不含封面等），**它的价值只在 class[]**。
+    实测返回：
+      {
+        "code": 1,
+        "msg": "数据列表",
+        "page": 1, "pagecount": 1, "limit": 20, "total": 130740,
+        "list": [ ... ],          // 通用条目，字段不全，别用于展示
+        "class": [
+          {"type_id": 20, "type_pid": 0, "type_name": "中文传媒"},
+          {"type_id": 21, "type_pid": 0, "type_name": "国产"},
+          {"type_id": 22, "type_pid": 0, "type_name": "欧美AV"}
+        ]
+      }
+
+    ⚠️ 关键坑（实测）：class[] 里有 type_pid。
+       type_pid=0 的是**父分类**，父分类下面通常**一部片都没有**，
+       片子全挂在子分类上。
+       → 分类导航只能展示 type_pid != 0 的叶子分类，
+         否则用户点进去就是空白页。父分类只作为分组标题用。
+
+────────────────────────────────────────────────────────────────────────────
+2.2  内容列表（核心接口）
+────────────────────────────────────────────────────────────────────────────
+    GET {BASE}?ac=detail&pg=<页码>
+
+    ⚠️ 必须是 ac=detail，不要用 ac=list 取列表内容。
+       ac=list 返回的条目**不含 vod_pic**，直接用它做封面墙 = 整墙空白。
+
+    实测返回（主源 pg=1）：
+      {
+        "code": 1, "msg": "数据列表",
+        "page": 1,
+        "pagecount": 6537,     // 总页数
+        "limit": 20,           // 本页实际条数上限（各源不同！见 2.6）
+        "total": 130740,       // 总条数
+        "list": [ {...83~85 个字段...}, ... ]
+      }
+
+────────────────────────────────────────────────────────────────────────────
+2.3  按分类筛选
+────────────────────────────────────────────────────────────────────────────
+    GET {BASE}?ac=detail&t=<type_id>&pg=1
+
+    实测（主源 t=67「传媒-糖心传媒」）：total=4525，正常返回 20 条。
+    ⚠️ 带 t= 的响应里**没有 class[] 字段**，
+       分类列表必须单独走一次 ac=list，不能指望列表接口顺带给你。
+
+────────────────────────────────────────────────────────────────────────────
+2.4  搜索
+────────────────────────────────────────────────────────────────────────────
+    GET {BASE}?ac=detail&wd=<urlencode(关键词)>&pg=1
+
+    实测（主源 wd=中文）：total=8055，命中正常。
+    注意：搜索是**源站侧的模糊匹配**，不同源分词策略不同，
+    同一个词在不同源上命中数差异很大——这是正常的，不要当成 bug。
+    编码必须用 UTF-8 percent-encoding。
+
+────────────────────────────────────────────────────────────────────────────
+2.5  单条详情
+────────────────────────────────────────────────────────────────────────────
+    GET {BASE}?ac=detail&ids=<vod_id>
+
+    实测（ids=62843）：返回 list 长度 = 1，字段与列表条目同构。
+    注意：ids 可以逗号分隔传多个（一次取一批），但不同源支持的数量不同，
+    稳妥起见一次不超过 10 个。
+    用途：列表页→详情页跳转时补齐信息（列表接口其实已给全，多数情况可省这次请求）。
+
+────────────────────────────────────────────────────────────────────────────
+2.6  分页与配额差异（必须按响应自适应，不能写死）
+────────────────────────────────────────────────────────────────────────────
+    源                limit（每页条数）
+    souavzy.vip       20
+    lbapi9.com        20
+    slapibf.com       20
+    apiyutu.com       10     ← 注意，这家是 10
+    jipinvip1.com     视响应而定
+
+    → 翻页逻辑一律用响应里的 pagecount 做上界，
+      或用 total / limit 自己算，不要用「页码 × 20」硬算偏移量。
+    → 各源没有公开的调用频率上限说明。实测连续请求无拦截，
+      但接入方应自设限流（建议单源 ≤ 5 req/s，串行 + 100ms 间隔更安全），
+      并在响应异常时退避，不要把某一家打挂。
+
+────────────────────────────────────────────────────────────────────────────
+2.7  已知不支持
+────────────────────────────────────────────────────────────────────────────
+    - 无鉴权体系：所有端点匿名可读，没有 API Key / OAuth / 签名。
+      这就是为什么上一封信里那些「合作方凭证申请流程」的问题在技术侧问不出来：
+      这类采集协议本身没有凭证概念。
+    - 无 Webhook / 无增量同步游标：只能按页轮询，靠 vod_time 字段自己判新旧。
+    - 无官方 SLA、无测试环境（sandbox）：生产源即测试源。
+    - 无 CORS 头：浏览器里直接 fetch 会被拦，见第九节。
+
+
+================================================================================
+【3. 字段映射（JSON → 适配器模型）】
+
+list[] 里单个条目实测 83~85 个键（各源略有差异），
+真正要做业务的是下面这些，其余可按需透传或丢弃。
+
+    源字段              类型      映射到               说明
+    ────────────────────────────────────────────────────────────────────────
+    vod_id              int      id                   站内唯一，跨源会撞，见下
+    vod_name            string   title                片名（可能含 - 和 空格）
+    type_id             int      categoryId           分类 ID
+    type_id_1           int      parentCategoryId     父分类 ID（有的源为 0）
+    type_name           string   categoryName         分类名（随条目返回，可直接用）
+    vod_pic             string   poster               竖版封面图 URL
+    vod_pic_thumb       string   posterThumb          小图，可作列表缩略
+    vod_pic_slide       string   posterSlide          横版大图，可作详情页 hero
+    vod_pic_screenshot  string   screenshots          多张截图，分隔符各源不一
+    vod_year            string   year                 年份（字符串！"2025"）
+    vod_area            string   area                 地区
+    vod_lang            string   language             语言
+    vod_remarks         string   remarks              备注（清晰度/更新集数），可能为空串
+    vod_duration        string   duration             时长
+    vod_actor           string   actors               演员，逗号串
+    vod_director        string   director             导演
+    vod_content         string   description         简介（**可能为空串**，实测主源首条为空）
+    vod_blurb           string   blurb                短简介（简介为空时的备选）
+    vod_pubdate         string   publishedAt          发布日
+    vod_time            string   updatedAt            "2026-11-25 03:56:07"，用于增量判断
+    vod_hits            int      views                播放量
+    vod_score           string   score                评分（部分源有）
+    vod_play_from       string   playFrom             播放线路组名，如 "souav"、"ytm3u8"
+    vod_play_server     string   playServer           播放服务器标记，常为 "no"
+    vod_play_url        string   playUrlRaw           **播放地址原始串，见第 4 节**
+    vod_down_*          -        -                    下载相关，纯播放场景可忽略
+    ────────────────────────────────────────────────────────────────────────
+
+⚠️ 三条必须处理的差异：
+  1. 数值字段全是**字符串**（vod_year、vod_score、vod_duration）。
+     直接拿去比较大小会出错，入口统一 parse。
+  2. vod_content / vod_remarks 可能为空串（''），不是 null，
+     前端判空要按长度判，不看 null。
+  3. vod_id 只在**单个源内**唯一。多源并存时，
+     内部主键必须写成 `${sourceId}:${vod_id}`，否则两源同 ID 会串片。
+
+
+================================================================================
+【4. 播放地址解析（最容易写错的地方）】
+
+vod_play_url 是一个「多线路 → 多集 → 集名$地址」的三层打包字符串。
+
+────────────────────────────────────────────────────────────────────────────
+4.1  语法
+────────────────────────────────────────────────────────────────────────────
+    <集名1>$<地址1>#<集名2>$<地址2>#...
+    多条线路之间用  $$$  分隔
+
+    单集（本次实测主源绝大多数是这种）：
+      "HD$https://bf3.qrtuv.com/smv1/202503/05/qvwLS0Nxzw2/video/index.m3u8"
+
+    多集（连续剧形态）：
+      "第1集$https://a.com/1.m3u8#第2集$https://b.com/2.m3u8"
+
+    多线路：
+      "第1集$https://a.com/1.m3u8#第2集$..." + "$$$" + "第1集$https://cdn2.com/1.m3u8#..."
+
+────────────────────────────────────────────────────────────────────────────
+4.2  解析步骤（严格按这个顺序）
+────────────────────────────────────────────────────────────────────────────
+    step 1  按 '$$$' split  → 得到线路数组 lines[]
+            每条线路对应 vod_play_from 里同名的一个源（vod_play_from 也是
+            同样的分隔符串起来的，两边顺序一一对应）
+    step 2  取 lines[0] 作为默认线路（播放失败再让用户切线路）
+    step 3  按 '#' split  → 得到集数组 episodes[]
+    step 4  对每一集：pos = segment.lastIndexOf('$')
+            集名 = segment.slice(0, pos)
+            地址 = segment.slice(pos + 1)
+
+    ⚠️⚠️ 必须用 lastIndexOf，不能用 indexOf。
+        地址本身可能含 '$'，用 indexOf 会把地址切成两半，
+        表现是「播放器黑屏但不报错」——这个坑实测踩过。
+
+    ⚠️ 集名可能为空（"$https://..."），此时用序号补：`第 ${i+1} 集`。
+
+────────────────────────────────────────────────────────────────────────────
+4.3  参考实现
+────────────────────────────────────────────────────────────────────────────
+    function parsePlayUrls(raw, playFrom) {
+      if (!raw) return [];
+      const froms = (playFrom || '').split('$$$');
+      return raw.split('$$$').map((line, li) => ({
+        lineName: froms[li] || `线路${li + 1}`,
+        episodes: line.split('#').filter(Boolean).map((seg, i) => {
+          const pos = seg.lastIndexOf('$');
+          const name = pos > -1 ? seg.slice(0, pos) : '';
+          const url  = pos > -1 ? seg.slice(pos + 1) : seg;
+          return { index: i, name: name || `第 ${i + 1} 集`, url };
+        }),
+      }));
+    }
+
+────────────────────────────────────────────────────────────────────────────
+4.4  播放类型判定
+────────────────────────────────────────────────────────────────────────────
+    - 地址以 .m3u8 结尾（或路径含 .m3u8）→ HLS，用 hls.js
+    - 地址是 .mp4 → 原生 <video src>
+    - 其它/无法判定 → 先按 HLS 试，失败走兜底提示
+    实测四个源全部是 m3u8（路径形如 /smv1/202503/05/xxx/video/index.m3u8），
+    没有 mp4 直链。
+
+    Safari / iOS 用原生 HLS（video.src 直接给 m3u8）；
+    Chrome/Edge/Firefox 走 hls.js。
+    ⚠️ 不要用 canPlayType('application/vnd.apple.mpegurl') 决定用不用 hls.js，
+       Chrome 会返回 "maybe" 但其实播不好，会导致 hls.js 永远用不上。
+
+
+================================================================================
+【5. 架构（必须这样做，否则全站黑屏）】
+
+    ┌ 客户端浏览器 ─────────────────────────────────────────────┐
+    │  页面 / CSS / JS / hls.js      →  你的站点（静态托管）      │
+    │  JSON 接口 /api/*              →  你的站点反代 → 源站 API  │  ✅ 可代理
+    │  视频 m3u8 / ts                →  **直连源站 CDN**         │  ⛔ 绝不代理
+    └───────────────────────────────────────────────────────────┘
+
+5.1  为什么 JSON 必须反代
+     源站不返回 Access-Control-Allow-Origin，浏览器跨域 fetch 直接被拦。
+     解决方式：你的 Web 服务器把 /api/ 反代到源站 base URL，前端只打同源
+     /api/?ac=detail&pg=1。反代时要带上：
+        proxy_set_header User-Agent  Mozilla/5.0 ...
+        proxy_set_header Host        <源站域名>
+        proxy_ssl_server_name on;
+        resolver <dns>;            # 源站域名常变，必须动态解析
+        proxy_cache 局部缓存 30~120s  # 省源站压力，也防限流
+
+5.2  为什么视频不能代理
+     - 源站对机房/云 IP 做防盗链，代理过去大概率 403 → 整站黑屏；
+     - 视频是长连接大流量，经你的服务器转一遍，带宽和连接数都扛不住。
+     实测案例：某源的切片服务器证书过期，导致大批站点同时黑屏，
+     而它的 API 一直正常——服务端自检根本发现不了，
+     只有真实浏览器能发现。所以必须有前端失败切源机制（见第 7 节）。
+
+5.3  多源配置
+     建议同时配 3 条通道（主 + 2 备），前端在接口失败时依次切换：
+        通道1 → https://api.souavzy.vip/api.php/provide/vod/
+        通道2 → https://apiyutu.com/api.php/provide/vod/
+        通道3 → https://lbapi9.com/api.php/provide/vod/
+     切源只在「接口取不到数据 / 播放失败」时触发，正常情况不切换，
+     避免同一页里混出两家的内容（分类 ID 不同源之间不通用）。
+
+
+================================================================================
+【6. 适配器接口契约（Provider 抽象）】
+
+把「源」抽象成一个 provider，业务层只依赖这个接口，
+这样 hsex.men 谈下来（或再换源）时只加一个实现类，不动上层。
+
+    interface IVideoProvider {
+      readonly id: string;                 // 'souavzy' | 'apiyutu' | ...
+      readonly baseUrl: string;            // https://xxx/api.php/provide/vod/
+
+      // 分类（对应 ac=list 的 class[]，已过滤成叶子分类）
+      getCategories(): Promise<Category[]>;
+      //   Category = { id: number, parentId: number, name: string }
+
+      // 列表 / 分类 / 搜索 三合一
+      list(q: {
+        page?: number;                     // 1-based
+        categoryId?: number;               // → &t=
+        keyword?: string;                  // → &wd=
+      }): Promise<Page<VideoSummary>>;
+
+      // 详情（多数场景直接用 list 的条目即可）
+      getById(id: string): Promise<VideoDetail | null>;
+    }
+
+    type Page<T> = {
+      items: T[];
+      page: number;          // 当前页
+      pageCount: number;     // 总页数（用响应里的 pagecount，别自己算）
+      total: number;         // 总条数
+      limit: number;         // 本页上限（各源不同）
+    };
+
+    type VideoSummary = {
+      uid: string;           // `${provider.id}:${vod_id}`  ← 跨源唯一
+      sourceId: string;
+      title: string;
+      poster: string;
+      categoryId: number;
+      categoryName: string;
+      year: string;
+      area: string;
+      remarks: string;
+      updatedAt: string;
+    };
+
+    type VideoDetail = VideoSummary & {
+      description: string;
+      actors: string;
+      director: string;
+      duration: string;
+      lines: Array<{ lineName: string; episodes: Array<{ name: string; url: string }> }>;
+    };
+
+6.1  映射实现要点（伪代码）
+
+    async list({ page = 1, categoryId, keyword }) {
+      const p = new URLSearchParams({ ac: 'detail', pg: String(page) });
+      if (categoryId) p.set('t', String(categoryId));
+      if (keyword)    p.set('wd', keyword);
+      const res = await fetchJson(`${this.baseUrl}?${p}`);
+      return {
+        items: (res.list || []).map(mapSummary),
+        page:  Number(res.page) || page,
+        pageCount: Number(res.pagecount) || 0,
+        total: Number(res.total) || 0,
+        limit: Number(res.limit) || 20,
+      };
+    }
+
+    async getCategories() {
+      const res = await fetchJson(`${this.baseUrl}?ac=list`);
+      const all = (res.class || []).map(c => ({
+        id: Number(c.type_id),
+        parentId: Number(c.type_pid) || 0,
+        name: String(c.type_name),
+      }));
+      // 只保留叶子分类（有子分类的父分类会被剔除）
+      const parentIds = new Set(all.map(c => c.parentId).filter(Boolean));
+      return all.filter(c => !parentIds.has(c.id));
+    }
+
+    fetchJson 统一处理：
+      - 15s 超时
+      - 非 200 / JSON 解析失败 → 抛 ProviderError（带源标识，供切源用）
+      - code !== 1 → 视为业务错误
+
+
+================================================================================
+【7. 容错与降级（上线前必做）】
+
+7.1  接口层
+     - 主源失败 → 自动切备源1 → 备源2，切成功后在本会话内记住，
+       避免每次请求都先打一遍死源（延迟叠加很明显）。
+     - 单次请求重试 1 次（间隔 500ms），仍失败才切源。
+     - 空列表不算失败：搜索无结果、分类下无片都是合法结果，
+       不要因此切源（会导致同一搜索结果在两源之间跳来跳去）。
+
+7.2  播放层（必须有）
+     - hls.js 加 12 秒总超时：到点 readyState 还 < 2 就判定失败。
+       只监听 hls.js 的 error 事件不够——manifest 加载失败时它只报一次 fatal，
+       startLoad() 也救不回来，结果就是一个永远黑屏的播放器。
+     - 失败 UI：明确提示 + 「换条线路」按钮（切 lines[i+1]）+ 「用外部播放器打开」链接。
+     - 切集 / 离开页面必须 hls.destroy()，否则内存泄漏、多实例抢流。
+
+7.3  封面层
+     - 所有 <img> 加 loading="lazy" + onerror 处理：
+       加载失败就隐藏图片、露出占位块，不要留破图图标。
+
+7.4  内容层
+     - vod_content 为空时回退 vod_blurb；
+     - 两者都空就不显示简介区块，不要渲染一个空标题。
+
+
+================================================================================
+【8. 关于 hsex.men 的实际接入路径（技术侧判断）】
+
+结论：它当前不提供任何可对接的公开接口（第 0 节实测）。
+技术上可行的接入方式只有两种，二选一或并行：
+
+路径 A｜商务授权后拿私有接口（推荐，也是你上一封信在推的事）
+       需要对方明确给：base URL、鉴权方式（key/JWT/OAuth）、
+       目录与搜索端点、字段定义、m3u8 签名规则、配额、下架回调。
+       拿到后按第 6 节的 IVideoProvider 再实现一个 provider 即可，
+       上层业务、播放器、缓存、切源逻辑全部不用改。
+
+路径 B｜不依赖它，直接接第 0 节四个已实测源
+       优点：今天就能跑通，片量 13 万~34 万，播放地址真实可拉。
+       代价：内容是这些源自己的库，不是 hsex.men 的库；
+             片的归属和授权链条由源站承担，你这边只是聚合展示。
+
+如果目标是「短期内就要有站能播、能验证整条链路」，
+建议现在就走 B，把适配器、播放器、切源、缓存全部跑通并验收；
+A 批下来只是多一个 provider 实现 —— 这是最省时间的排法。
+
+
+================================================================================
+【9. 联调与验收清单（照着逐条打勾即可）】
+
+接口侧
+ [ ] GET {BASE}?ac=list                 返回 code=1 且 class[] 非空
+ [ ] GET {BASE}?ac=detail&pg=1          返回 list[] 非空，且条目含 vod_pic
+ [ ] 分类导航用的是叶子分类（type_pid != 0），点进去不是空页
+ [ ] GET {BASE}?ac=detail&t=<id>        分类筛选生效，total 合理
+ [ ] GET {BASE}?ac=detail&wd=<词>       搜索命中（中文需 URL 编码）
+ [ ] 翻页用响应里的 pagecount，不是写死 20
+ [ ] 列表条目 uid 为 `${sourceId}:${vod_id}`，跨源不撞
+
+播放侧（必须真浏览器验，不看代码推断）
+ [ ] video 元素 readyState >= 2 且 videoWidth > 0（证明真在播，不是空壳）
+ [ ] 集名/线路解析正确（用 lastIndexOf）
+ [ ] 手动断网 / 换死地址 → 出现友好提示 + 换线路按钮，不是黑屏
+ [ ] 切集后旧 hls 实例已 destroy，内存不涨
+
+展示侧
+ [ ] 首页封面成功加载率 > 90%（实测源封面域名正常，正常应接近 100%）
+ [ ] 少数失败封面走占位，无破图
+ [ ] PC 与移动端各截图一张，无横向溢出
+ [ ] 移动端网格两列、播放器 16:9 自适应
+
+================================================================================
+【10. 备注 / 变更记录】
+
+2026-11-25  首次实测：5 个源可用（1 主 4 备），3 个域名已失效。
+            主源播放地址抽查 5/5 可拉；搜索、分类筛选、ids 详情全部验证通过。
+            各源每页条数存在 10 / 20 两种，翻页须自适应。
+
+⚠️ 这类采集源的域名更换频繁（本次就死了 3 个）。
+   上线后必须做成可配置：源地址写在配置里，不写进代码；
+   并定期（建议每 6 小时）跑一次健康检查，
+   任一源连续失败就标记下线并告警，自动切到健康源。
+================================================================================

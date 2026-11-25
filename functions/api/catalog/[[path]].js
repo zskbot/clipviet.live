@@ -1,20 +1,47 @@
-// Same-origin bridge to the read-only catalog Worker.
-// The Worker currently allowlists the legacy Pages preview origin; this
-// server-side request uses that approved origin and removes CORS headers
-// before returning the response to this Pages origin.
+// Public catalog safety gate for the independent Preview.
+// All five seeded providers are PENDING in Provider Registry and have no
+// verified distribution-rights records. Do not fetch or expose provider
+// media until the legal/rights workflow approves the relevant sources.
+const PROVIDER_CATALOG_ENABLED = false;
 const UPSTREAM = "https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev";
 const TRUSTED_ORIGIN = "https://3e1ad354.clipviet-live-qa.pages.dev";
 const ALLOWED_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    }
+  });
+}
+
 export async function onRequest({ request }) {
   if (!ALLOWED_METHODS.has(request.method)) {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "content-type": "application/json; charset=utf-8", "allow": "GET, HEAD, OPTIONS" }
-    });
+    return json({ error: "Method not allowed" }, 405);
   }
 
   const incoming = new URL(request.url);
+  if (!PROVIDER_CATALOG_ENABLED) {
+    if (incoming.pathname === "/api/catalog/categories") {
+      return json({ data: [], pending: true, notice: "Provider integrations are pending rights verification." });
+    }
+    if (incoming.pathname === "/api/catalog/videos") {
+      return json({
+        items: [],
+        page: Math.max(1, Number.parseInt(incoming.searchParams.get("page") || "1", 10) || 1),
+        pageCount: 0,
+        total: 0,
+        limit: 30,
+        pending: true,
+        notice: "No provider content is published until distribution rights are approved."
+      });
+    }
+    return json({ error: "Catalog route not found" }, 404);
+  }
+
   const upstream = new URL(incoming.pathname + incoming.search, UPSTREAM);
   const headers = new Headers(request.headers);
   headers.set("Origin", TRUSTED_ORIGIN);
@@ -44,9 +71,6 @@ export async function onRequest({ request }) {
       headers: responseHeaders
     });
   } catch {
-    return new Response(JSON.stringify({ error: "Catalog service is temporarily unavailable" }), {
-      status: 502,
-      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
-    });
+    return json({ error: "Catalog service is temporarily unavailable" }, 502);
   }
 }

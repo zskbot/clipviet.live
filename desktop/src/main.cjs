@@ -33,6 +33,13 @@ function validHttpsUrl(input) {
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h === "127.0.0.1" || h === "::1" || /^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) throw new Error("Không cho phép địa chỉ local/private.");
   return { url: u.toString(), host: h };
 }
+function validPreviewApiUrl(input) {
+  const parsed = validHttpsUrl(input);
+  if (!parsed.host.endsWith(".clipviet-live-independent-preview.pages.dev")) {
+    throw new Error("ClipViet API chỉ được kết nối tới Pages Preview độc lập; Production/custom domain bị chặn.");
+  }
+  return parsed.url;
+}
 function requireAllowed(url, settings) {
   const parsed = validHttpsUrl(url);
   if (!settings.allowedHosts.includes(parsed.host)) throw new Error("Host chưa có trong allowlist cục bộ. Hãy thêm host sau khi xác minh quyền sử dụng.");
@@ -64,7 +71,7 @@ function createWindow() {
     backgroundColor: "#05070f",
     webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
-  win.loadFile(path.join(__dirname, "index.html"));
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));\n  win.webContents.on("will-navigate", (event, target) => { if (!target.startsWith("file://")) event.preventDefault(); });\n  win.loadFile(path.join(__dirname, "index.html"));
 }
 app.whenReady().then(() => {
   ipcMain.handle("settings:get", () => readSettings());

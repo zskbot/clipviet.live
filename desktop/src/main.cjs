@@ -71,7 +71,9 @@ function createWindow() {
     backgroundColor: "#05070f",
     webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
-  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));\n  win.webContents.on("will-navigate", (event, target) => { if (!target.startsWith("file://")) event.preventDefault(); });\n  win.loadFile(path.join(__dirname, "index.html"));
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("will-navigate", (event, target) => { if (!target.startsWith("file://")) event.preventDefault(); });
+  win.loadFile(path.join(__dirname, "index.html"));
 }
 app.whenReady().then(() => {
   ipcMain.handle("settings:get", () => readSettings());

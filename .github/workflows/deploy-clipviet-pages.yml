@@ -1,0 +1,82 @@
+name: ClipViet GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "scripts/sync-pages-catalog.mjs"
+      - ".github/workflows/deploy-clipviet-pages.yml"
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      pages_per_provider:
+        description: "Số trang catalog tối đa lấy từ mỗi nguồn (1-5)"
+        required: false
+        default: "5"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: clipviet-github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Sync AppleCMS catalog and publish site/ to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build static catalog from AppleCMS providers
+        env:
+          CATALOG_PAGES_PER_PROVIDER: ${{ inputs.pages_per_provider || '5' }}
+        run: node scripts/sync-pages-catalog.mjs
+
+      - name: Validate generated catalogue and static pages
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const catalog = JSON.parse(fs.readFileSync('site/data/catalog.json', 'utf8'));
+          if (!Array.isArray(catalog.videos) || catalog.videos.length === 0) throw new Error('catalog.videos is empty');
+          if (!Array.isArray(catalog.providers) || catalog.providers.length !== 5) throw new Error('expected five provider health records');
+          if (catalog.videos.some(v => !v.uid || !v.sourceId || !v.id || !v.title)) throw new Error('catalog contains an invalid video record');
+          if (catalog.videos.some(v => (v.lines || []).some(line => line.episodes.some(ep => !ep.url.startsWith('https://'))))) throw new Error('catalog contains a non-HTTPS playback URL');
+          console.log('Validated', catalog.videos.length, 'videos from', catalog.providers.filter(p => p.state === 'online').length, 'online providers');
+          NODE
+          test -s site/index.html
+          test -s site/browse/index.html
+          test -s site/watch/source.html
+          test -s site/watch/source-player.js
+          test -s site/data/catalog.json
+          test "$(cat site/CNAME)" = "clipviet.live"
+          find site -type f \( -name '*.js' -o -name '*.mjs' \) -print0 |
+            while IFS= read -r -d '' file; do
+              node --input-type=module --check < "$file"
+            done
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload only site/
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

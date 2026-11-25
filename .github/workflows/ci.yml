@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "feat/**", "fix/**", "chore/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  static-site:
+    name: Static website (site/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate static website boundary
+        run: |
+          test -s site/index.html
+          test -s site/styles.css
+          test -s site/app.js
+          test -s site/data.js
+          test -s site/admin/index.html
+          test -s site/admin/admin.js
+          test -s scripts/sync-pages-catalog.mjs
+          test "$(cat site/CNAME)" = "clipviet.live"
+          test ! -e site/package.json
+          echo "Static website is self-contained in site/."
+      - name: Check all static JavaScript modules
+        run: |
+          node --input-type=module --check < scripts/sync-pages-catalog.mjs
+          find site -type f \( -name '*.js' -o -name '*.mjs' \) -print0 | while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done
+
+  nextjs:
+    name: Next.js app and API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Lint Next.js app and shared server code
+        run: npm run lint
+      - name: Run unit tests
+        run: npm test
+      - name: Build Next.js application
+        run: npm run build
+
+  php-lint:
+    name: PHP API syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: Check PHP syntax
+        run: find php-api -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l

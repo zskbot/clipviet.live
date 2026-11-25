@@ -1,0 +1,18 @@
+name: Legacy Pages Workflow (validation only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Pages source
+        run: |
+          test -s site/index.html
+          test -s site/browse/index.html
+          test -s site/data/catalog.json || echo "catalog is generated during the deployment workflow"

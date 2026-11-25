@@ -1,0 +1,30 @@
+name: Telegram Worker source checks
+
+on:
+  pull_request:
+    paths:
+      - "worker/telegram-api/**"
+      - ".github/workflows/telegram-worker-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "worker/telegram-api/**"
+      - ".github/workflows/telegram-worker-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: node --check worker/telegram-api/src/index.js
+      - name: Verify no secrets are committed
+        run: |
+          ! grep -R -nE '([0-9]{6,}:[A-Za-z0-9_-]{30,}|TELEGRAM_BOT_TOKEN=.{8,}|SESSION_SECRET=.{8,})' worker/telegram-api

@@ -1,0 +1,14 @@
+name: Legacy Next.js Pages deployment (disabled)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disabled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment intentionally disabled
+        run: echo "The only publishing target for this repository is the static site/ directory via deploy-clipviet-pages.yml."

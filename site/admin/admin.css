@@ -55,3 +55,20 @@ footer{padding:18px 0}
  main{width:100%;margin:0;padding:18px 12px 26px}
  .panel{padding:15px}.intro{padding:8px 0 16px}
 }
+
+
+/* Security correction: never render the Admin workspace before server auth succeeds.
+   The workspace itself carries data-admin-protected and is toggled by admin.js. */
+#admin-workspace.admin-locked {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+}
+#admin-workspace:not(.admin-locked) {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+#admin-workspace [data-admin-protected].admin-locked {
+  display: none !important;
+}

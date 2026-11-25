@@ -1,7 +1,7 @@
 const menu=document.querySelector("#filter-menu");
 if(menu){
  const primary=document.querySelector(".primary-nav");
- if(primary) primary.innerHTML='<a href="#community">COMMUNITY</a><a href="#clipviet">CLIPVIET</a>';
+ if(primary) primary.innerHTML='<a href="./community/">COMMUNITY</a><a href="./browse/">CLIPVIET</a>';
  const oldNav=menu.querySelector(".drawer-nav");
  const oldFilters=menu.querySelector(".filter-group");
  const suggestion=menu.querySelector(".suggestion-panel");
@@ -16,7 +16,7 @@ if(menu){
  const community=document.createElement("section");
  community.className="nav-section";
  community.id="community";
- community.innerHTML='<h3 class="nav-section-title">COMMUNITY <small>CỘNG ĐỒNG</small></h3><div class="nav-community-links"><a href="./">Trang chủ cộng đồng</a><a href="./#video-suggestion" id="open-suggestion">Đề xuất video <span>Gửi nguồn có quyền</span></a><a href="./sources.html">Nguồn liên kết</a><a href="./api-docs/">Tài liệu API</a></div>';
+ community.innerHTML='<h3 class="nav-section-title">COMMUNITY <small>CỘNG ĐỒNG</small></h3><div class="nav-community-links"><a href="./community/">Mở Community Hub</a><a href="./">Trang chủ ClipViet</a><a href="./#video-suggestion" id="open-suggestion">Đề xuất video <span>Gửi nguồn có quyền</span></a><a href="./sources.html">Nguồn liên kết</a><a href="./api-docs/">Tài liệu API</a></div>';
  const clip=document.createElement("section");
  clip.className="nav-section";
  clip.id="clipviet";

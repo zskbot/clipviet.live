@@ -1,0 +1,152 @@
+name: Auto Affiliate Links, Related Search & Deploy Pages
+
+on:
+  push:
+    branches: ["main"]        # Tự động chạy ngay khi có code mới đẩy lên nhánh main
+  schedule:
+    - cron: '0 */6 * * *'     # Tự động cập nhật và deploy lại mỗi 6 tiếng
+  workflow_dispatch:          # Cho phép bấm chạy thủ công bất cứ lúc nào
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  # Cấu hình mã tiếp thị liên kết (Affiliate) và từ khóa đối tác của bạn tại đây
+  AFFILIATE_TAG: "ref=clipviet_live"
+  PARTNER_DOMAINS: "shopee.vn,lazada.vn,tiki.vn,clipform.io"
+
+jobs:
+  build-enrich-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # Bước 1: Tải mã nguồn mới nhất
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt Node.js và chạy script đồng bộ danh mục video của dự án
+      - name: Setup Node.js & Sync Catalog
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Sync video catalog
+        run: |
+          if [ -f "scripts/sync-pages-catalog.mjs" ]; then
+            node scripts/sync-pages-catalog.mjs
+          fi
+
+      # Bước 3: Tự động gắn mã Affiliate, thêm link đối tác và tạo khối Tìm kiếm liên quan
+      - name: Enrich Links, Affiliate & Related Search
+        run: |
+          python3 - << 'EOF'
+          import os, re, json
+          from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+
+          site_dir = "site"
+          catalog_path = os.path.join(site_dir, "data", "catalog.json")
+          aff_param = os.environ.get("AFFILIATE_TAG", "ref=clipviet")
+          aff_key, aff_val = aff_param.split("=", 1) if "=" in aff_param else ("ref", aff_param)
+          partner_domains = [d.strip() for d in os.environ.get("PARTNER_DOMAINS", "").split(",") if d.strip()]
+
+          # 1. Trích xuất từ khóa / danh mục từ catalog.json để tạo link tìm kiếm liên quan
+          related_keywords = []
+          if os.path.exists(catalog_path):
+              try:
+                  with open(catalog_path, "r", encoding="utf-8") as cf:
+                      data = json.load(cf)
+                      items = data if isinstance(data, list) else data.get("results") or data.get("data") or data.get("videos") or []
+                      seen = set()
+                      for item in items[:30]:
+                          cat = item.get("category") or item.get("type")
+                          title = item.get("title", "")
+                          if cat and cat not in seen:
+                              seen.add(cat)
+                              related_keywords.append(cat)
+                          elif title:
+                              short_kw = " ".join(title.split()[:4])
+                              if short_kw not in seen:
+                                  seen.add(short_kw)
+                                  related_keywords.append(short_kw)
+                          if len(related_keywords) >= 8:
+                              break
+              except Exception as e:
+                  print("Không đọc được catalog.json:", e)
+
+          if not related_keywords:
+              related_keywords = ["Phim mới", "Clip thịnh hành", "Giải trí tổng hợp", "Video đề xuất"]
+
+          # Tạo mã HTML cho khối Liên kết đối tác & Tìm kiếm liên quan
+          search_links_html = "\n".join([
+              f'<a href="?q={kw.replace(" ", "+")}" class="related-tag" style="display:inline-block;margin:4px;padding:6px 12px;background:#1e293b;color:#38bdf8;border-radius:6px;text-decoration:none;font-size:13px;">🔍 {kw}</a>'
+              for kw in related_keywords
+          ])
+
+          partner_links_html = f"""
+          <section id="auto-related-partners" style="margin:24px auto;padding:16px;max-width:1200px;border-top:1px solid #334155;">
+            <h3 style="font-size:15px;margin-bottom:10px;color:#94a3b8;">Tìm kiếm liên quan & Đối tác đề xuất</h3>
+            <div class="related-searches">{search_links_html}</div>
+            <div class="partner-links" style="margin-top:12px;font-size:13px;">
+              <a href="https://clipform.io?{aff_param}" target="_blank" rel="sponsored noopener noreferrer" style="color:#fbbf24;margin-right:16px;">★ Đề xuất nội dung mới</a>
+              <a href="https://clipviet.live?{aff_param}" target="_blank" rel="noopener noreferrer" style="color:#34d399;">Trang chủ ClipViet.live</a>
+            </div>
+          </section>
+          """
+
+          # Hàm gắn mã tiếp thị liên kết vào URL đối tác
+          def append_affiliate(url):
+              parsed = urlparse(url)
+              if any(domain in parsed.netloc for domain in partner_domains):
+                  query = parse_qs(parsed.query)
+                  if aff_key not in query:
+                      query[aff_key] = [aff_val]
+                      new_query = urlencode(query, doseq=True)
+                      return urlunparse(parsed._replace(query=new_query))
+              return url
+
+          # 2. Quét và cập nhật toàn bộ tệp HTML trong thư mục site/
+          href_pattern = re.compile(r'href=["\'](https?://[^"\']+)["\']')
+
+          for root, _, files in os.walk(site_dir):
+              for file in files:
+                  if file.endswith(".html"):
+                      filepath = os.path.join(root, file)
+                      with open(filepath, "r", encoding="utf-8") as f:
+                          html = f.read()
+
+                      # Chèn mã Affiliate vào các thẻ <a> trỏ tới domain đối tác
+                      def replace_href(match):
+                          orig_url = match.group(1)
+                          new_url = append_affiliate(orig_url)
+                          return f'href="{new_url}"'
+
+                      html = href_pattern.sub(replace_href, html)
+
+                      # Chèn khối Tìm kiếm liên quan & Đối tác trước thẻ </body> nếu chưa có
+                      if "auto-related-partners" not in html and "</body>" in html:
+                          html = html.replace("</body>", f"{partner_links_html}\n</body>")
+
+                      with open(filepath, "w", encoding="utf-8") as f:
+                          f.write(html)
+                      print(f"Đã xử lý xong: {filepath}")
+          EOF
+
+      # Bước 4: Đóng gói thư mục site/
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+
+      # Bước 5: Xuất bản lên GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

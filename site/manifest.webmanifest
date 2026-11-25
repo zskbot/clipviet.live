@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "ClipViet.live",
+  "short_name": "ClipViet",
+  "description": "Thư viện video ClipViet",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#08090d",
+  "theme_color": "#08090d",
+  "orientation": "any",
+  "icons": [
+    {"src": "/clipviet-logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}

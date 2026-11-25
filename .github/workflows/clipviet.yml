@@ -1,0 +1,44 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**", "chore/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clipviet-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clipviet:
+    name: ClipViet application and Provider Registry tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Build Next.js application
+        run: npm run build
+      - name: Validate Provider Registry modules
+        run: |
+          node --input-type=module --check < workers/provider-registry/src/index.mjs
+          node --input-type=module --check < workers/provider-registry/src/security.mjs
+          node --input-type=module --check < workers/provider-registry/src/auth.mjs
+          node --input-type=module --check < workers/provider-registry/src/rights-gate.mjs
+          node --input-type=module --check < workers/provider-registry/src/rights-entry.mjs
+          node --input-type=module --check < workers/provider-registry/src/diagnostics.mjs
+          node --input-type=module --check < workers/provider-registry/src/admin-ui.mjs

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08090d">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Danh mục repository tham chiếu và trạng thái tích hợp của ClipViet.live.">
+  <title>Nguồn tích hợp — ClipViet.live</title>
+  <link rel="icon" href="./clipviet-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <style>
+    .sources-wrap{max-width:1120px;margin:0 auto;padding:62px 22px 90px}
+    .sources-intro{max-width:720px;color:#a5a6ae;font-size:13px;line-height:1.85}
+    .integration-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:28px}
+    .integration-card{border:1px solid var(--line);background:var(--panel);padding:22px;min-width:0}
+    .integration-card h2{font-size:18px;margin:13px 0 8px;overflow-wrap:anywhere}
+    .integration-card p{color:#a5a6ae;font-size:12px;line-height:1.8}
+    .integration-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .integration-status{font-size:9px;font-weight:850;letter-spacing:1.2px;padding:7px 9px;border:1px solid #6b5528;color:#e8c47d}
+    .integration-kind{font-size:9px;letter-spacing:1.2px;color:#85868f}
+    .integration-card a{display:inline-block;margin-top:12px;border-bottom:1px solid #555;padding-bottom:4px;font-size:10px;font-weight:850;letter-spacing:1px}
+    .integration-card a:hover{color:#fff;border-color:var(--red)}
+    .integration-notice{margin-top:26px;border-left:2px solid var(--red);padding:4px 0 4px 16px;color:#a5a6ae;font-size:11px;line-height:1.9}
+    .architecture{margin-top:42px;border-top:1px solid var(--line);padding-top:30px}
+    .architecture h2{font-size:24px}
+    .architecture p,.architecture li{font-size:12px;color:#a5a6ae;line-height:1.9}
+    .architecture code{color:#f3c0c3}
+    @media(max-width:680px){.integration-grid{grid-template-columns:1fr}.sources-wrap{padding:42px 16px 70px}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="ClipViet.live trang chủ"><img src="./clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
+    <nav aria-label="Điều hướng"><a href="./">Trang chủ</a><a href="./#catalog">Thư viện</a><a href="./admin/">Admin</a></nav>
+  </header>
+  <main class="sources-wrap">
+    <p class="eyebrow">CLIPVIET.LIVE / INTEGRATION REGISTRY</p>
+    <h1>Repository tích hợp</h1>
+    <p class="sources-intro">Sáu repository được rà soát để định hình các mô-đun của nền tảng video: danh mục nguồn live, tìm kiếm metadata, phân tích video và công cụ biên tập. Đây là danh mục tham chiếu; không có repository bên ngoài nào được tự động thực thi hoặc cấp quyền phát nội dung.</p>
+    <div id="integration-grid" class="integration-grid" aria-live="polite"><p class="sources-intro">Đang tải danh mục repository…</p></div>
+    <p class="integration-notice">Chỉ đưa video vào thư viện khi ClipViet có quyền phân phối hợp lệ, nguồn có điều khoản sử dụng rõ ràng và nội dung đã qua kiểm duyệt. Không tự động tải xuống, scrape, proxy hoặc phát playlist từ repository bên ngoài. Nội dung người lớn phải được tách biệt, có kiểm soát truy cập phù hợp và không được nhắm tới người chưa thành niên.</p>
+    <section class="architecture">
+      <p class="eyebrow">SYSTEM BOUNDARIES</p>
+      <h2>Kiến trúc tích hợp</h2>
+      <ul>
+        <li><strong><code>site/</code></strong> là frontend tĩnh: chỉ hiển thị thư viện, registry và admin thử API trên trình duyệt.</li>
+        <li><strong>Next.js và các server routes trong repository không thuộc target triển khai của GitHub Pages.</li>
+        <li><strong>Provider adapter</strong> phải chuẩn hóa metadata, kiểm tra HTTPS, allowlist embed host, timeout và giới hạn dữ liệu.</li>
+        <li><strong>Player</strong> phát URL media HTTPS từ catalog đã đồng bộ trực tiếp trên trình duyệt; không proxy stream.</li>
+      </ul>
+      <p>ClipViet GitHub Pages sử dụng catalog JSON tĩnh được đồng bộ bởi GitHub Actions; trang quản lý nguồn chỉ đọc trạng thái đồng bộ.</p>
+    </section>
+  </main>
+  <footer><a class="brand footer-brand" href="./"><img src="./clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><p>© <span id="year"></span> ClipViet.live · Chỉ phát nội dung có quyền phân phối.</p></footer>
+  <script type="module" src="./sources.js"></script>
+</body>
+</html>

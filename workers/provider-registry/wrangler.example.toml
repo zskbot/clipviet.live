@@ -1,0 +1,25 @@
+name = "clipviet-provider-registry-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-11-24"
+workers_dev = true
+preview_urls = false
+
+[vars]
+REGISTRY_ENV = "preview"
+CORS_ALLOWED_ORIGINS = ""
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+ACCESS_ADMIN_GROUP_ID = ""
+ACCESS_TECH_GROUP_ID = ""
+ACCESS_LEGAL_GROUP_ID = ""
+
+# Required secrets (set only in the dedicated Preview Worker):
+# REGISTRY_TECH_TOKEN, REGISTRY_LEGAL_TOKEN
+# REGISTRY_ENCRYPTION_KEYS = JSON key ring with activeKid and up to five base64 32-byte keys.
+# Keep REGISTRY_ENCRYPTION_KEY temporarily only when migrating legacy PR #48 ciphertext.
+# Admin authorization uses Cloudflare Access JWT + ACCESS_ADMIN_GROUP_ID; no admin bearer secret.
+# Add a dedicated D1 database binding after creating the Preview-only database.
+# [[d1_databases]]
+# binding = "PROVIDER_DB"
+# database_name = "clipviet-provider-registry-preview"
+# database_id = "REPLACE_WITH_NEW_PREVIEW_DATABASE_ID"

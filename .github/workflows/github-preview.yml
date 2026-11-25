@@ -1,0 +1,72 @@
+name: GitHub Preview Artifact
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/github-preview.yml"
+      - "docs/GITHUB-PREVIEW.md"
+  push:
+    branches:
+      - "preview/**"
+    paths:
+      - "site/**"
+      - ".github/workflows/github-preview.yml"
+      - "docs/GITHUB-PREVIEW.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clipviet-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-preview:
+    name: Validate and package static Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Validate GitHub Pages static site
+        run: |
+          set -eu
+          test -s site/index.html
+          test -s site/styles.css
+          test -s site/app.js
+          test -s site/data.js
+          test -s site/admin/index.html
+          test -s site/admin/admin.js
+          test -s site/admin/adultembed-admin.mjs
+          test -s site/admin/adultembed-adapter.mjs
+          test ! -e site/package.json
+
+      - name: Syntax-check browser JavaScript
+        run: |
+          set -eu
+          find site -type f \( -name '*.js' -o -name '*.mjs' \) -print0 |
+            while IFS= read -r -d '' file; do
+              echo "Checking $file"
+              node --input-type=module --check < "$file"
+            done
+
+      - name: Assemble isolated Preview artifact
+        run: |
+          set -eu
+          rm -rf preview-site
+          mkdir -p preview-site
+          cp -R site/. preview-site/
+          rm -f preview-site/CNAME
+          test ! -e preview-site/CNAME
+          printf '%s\n' "Preview artifact only. No custom domain or production deployment." > preview-site/PREVIEW-NOTICE.txt
+
+      - name: Upload Preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipviet-github-preview
+          path: preview-site/
+          if-no-files-found: error
+          retention-days: 3

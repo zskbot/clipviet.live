@@ -1,0 +1,7 @@
+/* ClipViet global UI geometry: square corners are a brand requirement. */
+:where(button, input, select, textarea, option, summary, a, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="switch"], [role="checkbox"], [role="radio"], .btn, .button, .cta, .chip, .badge, .tab, .pill, .card, .panel, .modal, .dialog, .dropdown, .menu, .popover, .toast, .tooltip, .pagination, .nav-item, .filter, .filter-button) {
+  border-radius: 0 !important;
+}
+:where(button, [role="button"], .btn, .button, .cta, .chip, .tab, .filter-button, .pagination a) {
+  border-radius: 0 !important;
+}

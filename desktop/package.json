@@ -10,7 +10,7 @@
     "pack": "electron-builder"
   },
   "devDependencies": {
-    "electron": "^38.0.0",
+    "electron": "^45.5.0",
     "electron-builder": "^26.0.12"
   },
   "build": {

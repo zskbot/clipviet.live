@@ -86,7 +86,7 @@ app.whenReady().then(() => {
   ipcMain.handle("catalog:load", async () => {
     const s = readSettings();
     if (!s.apiBase) throw new Error("Chưa cấu hình ClipViet API URL.");
-    const base = validHttpsUrl(s.apiBase).url.replace(/\/$/, "");
+    const base = validPreviewApiUrl(s.apiBase).replace(/\/$/, "");
     const token = fs.existsSync(secretFile()) && safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(fs.readFileSync(secretFile())) : "";
     const data = await requestJson(base + "/api/admin/videos", token);
     return Array.isArray(data) ? data : (data.videos || data.results || data.data || []);

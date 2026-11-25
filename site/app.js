@@ -28,7 +28,7 @@ pagination.className = "video-pagination";
 pagination.setAttribute("aria-label", "Phân trang video");
 grid.insertAdjacentElement("afterend", pagination);
 
-search.value = query;
+if (search) search.value = query;
 $("#year").textContent = new Date().getFullYear();
 initFeaturedPlayer();
 

@@ -103,99 +103,15 @@ async function handle(request, env) {
 
   if (!path.startsWith("/admin/api/")) return json({ error: "Not found." }, 404);
   if (path === "/admin/api/videos" && request.method === "GET") {
-    const rows = await env.DB.prepare("SELECT * FROM clipviet_videos ORDER BY updated_at DESC LIMIT 200").all();
-    return json({ data: (rows.results || []).map(videoRow), count: rows.results?.length || 0 });
+    const rows = await env.DB.prepare("SELECT id,slug,title,description,video_url,poster_url,tags_json,groups_json,rights_status,status,created_at,updated_at,published_at FROM clipviet_videos ORDER BY updated_at DESC LIMIT 200").all();
+    return json({ data: (rows.results || []).map(row => ({
+      id: row.id, slug: row.slug, title: row.title, description: row.description,
+      videoUrl: row.video_url, posterUrl: row.poster_url, tags: safeArray(row.tags_json),
+      groups: safeArray(row.groups_json), rightsStatus: row.rights_status, status: row.status,
+      createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at
+    })), count: rows.results?.length || 0 });
   }
-
-  if (path.startsWith("/admin/api/")) {
-    return json({ error: "Public Admin is read-only. Create, edit, review, publish and delete operations are disabled." }, 403);
-  }
-
-  if (path === "/admin/api/videos" && request.method === "POST") {
-    const body = await readBody(request);
-    if (!body) return json({ error: "Invalid JSON or payload too large." }, 400);
-    const title = String(body.title || "").trim();
-    const description = String(body.description || "").trim().slice(0, 5000);
-    const videoUrl = String(body.videoUrl || "").trim();
-    const posterUrl = String(body.posterUrl || "").trim();
-    if (title.length < 2 || title.length > 160 || !validHttpsUrl(videoUrl) || !validHttpsUrl(posterUrl)) {
-      return json({ error: "Title or HTTPS media URL is invalid." }, 400);
-    }
-    const slug = slugify(body.slug || title) || crypto.randomUUID();
-    const id = crypto.randomUUID(), now = nowIso();
-    try {
-      await env.DB.prepare("INSERT INTO clipviet_videos (id,slug,title,description,video_url,poster_url,tags_json,groups_json,rights_status,rights_evidence_url,rights_notes,status,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
-        .bind(id,slug,title,description,videoUrl,posterUrl,JSON.stringify(cleanList(body.tags)),JSON.stringify(cleanList(body.groups)),"pending",String(body.rightsEvidenceUrl || "").trim(),String(body.rightsNotes || "").trim().slice(0,2000),"draft",now,now,null).run();
-    } catch {
-      return json({ error: "Could not save draft. The slug may already exist." }, 409);
-    }
-    const row = await env.DB.prepare("SELECT * FROM clipviet_videos WHERE id=?").bind(id).first();
-    return json({ ok: true, data: videoRow(row) }, 201);
-  }
-
-  const match = path.match(/^\/admin\/api\/videos\/([0-9a-f-]{36})(?:\/(review|publish))?$/i);
-  if (!match) return json({ error: "Admin endpoint not found." }, 404);
-  const [, id, action] = match;
-  const existing = await env.DB.prepare("SELECT * FROM clipviet_videos WHERE id=?").bind(id).first();
-  if (!existing) return json({ error: "Video not found." }, 404);
-
-  if (!action && request.method === "PUT") {
-    if (existing.status === "published") return json({ error: "Published records are immutable in this Preview." }, 409);
-    const body = await readBody(request);
-    if (!body) return json({ error: "Invalid JSON or payload too large." }, 400);
-    const title = String(body.title || existing.title).trim();
-    const description = String(body.description ?? existing.description).trim().slice(0,5000);
-    const videoUrl = String(body.videoUrl ?? existing.video_url).trim();
-    const posterUrl = String(body.posterUrl ?? existing.poster_url).trim();
-    const rightsEvidenceUrl = String(body.rightsEvidenceUrl ?? existing.rights_evidence_url).trim();
-    const rightsNotes = String(body.rightsNotes ?? existing.rights_notes).trim().slice(0,2000);
-    if (title.length < 2 || title.length > 160 || !validHttpsUrl(videoUrl) || !validHttpsUrl(posterUrl) || !validHttpsUrl(rightsEvidenceUrl)) return json({ error: "Title or HTTPS URL is invalid." }, 400);
-    const slug = slugify(body.slug || title) || existing.slug;
-    const now = nowIso();
-    try {
-      await env.DB.prepare("UPDATE clipviet_videos SET slug=?,title=?,description=?,video_url=?,poster_url=?,tags_json=?,groups_json=?,rights_evidence_url=?,rights_notes=?,updated_at=? WHERE id=?")
-        .bind(slug,title,description,videoUrl,posterUrl,JSON.stringify(cleanList(body.tags ?? safeArray(existing.tags_json))),JSON.stringify(cleanList(body.groups ?? safeArray(existing.groups_json))),rightsEvidenceUrl,rightsNotes,now,id).run();
-    } catch { return json({ error: "Could not update draft. The slug may already exist." }, 409); }
-    const row = await env.DB.prepare("SELECT * FROM clipviet_videos WHERE id=?").bind(id).first();
-    return json({ ok: true, data: videoRow(row) });
-  }
-
-  if (action === "review" && request.method === "POST") {
-    const body = await readBody(request);
-    if (!body) return json({ error: "Invalid JSON." }, 400);
-    const decision = body.decision === "approved" ? "approved" : body.decision === "rejected" ? "rejected" : "pending";
-    const evidence = String(body.rightsEvidenceUrl || "").trim();
-    const notes = String(body.rightsNotes || "").trim().slice(0,2000);
-    if (decision === "approved" && (!validHttpsUrl(evidence) || evidence.length < 12 || notes.length < 10)) {
-      return json({ error: "Rights approval requires an HTTPS evidence URL and at least 10 characters of review notes." }, 400);
-    }
-    await env.DB.prepare("UPDATE clipviet_videos SET rights_status=?,rights_evidence_url=?,rights_notes=?,updated_at=? WHERE id=?")
-      .bind(decision,evidence,notes,nowIso(),id).run();
-    const row = await env.DB.prepare("SELECT * FROM clipviet_videos WHERE id=?").bind(id).first();
-    return json({ ok: true, data: videoRow(row) });
-  }
-
-  if (action === "publish" && request.method === "POST") {
-    if (existing.rights_status !== "approved" || !existing.rights_evidence_url || !existing.video_url) {
-      return json({ error: "Publishing requires approved distribution rights, evidence, and a video URL." }, 409);
-    }
-    if (!allowedMediaUrl(existing.video_url, env)) {
-      return json({ error: "MEDIA_HOST_ALLOWLIST is not configured or the video host is not approved." }, 409);
-    }
-    if (existing.poster_url && !validHttpsUrl(existing.poster_url)) return json({ error: "Poster URL must use HTTPS." }, 400);
-    const now = nowIso();
-    await env.DB.prepare("UPDATE clipviet_videos SET status='published',published_at=?,updated_at=? WHERE id=?").bind(now,now,id).run();
-    const row = await env.DB.prepare("SELECT * FROM clipviet_videos WHERE id=?").bind(id).first();
-    return json({ ok: true, data: videoRow(row) });
-  }
-
-  if (!action && request.method === "DELETE") {
-    if (existing.status === "published") return json({ error: "Published records cannot be deleted from this Preview." }, 409);
-    await env.DB.prepare("DELETE FROM clipviet_videos WHERE id=?").bind(id).run();
-    return json({ ok: true });
-  }
-
-  return json({ error: "Method not allowed." }, 405);
+  return json({ error: "Public Admin is read-only. Create, edit, review, publish and delete operations are disabled." }, 403);
 }
 
 export default {

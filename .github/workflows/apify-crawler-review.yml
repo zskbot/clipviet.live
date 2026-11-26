@@ -6,10 +6,11 @@ on:
       dataset_id:
         description: Apify dataset ID to import into the private review artifact
         required: true
+        default: "b2fEjQCqLoak61WwS"
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: clipviet-apify-review
@@ -29,6 +30,17 @@ jobs:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           APIFY_DATASET_ID: ${{ inputs.dataset_id }}
         run: node scripts/ingest-apify-review.mjs
+      - name: Persist deduplication index on the selected branch
+        run: |
+          if git diff --quiet -- data/apify-crawler-index.json; then
+            echo "Deduplication index unchanged."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/apify-crawler-index.json
+            git commit -m "chore(crawler): update persistent deduplication index"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
       - name: Upload private review artifact
         uses: actions/upload-artifact@v4
         with:

@@ -1,31 +1,5 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ClipViet Groups</title>
-<style>
-:root{color-scheme:dark;background:#08090d;color:#f5f5f5;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}*{box-sizing:border-box}body{margin:0;padding:28px 16px}main{max-width:1100px;margin:auto}h1{font-size:clamp(30px,7vw,56px)}p{color:#aaa;font-size:12px;line-height:1.8}.group{border:1px solid #30313a;padding:16px;margin:10px 0;background:#101116}.group a{color:#ff9ca4}.status{border-left:2px solid #ef3340;padding:10px 14px}
-</style></head><body><main><p>CLIPVIET / CATALOG</p><h1>Groups</h1><p class="status" id="status">Đang tổng hợp nhóm từ metadata Preview…</p><div id="groups"></div></main>
-<script type="module">
-const status=document.querySelector("#status"),root=document.querySelector("#groups");
-try{
- const r=await fetch("/api/catalog/categories",{headers:{accept:"application/json"},cache:"no-store"});
- if(!r.ok)throw new Error("API trả HTTP "+r.status);
- const payload=await r.json(),items=Array.isArray(payload.data)?payload.data:[];
- const groups=new Map();
- for(const item of items){
-  const parent=String(item.type_pid??item.parent_id??item.parentId??"root");
-  const name=String(item.type_name||item.name||item.title||"Danh mục").slice(0,100);
-  const id=String(item.type_id??item.id??"");
-  if(!groups.has(parent))groups.set(parent,[]);
-  groups.get(parent).push({name,id});
- }
- status.textContent=groups.size+" nhóm được dựng từ "+items.length+" danh mục.";
- for(const [parent,children] of groups){
-  const section=document.createElement("section");section.className="group";
-  const title=document.createElement("h2");title.textContent=parent==="root"?"Nhóm gốc":"Nhóm "+parent;section.append(title);
-  for(const child of children){
-   const link=document.createElement("a");link.href="/video/?categoryId="+encodeURIComponent(child.id);link.textContent=child.name;section.append(link,document.createTextNode(" · "));
-  }
-  root.append(section);
- }
- if(!items.length)status.textContent="Chưa có danh mục trong phản hồi API Preview.";
-}catch(e){status.textContent="Không thể tải groups: "+e.message;}
-</script></body></html>
+<style>:root{color-scheme:dark;background:#08090d;color:#f5f5f5;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}*{box-sizing:border-box}body{margin:0;padding:28px 16px}main{max-width:1100px;margin:auto}h1{font-size:clamp(30px,7vw,56px)}p{color:#aaa;font-size:12px;line-height:1.8}.group{border:1px solid #30313a;padding:16px;margin:10px 0;background:#101116}.group a{color:#ff9ca4}.status{border-left:2px solid #ef3340;padding:10px 14px}</style></head>
+<body><main><p>CLIPVIET / CATALOG</p><h1>Groups</h1><p class="status" id="status">Đang tải groups đã xuất bản…</p><div id="groups"></div></main>
+<script type="module">const status=document.querySelector("#status"),root=document.querySelector("#groups");try{const r=await fetch("/api/groups",{cache:"no-store"});if(!r.ok)throw new Error("API HTTP "+r.status);const p=await r.json(),items=Array.isArray(p.data)?p.data:[];status.textContent=items.length+" groups công khai.";for(const item of items){const section=document.createElement("section");section.className="group";const title=document.createElement("h2");title.textContent=item.name;const meta=document.createElement("p");meta.textContent=item.count+" video";const link=document.createElement("a");link.href="/video/?group="+encodeURIComponent(item.name);link.textContent="MỞ NHÓM ↗";section.append(title,meta,link);root.append(section)}if(!items.length)status.textContent="Chưa có group vì chưa có video được duyệt xuất bản."}catch(e){status.textContent="Không tải được groups: "+e.message}</script></body></html>

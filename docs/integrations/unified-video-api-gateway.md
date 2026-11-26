@@ -37,3 +37,15 @@ This change is Preview-only. Do not enable Production deployments, attach `clipv
 
 
 Preview deployment trigger: branch is explicitly allowlisted in `clipviet-live-independent-preview`; verify the resulting deployment is tagged `preview` before testing. Production deployment remains disabled.
+
+## Legacy frontend compatibility
+The Pages Function accepts both canonical and existing frontend parameters:
+
+- Search: `q`, `keyword`, or `search`
+- Category: `category` and `categoryId`
+- Page: `page` or `currentPage`
+- Page size: `limit`, `pageSize`, or `per_page`
+
+Canonical parameters take precedence when both forms are present. The response retains both `results` and `items`, along with `page`, `limit`, `total`, `pageCount`, and `hasMore`. Invalid pagination or overlong filters return HTTP 400; unknown IDs return 404; unsupported methods return 405 with an `Allow` header. HEAD returns headers without a body and OPTIONS advertises the supported methods.
+
+The Preview runtime tests exercise the Pages Function handler directly. They do not imply that the public `api.clipviet.live` hostname is configured or available.

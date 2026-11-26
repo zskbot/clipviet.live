@@ -43,6 +43,7 @@ function json(data, status = 200, method = "GET") {
     "x-content-type-options": "nosniff",
     "referrer-policy": "no-referrer"
   };
+  if (status === 405) headers.allow = "GET, HEAD, OPTIONS";
   return new Response(method === "HEAD" ? null : JSON.stringify(data), { status, headers });
 }
 
@@ -52,7 +53,8 @@ export async function onRequest({ request }) {
       status: 204,
       headers: {
         "allow": "GET, HEAD, OPTIONS",
-        "access-control-max-age": "600"
+        "access-control-max-age": "600",
+        "access-control-allow-methods": "GET, HEAD, OPTIONS"
       }
     });
   }
@@ -83,6 +85,9 @@ export async function onRequest({ request }) {
   return json({
     success: true,
     endpoint: "/api/videos",
+    query,
+    category,
+    categoryId,
     version: "1.0.0",
     mode: "rights-gated-unified",
     pending: true,

@@ -6,11 +6,11 @@ if (!datasetId) throw new Error("Set APIFY_DATASET_ID or pass a dataset ID.");
 if (!token) throw new Error("Missing APIFY_TOKEN secret.");
 if (!/^[A-Za-z0-9]{8,64}$/.test(datasetId)) throw new Error("Invalid Apify dataset ID.");
 
-const response = await fetch(\`https://api.apify.com/v2/datasets/\${encodeURIComponent(datasetId)}/items?format=json&clean=true&limit=50000\`, {
-  headers: { Authorization: \`Bearer \${token}\`, Accept: "application/json" },
+const response = await fetch(`https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?format=json&clean=true&limit=50000`, {
+  headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   signal: AbortSignal.timeout(30000)
 });
-if (!response.ok) throw new Error(\`Apify dataset fetch failed: HTTP \${response.status}\`);
+if (!response.ok) throw new Error(`Apify dataset fetch failed: HTTP ${response.status}`);
 const raw = await response.json();
 if (!Array.isArray(raw)) throw new Error("Apify dataset response is not a JSON array.");
 

@@ -1,0 +1,18 @@
+name = "clipviet-video-cms-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-11-26"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ENVIRONMENT = "preview"
+ACCESS_TEAM_DOMAIN = "dark-snow-8a68.cloudflareaccess.com"
+ACCESS_AUD = "b475994bb8c14e80308272225de7b12a5796303b7058b28b4fb14460b2f9860c"
+MEDIA_HOST_ALLOWLIST = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "clipviet-cms-preview"
+database_id = "1e613e7b-5aa3-4927-bf78-552f383c9dce"
+
+# Preview-only metadata CMS. Binary video upload stays disabled until a dedicated R2 bucket is approved.

@@ -61,11 +61,14 @@ export async function onRequest({ request }) {
   }
 
   const url = new URL(request.url);
-  const rawPage = Number.parseInt(url.searchParams.get("page") || "1", 10);
-  const rawLimit = Number.parseInt(url.searchParams.get("limit") || "30", 10);
+  const params = url.searchParams;
+  const rawPage = Number.parseInt(params.get("page") || params.get("currentPage") || "1", 10);
+  const rawLimit = Number.parseInt(params.get("limit") || params.get("pageSize") || params.get("per_page") || "30", 10);
   const page = Number.isSafeInteger(rawPage) ? Math.max(1, Math.min(rawPage, 10000)) : 1;
   const limit = Number.isSafeInteger(rawLimit) ? Math.max(1, Math.min(rawLimit, 100)) : 30;
-  const videoId = url.searchParams.get("id");
+  const query = (params.get("q") || params.get("keyword") || params.get("search") || "").trim().slice(0, 120);
+  const categoryId = (params.get("categoryId") || params.get("category") || "").trim().slice(0, 120);
+  const videoId = params.get("id");
 
   if (videoId) {
     return json({
@@ -91,6 +94,7 @@ export async function onRequest({ request }) {
     total: 0,
     pageCount: 0,
     hasMore: false,
+    filters: { query, categoryId },
     source: "unified-gateway",
     providers: PROVIDERS,
     providerCount: PROVIDERS.length,

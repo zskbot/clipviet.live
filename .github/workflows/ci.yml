@@ -1,96 +1,156 @@
-name: CI
+name: CI via GitLab
 
 on:
-  pull_request:
-    branches: [main]
   push:
-    branches: [main, "feat/**", "fix/**", "chore/**"]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Optional exact GitHub commit SHA (defaults to this run's commit)
+        required: false
+        type: string
 
 permissions:
   contents: read
+  statuses: write
+
+concurrency:
+  group: gitlab-ci-${{ github.event.inputs.source_sha || github.sha }}
+  cancel-in-progress: false
 
 jobs:
-  static-site:
-    name: Static website (site/)
+  gitlab:
+    name: GitLab CI relay
     runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GITLAB_PROJECT_ID: "89474932"
+      GITLAB_REF: "ci/github-gitlab-bridge"
+      SOURCE_SHA: ${{ github.event.inputs.source_sha || github.sha }}
+      GITLAB_API_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Validate static website boundary
+      - name: Dispatch pipeline and collect job traces
+        id: relay
+        continue-on-error: true
+        shell: bash
         run: |
-          test -s site/index.html
-          test -s site/styles.css
-          test -s site/app.js
-          test -s site/data.js
-          test -s site/admin/index.html
-          test -s site/admin/admin.js
-          test -s scripts/sync-pages-catalog.mjs
-          test "$(cat site/CNAME)" = "clipviet.live"
-          test ! -e site/package.json
-          echo "Static website is self-contained in site/."
-      - name: Verify rights-gated catalog defaults
-        run: |
-          env -u CATALOG_DISTRIBUTION_AUTHORIZED node scripts/sync-pages-catalog.mjs
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const catalog = JSON.parse(fs.readFileSync('site/data/catalog.json', 'utf8'));
-          if (!Array.isArray(catalog.providers) || catalog.providers.length !== 5) throw new Error('expected exactly five providers');
-          if (catalog.providers.some(provider => provider.status !== 'PENDING' || provider.rightsStatus !== 'PENDING')) throw new Error('provider rights state must remain PENDING');
-          if (!Array.isArray(catalog.videos) || catalog.videos.length !== 0) throw new Error('unlicensed video records must not enter the public catalog');
-          if (catalog.providers.some(provider => (provider.mediaHosts || []).length !== 0)) throw new Error('media allowlists must remain empty');
-          console.log('PASS: five providers PENDING; zero public videos; empty media allowlists.');
-          NODE
-      - name: Check all static JavaScript modules
-        run: |
-          node --input-type=module --check < scripts/sync-pages-catalog.mjs
-          node --input-type=module --check < scripts/ingest-apify-review.mjs
-          node --input-type=module --check < scripts/build-approved-apify-catalog.mjs
-          node --input-type=module --check < apify/video-list-crawler/src/main.js
-          node --input-type=module --check < apify/video-list-crawler/src/routes.js
-          node --input-type=module --check < apify/video-list-crawler/src/robots.js
-          node -e "JSON.parse(require('fs').readFileSync('apify/video-list-crawler/.actor/actor.json')); JSON.parse(require('fs').readFileSync('apify/video-list-crawler/.actor/input_schema.json')); JSON.parse(require('fs').readFileSync('apify/video-list-crawler/package.json'));"
-          node --input-type=module --check < workers/provider-registry/src/index.mjs
-          node --input-type=module --check < workers/provider-registry/src/security.mjs
-          node --input-type=module --check < workers/provider-registry/src/auth.mjs
-          node --input-type=module --check < workers/provider-registry/src/rights-gate.mjs
-          node --input-type=module --check < workers/provider-registry/src/rights-entry.mjs
-          node --input-type=module --check < workers/provider-registry/src/diagnostics.mjs
-          node --input-type=module --check < workers/provider-registry/src/admin-ui.mjs
-          find site -type f \( -name '*.js' -o -name '*.mjs' \) -print0 | while IFS= read -r -d '' file; do
-            echo "Checking $file"
-            node --input-type=module --check < "$file"
+          set -euo pipefail
+          mkdir -p artifacts
+          : > artifacts/gitlab-job-logs.txt
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "final_status=error" >> "$GITHUB_OUTPUT"
+            echo "Invalid source SHA" >> artifacts/gitlab-job-logs.txt
+            exit 1
+          fi
+          if [[ -z "$GITLAB_API_TOKEN" ]]; then
+            echo "final_status=error" >> "$GITHUB_OUTPUT"
+            echo "Missing GitHub repository secret: GITLAB_API_TOKEN" >> artifacts/gitlab-job-logs.txt
+            exit 1
+          fi
+          payload="$(jq -n --arg ref "$GITLAB_REF" --arg sha "$SOURCE_SHA" '{ref:$ref,inputs:{source_sha:$sha}}')"
+          response="$(curl --fail-with-body --silent --show-error --request POST \
+            --header "PRIVATE-TOKEN: $GITLAB_API_TOKEN" \
+            --header "Content-Type: application/json" --data "$payload" \
+            "https://gitlab.com/api/v4/projects/$GITLAB_PROJECT_ID/pipeline")"
+          pipeline_id="$(jq -r '.id // empty' <<< "$response")"
+          pipeline_url="$(jq -r '.web_url // empty' <<< "$response")"
+          if [[ -z "$pipeline_id" ]]; then
+            echo "final_status=error" >> "$GITHUB_OUTPUT"
+            echo "GitLab did not return a pipeline ID." >> artifacts/gitlab-job-logs.txt
+            exit 1
+          fi
+          echo "pipeline_id=$pipeline_id" >> "$GITHUB_OUTPUT"
+          echo "pipeline_url=$pipeline_url" >> "$GITHUB_OUTPUT"
+          status="created"
+          for attempt in $(seq 1 150); do
+            pipeline="$(curl --fail-with-body --silent --show-error \
+              --header "PRIVATE-TOKEN: $GITLAB_API_TOKEN" \
+              "https://gitlab.com/api/v4/projects/$GITLAB_PROJECT_ID/pipelines/$pipeline_id")"
+            status="$(jq -r '.status // "unknown"' <<< "$pipeline")"
+            if [[ "$status" == "success" || "$status" == "failed" || "$status" == "canceled" || "$status" == "skipped" ]]; then break; fi
+            sleep 10
           done
+          if [[ "$status" != "success" && "$status" != "failed" && "$status" != "canceled" && "$status" != "skipped" ]]; then status="timeout"; fi
+          echo "final_status=$status" >> "$GITHUB_OUTPUT"
+          jobs="$(curl --fail-with-body --silent --show-error \
+            --header "PRIVATE-TOKEN: $GITLAB_API_TOKEN" \
+            "https://gitlab.com/api/v4/projects/$GITLAB_PROJECT_ID/pipelines/$pipeline_id/jobs?per_page=100")"
+          while IFS=$'\t' read -r job_id job_name job_status; do
+            [[ -n "$job_id" ]] || continue
+            {
+              echo "===== $job_name (#$job_id): $job_status ====="
+              curl --silent --show-error --fail --header "PRIVATE-TOKEN: $GITLAB_API_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$GITLAB_PROJECT_ID/jobs/$job_id/trace" || echo "[trace unavailable]"
+              echo
+            } >> artifacts/gitlab-job-logs.txt
+          done < <(jq -r '.[] | [.id, .name, .status] | @tsv' <<< "$jobs")
+          sed -E -i \
+            -e 's/(PRIVATE-TOKEN:)[[:space:]]*[^[:space:]]+/\1 [REDACTED]/Ig' \
+            -e 's/(Bearer[[:space:]]+)[A-Za-z0-9._~+\/-]+/\1[REDACTED]/Ig' \
+            -e 's/(APIFY_TOKEN[=:])[[:space:]]*[^[:space:]]+/\1[REDACTED]/Ig' \
+            artifacts/gitlab-job-logs.txt
+          tail -c 500000 artifacts/gitlab-job-logs.txt > artifacts/gitlab-job-logs.trimmed.txt
+          mv artifacts/gitlab-job-logs.trimmed.txt artifacts/gitlab-job-logs.txt
 
-  nextjs:
-    name: Next.js app and API
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Lint Next.js app and shared server code
-        run: npm run lint
-      - name: Run unit tests
-        run: npm test
-      - name: Build Next.js application
-        run: npm run build
+      - name: Publish GitLab result in GitHub summary
+        if: always()
+        env:
+          PIPELINE_URL: ${{ steps.relay.outputs.pipeline_url }}
+          FINAL_STATUS: ${{ steps.relay.outputs.final_status }}
+          SHA: ${{ steps.relay.outputs.source_sha }}
+        shell: bash
+        run: |
+          {
+            echo "## GitLab CI result"
+            echo
+            echo "- Source commit: `$SHA`"
+            echo "- Pipeline: ${PIPELINE_URL:-not created}"
+            echo "- GitLab status: ${FINAL_STATUS:-error}"
+            echo
+            echo "### Recent job output"
+            echo '```text'
+            if [[ -f artifacts/gitlab-job-logs.txt ]]; then tail -n 120 artifacts/gitlab-job-logs.txt; else echo "No job trace was returned."; fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  php-lint:
-    name: PHP API syntax
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+      - name: Upload GitLab logs
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          php-version: '8.5'
-          extensions: pdo_mysql, mbstring
-          coverage: none
-      - name: Check PHP syntax
-        run: find php-api -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l
+          name: gitlab-ci-logs-${{ github.run_id }}
+          path: artifacts/gitlab-job-logs.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Report GitLab status on the GitHub commit
+        if: always() && steps.relay.outputs.source_sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.relay.outputs.source_sha }}
+          FINAL_STATUS: ${{ steps.relay.outputs.final_status }}
+          PIPELINE_URL: ${{ steps.relay.outputs.pipeline_url }}
+        shell: bash
+        run: |
+          case "$FINAL_STATUS" in
+            success) state=success ;;
+            failed|canceled|timeout) state=failure ;;
+            *) state=error ;;
+          esac
+          description="GitLab CI: ${FINAL_STATUS:-error}"
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --data "$(jq -n --arg state "$state" --arg context "GitLab CI" --arg description "$description" --arg target_url "${PIPELINE_URL:-https://gitlab.com/huynhthuongg2505/clipviet-live/-/pipelines}" '{state:$state,context:$context,description:$description,target_url:$target_url}')" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$SHA"
+
+      - name: Fail GitHub run when GitLab CI fails
+        if: always()
+        env:
+          FINAL_STATUS: ${{ steps.relay.outputs.final_status }}
+        run: |
+          if [[ "$FINAL_STATUS" != "success" ]]; then
+            echo "GitLab CI did not pass: ${FINAL_STATUS:-error}"
+            exit 1
+          fi

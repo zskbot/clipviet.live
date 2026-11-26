@@ -97,8 +97,10 @@ export default {
     }
 
     if (path === "/docs" || path.startsWith("/docs/")) {
-      const suffix = path.slice("/docs".length);
-      return proxy(request, modulesOrigin, "/api-docs/" + suffix.replace(/^\//, ""));
+      return proxy(request, modulesOrigin, path === "/docs" ? "/docs/" : path);
+    }
+    if (path === "/api-docs" || path.startsWith("/api-docs/")) {
+      return proxy(request, modulesOrigin, path === "/api-docs" ? "/api-docs/" : path);
     }
     if (path === "/video" || path.startsWith("/video/")) {
       return proxy(request, modulesOrigin, path === "/video" ? "/video/" : path);

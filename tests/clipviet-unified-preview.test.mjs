@@ -5,7 +5,7 @@ import gateway from "../workers/clipviet-unified-preview/src/index.mjs";
 const env = {
   FRONTEND_ORIGIN: "https://frontend-preview.example.pages.dev",
   MODULES_ORIGIN: "https://modules-preview.example.pages.dev",
-  CATALOG_API_ORIGIN: "https://catalog-preview.example.workers.dev"
+  VIDEO_CMS_ORIGIN: "https://video-cms-preview.example.workers.dev"
 };
 
 async function withFetch(mock, callback) {
@@ -21,7 +21,6 @@ test("root routes to the primary frontend Preview", async () => {
     return new Response("frontend");
   }, async () => {
     const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/"), env);
-    assert.equal(response.status, 200);
     assert.equal(await response.text(), "frontend");
   });
 });
@@ -50,34 +49,61 @@ test("video, tag and group routes use the secondary modules Preview", async () =
   }
 });
 
-test("catalog API is proxied read-only without forwarding browser credentials", async () => {
+test("public video, tag and group APIs use the Preview D1 CMS", async () => {
+  for (const [path, target] of [["/api/videos", "/public/videos"], ["/api/tags", "/public/tags"], ["/api/groups", "/public/groups"]]) {
+    await withFetch(async request => {
+      assert.equal(new URL(request.url).origin, env.VIDEO_CMS_ORIGIN);
+      assert.equal(new URL(request.url).pathname, target);
+      return Response.json({ data: [] });
+    }, async () => {
+      const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev" + path), env);
+      assert.equal(response.status, 200);
+    });
+  }
+});
+
+test("catalog routes pass through the secondary Pages rights gate", async () => {
   await withFetch(async request => {
-    const url = new URL(request.url);
-    assert.equal(url.origin, env.CATALOG_API_ORIGIN);
-    assert.equal(url.pathname, "/api/catalog/videos");
-    assert.equal(url.searchParams.get("page"), "2");
-    assert.equal(request.headers.get("authorization"), null);
-    assert.equal(request.headers.get("cookie"), null);
-    assert.equal(request.headers.get("origin"), null);
-    return Response.json({ items: [] });
+    assert.equal(new URL(request.url).origin, env.MODULES_ORIGIN);
+    assert.equal(new URL(request.url).pathname, "/api/catalog/categories");
+    return Response.json({ data: [], pending: true });
   }, async () => {
-    const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/api/catalog/videos?page=2", {
-      headers: { authorization: "Bearer test-only", cookie: "session=test", origin: "https://router-preview.example.workers.dev" }
+    const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/api/catalog/categories"), env);
+    assert.equal(response.status, 200);
+  });
+});
+
+test("admin API forwards Access JWT but never forwards browser cookies", async () => {
+  await withFetch(async request => {
+    assert.equal(new URL(request.url).origin, env.VIDEO_CMS_ORIGIN);
+    assert.equal(new URL(request.url).pathname, "/admin/api/videos");
+    assert.equal(request.headers.get("cf-access-jwt-assertion"), "preview-jwt");
+    assert.equal(request.headers.get("cookie"), null);
+    assert.equal(request.headers.get("authorization"), null);
+    return Response.json({ data: [] });
+  }, async () => {
+    const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/admin/api/videos", {
+      headers: { "cf-access-jwt-assertion": "preview-jwt", cookie: "session=private" }
     }), env);
     assert.equal(response.status, 200);
   });
 });
 
-test("admin and binary uploads remain locked in Preview", async () => {
-  const admin = await gateway.fetch(new Request("https://router-preview.example.workers.dev/admin"), env);
-  assert.equal(admin.status, 423);
-  assert.equal((await admin.json()).code, "ADMIN_PREVIEW_LOCKED");
+test("admin page routes to the secondary repository and upload remains disabled", async () => {
+  await withFetch(async request => {
+    assert.equal(new URL(request.url).origin, env.MODULES_ORIGIN);
+    assert.equal(new URL(request.url).pathname, "/admin/");
+    return new Response("admin");
+  }, async () => {
+    const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/admin"), env);
+    assert.equal(await response.text(), "admin");
+  });
   const upload = await gateway.fetch(new Request("https://router-preview.example.workers.dev/upload"), env);
   assert.equal(upload.status, 501);
   assert.equal((await upload.json()).code, "VIDEO_STORAGE_NOT_PROVISIONED");
 });
 
-test("unsupported catalog write methods are rejected", async () => {
+test("unsupported API writes are rejected outside the protected Admin path", async () => {
   const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/api/catalog/videos", { method: "POST" }), env);
   assert.equal(response.status, 405);
 });

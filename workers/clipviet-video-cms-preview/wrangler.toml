@@ -6,8 +6,6 @@ preview_urls = false
 
 [vars]
 ENVIRONMENT = "preview"
-ACCESS_TEAM_DOMAIN = "dark-snow-8a68.cloudflareaccess.com"
-ACCESS_AUD = "b475994bb8c14e80308272225de7b12a5796303b7058b28b4fb14460b2f9860c"
 MEDIA_HOST_ALLOWLIST = ""
 
 [[d1_databases]]

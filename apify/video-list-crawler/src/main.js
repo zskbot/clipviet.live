@@ -1,6 +1,7 @@
 import { Actor } from "apify";
 import { CheerioCrawler, RequestQueue } from "crawlee";
 import { createRouter } from "./routes.js";
+import { isAllowedByRobots } from "./robots.js";
 
 await Actor.init();
 const input = (await Actor.getInput()) || {};
@@ -20,10 +21,10 @@ for (const entry of startUrls) {
   if (url.protocol !== "https:" || !allowedDomains.includes(url.hostname.toLowerCase())) {
     throw new Error("Start URL must be HTTPS and use an explicitly allowed host: " + url.hostname);
   }
-  await queue.addRequest({ url: url.href, userData: { sourceRoot: url.origin, pageDepth: 1 } });
+  if (await isAllowedByRobots(url.href)) await queue.addRequest({ url: url.href, userData: { sourceRoot: url.origin, pageDepth: 1 } });
 }
 
-const router = createRouter({ allowedDomains, maxPages });
+const router = createRouter({ allowedDomains, maxPages, isAllowedByRobots });
 const crawler = new CheerioCrawler({
   requestQueue: queue,
   maxRequestsPerCrawl,

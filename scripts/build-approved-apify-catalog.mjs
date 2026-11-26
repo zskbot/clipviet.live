@@ -32,5 +32,5 @@ for (const item of approvals.items) {
 catalog.schemaVersion = Math.max(1, Number(catalog.schemaVersion) || 1);
 catalog.crawlerVideos = approved;
 catalog.crawlerCatalogUpdatedAt = new Date().toISOString();
-await writeFile(catalogPath, JSON.stringify(catalog) + "\\n");
+await writeFile(catalogPath, JSON.stringify(catalog) + "\n");
 console.log(JSON.stringify({approvedCrawlerVideos:approved.length,publicCatalogVideos:catalog.videos?.length || 0},null,2));

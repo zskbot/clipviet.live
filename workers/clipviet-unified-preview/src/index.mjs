@@ -101,13 +101,13 @@ export default {
       return proxy(request, modulesOrigin, "/api-docs/" + suffix.replace(/^\//, ""));
     }
     if (path === "/video" || path.startsWith("/video/")) {
-      return proxy(request, modulesOrigin, path);
+      return proxy(request, modulesOrigin, path === "/video" ? "/video/" : path);
     }
     if (path === "/tag" || path.startsWith("/tag/")) {
-      return proxy(request, modulesOrigin, path);
+      return proxy(request, modulesOrigin, path === "/tag" ? "/tag/" : path);
     }
     if (path === "/group" || path.startsWith("/group/")) {
-      return proxy(request, modulesOrigin, path);
+      return proxy(request, modulesOrigin, path === "/group" ? "/group/" : path);
     }
 
     return proxy(request, frontendOrigin, path);

@@ -45,6 +45,12 @@ jobs:
       - name: Check all static JavaScript modules
         run: |
           node --input-type=module --check < scripts/sync-pages-catalog.mjs
+          node --input-type=module --check < scripts/ingest-apify-review.mjs
+          node --input-type=module --check < scripts/build-approved-apify-catalog.mjs
+          node --input-type=module --check < apify/video-list-crawler/src/main.js
+          node --input-type=module --check < apify/video-list-crawler/src/routes.js
+          node --input-type=module --check < apify/video-list-crawler/src/robots.js
+          node -e "JSON.parse(require('fs').readFileSync('apify/video-list-crawler/.actor/actor.json')); JSON.parse(require('fs').readFileSync('apify/video-list-crawler/.actor/input_schema.json')); JSON.parse(require('fs').readFileSync('apify/video-list-crawler/package.json'));"
           node --input-type=module --check < workers/provider-registry/src/index.mjs
           node --input-type=module --check < workers/provider-registry/src/security.mjs
           node --input-type=module --check < workers/provider-registry/src/auth.mjs

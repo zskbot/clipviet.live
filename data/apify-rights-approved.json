@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "description": "Human-reviewed allowlist. Add records only after verifying the right to redistribute each specific video.",
+  "items": []
+}

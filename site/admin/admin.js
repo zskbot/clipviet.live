@@ -11,6 +11,7 @@ function lockAdminControls() {
   }));
 }
 lockAdminControls();
+const $ = (selector) => document.querySelector(selector);
 const apiForm = $("#api-form");
 const apiUrl = $("#api-url");
 const apiToken = $("#api-token");

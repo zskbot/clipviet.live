@@ -29,11 +29,45 @@ jobs:
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           APIFY_DATASET_ID: ${{ inputs.dataset_id }}
-        run: node scripts/ingest-apify-review.mjs
-      - name: Upload crawler review artifact
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          set +e
+          node scripts/ingest-apify-review.mjs > "$RUNNER_TEMP/apify-import-output.txt" 2>&1
+          import_status=$?
+          node --input-type=module - "$import_status" "$RUNNER_TEMP/apify-import-output.txt" <<'NODE'
+          import fs from "node:fs";
+          const exitCode = Number(process.argv[2]);
+          const logPath = process.argv[3];
+          const raw = fs.existsSync(logPath) ? fs.readFileSync(logPath, "utf8") : "";
+          const safeLines = raw.split(/\r?\n/).filter(Boolean).slice(-40).map(line =>
+            line
+              .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
+              .replace(/(APIFY_TOKEN\s*[=:]\s*)\S+/gi, "$1[REDACTED]")
+              .replace(/([?&]token=)[^&\s]+/gi, "$1[REDACTED]")
+              .slice(0, 500)
+          );
+          const report = {
+            schemaVersion: 1,
+            generatedAt: new Date().toISOString(),
+            datasetId: process.env.APIFY_DATASET_ID || null,
+            nodeVersion: process.version,
+            tokenPresent: Boolean(process.env.APIFY_TOKEN),
+            exitCode,
+            result: exitCode === 0 ? "SUCCESS" : "FAILED",
+            outputTail: safeLines
+          };
+          fs.writeFileSync("artifacts/apify-import-diagnostics.json", JSON.stringify(report, null, 2) + "\n");
+          console.log(JSON.stringify(report, null, 2));
+          NODE
+          exit "$import_status"
+      - name: Upload review and diagnostic artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: clipviet-apify-review-${{ inputs.dataset_id }}
-          path: artifacts/apify-crawler-review.json
+          path: |
+            artifacts/apify-crawler-review.json
+            artifacts/apify-import-diagnostics.json
           retention-days: 14
-          if-no-files-found: error
+          if-no-files-found: warn

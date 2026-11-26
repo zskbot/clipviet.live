@@ -1,11 +1,12 @@
 const API="https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
 const KEY="clipviet.admin.session.v1";
+try{sessionStorage.removeItem(KEY)}catch{}
 const $=s=>document.querySelector(s);
 const form=$("#cms-form"),list=$("#cms-list"),message=$("#cms-status-message");
 let rows=[];
 function token(){try{return sessionStorage.getItem(KEY)||""}catch{return ""}}
 async function request(path,options={}){
- const t=token(); if(!t) throw new Error("Dashboard đã bỏ màn PIN. API D1 vẫn giữ quyền ghi ở máy chủ; cần cơ chế quản trị hợp lệ để tạo, sửa hoặc xóa bài viết.");
+ const t=token(); if(!t) throw new Error("Preview chỉ xem thử. CMS API tiếp tục được bảo vệ phía máy chủ; không có quyền tạo, sửa hoặc xóa bài viết trong chế độ này.");
  const response=await fetch(API+path,{...options,headers:{"content-type":"application/json",authorization:"Bearer "+t,...(options.headers||{})},cache:"no-store"});
  const data=await response.json().catch(()=>({}));
  if(!response.ok) throw new Error(data.error||"CMS request failed");
@@ -38,5 +39,5 @@ form.addEventListener("submit",async e=>{
  catch(err){message.textContent=err.message}
 });
 $("#cms-new").addEventListener("click",reset);
-window.addEventListener("clipviet-admin-auth",event=>{if(event.detail?.allowed)load();else{rows=[];render();message.textContent="Đăng nhập Admin để tải CMS."}});
+window.addEventListener("clipviet-admin-auth",event=>{if(event.detail?.allowed)load();else{rows=[];render();message.textContent="Preview chỉ xem thử. CMS đang khóa; API máy chủ vẫn yêu cầu phiên quản trị hợp lệ."}});
 if(token())load();

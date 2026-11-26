@@ -1,100 +1,17 @@
-const ADMIN_API = "";
-const ADMIN_SESSION_KEY = "clipviet.admin.session.v1";
-let adminToken = "";
-try { adminToken = sessionStorage.getItem(ADMIN_SESSION_KEY) || ""; } catch { /* storage may be unavailable */ }
-async function adminRequest(path, options = {}) {
-  const response = await fetch(ADMIN_API + path, {
-    credentials: "omit",
-    ...options,
-    headers: { "content-type": "application/json", ...(adminToken ? { authorization: "Bearer " + adminToken } : {}), ...(options.headers || {}) },
-    cache: "no-store",
-    redirect: "error"
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Yêu cầu quản trị không thành công.");
-  return data;
-}
-window.clipvietAdminRequest = adminRequest;
-function setAdminAccess(allowed, message) {
+// Admin Preview intentionally has no client-side PIN login or privileged session.
+// Privileged controls stay inert; the Worker remains the authority for all admin APIs.
+function lockAdminControls() {
   document.querySelectorAll("[data-admin-protected]").forEach(node => {
-    node.inert = !allowed;
-    if (allowed) {
-      node.removeAttribute("aria-disabled");
-      node.classList.remove("admin-locked");
-    } else {
-      node.setAttribute("aria-disabled", "true");
-      node.classList.add("admin-locked");
-    }
+    node.inert = true;
+    node.setAttribute("aria-disabled", "true");
+    node.classList.add("admin-locked");
   });
-  window.dispatchEvent(new CustomEvent("clipviet-admin-auth", { detail: { allowed, message } }));
+  window.dispatchEvent(new CustomEvent("clipviet-admin-auth", {
+    detail: { allowed: false, message: "Preview chỉ xem thử. Các thao tác quản trị vẫn khóa phía máy chủ." }
+  }));
 }
+lockAdminControls();
 const $ = (selector) => document.querySelector(selector);
-const loginGate = $("#admin-login-gate");
-const loginForm = $("#admin-login-form");
-const loginStatus = $("#admin-login-status");
-const logoutButton = $("#admin-logout");
-function showLogin(message = "Đăng nhập lần đầu bằng PIN để tạo phiên Admin.") {
-  setAdminAccess(false, message);
-  if (loginGate) loginGate.hidden = false;
-  if (loginStatus) loginStatus.textContent = message;
-}
-function showAdmin() {
-  setAdminAccess(true, "Auto Admin: phiên hợp lệ đã được máy chủ xác nhận.");
-  if (loginGate) loginGate.hidden = true;
-}
-let sessionVerification = null;
-async function verifyAdminSession() {
-  if (sessionVerification) return sessionVerification;
-  sessionVerification = (async () => {
-    if (!adminToken) { showLogin(); return false; }
-    try {
-      await adminRequest("/api/admin/session");
-      showAdmin();
-      return true;
-    } catch {
-      adminToken = "";
-      try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
-      showLogin("Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại bằng PIN.");
-      return false;
-    }
-  })();
-  try { return await sessionVerification; }
-  finally { sessionVerification = null; }
-}
-if (loginForm) loginForm.addEventListener("submit", async event => {
-  event.preventDefault();
-  const pin = String(new FormData(loginForm).get("pin") || "");
-  if (!/^\d{6}$/.test(pin)) { if (loginStatus) loginStatus.textContent = "PIN phải gồm đúng 6 chữ số."; return; }
-  const submit = loginForm.querySelector('button[type="submit"]');
-  if (submit) submit.disabled = true;
-  if (loginStatus) loginStatus.textContent = "Đang xác thực với máy chủ…";
-  try {
-    const response = await fetch(ADMIN_API + "/api/admin/login", {
-      method: "POST", credentials: "omit", cache: "no-store", redirect: "error",
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ pin })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || typeof data.token !== "string" || !data.token) throw new Error(data.error || "Đăng nhập không thành công.");
-    adminToken = data.token;
-    try { sessionStorage.setItem(ADMIN_SESSION_KEY, adminToken); } catch { throw new Error("Không thể lưu phiên an toàn trong sessionStorage."); }
-    loginForm.reset();
-    await verifyAdminSession();
-  } catch (error) {
-    adminToken = "";
-    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
-    showLogin(error.message || "Đăng nhập không thành công.");
-  } finally { if (submit) submit.disabled = false; }
-});
-if (logoutButton) logoutButton.addEventListener("click", async () => {
-  try { if (adminToken) await adminRequest("/api/admin/logout", { method: "POST" }); } catch { /* always clear local session */ }
-  adminToken = "";
-  try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* storage may be unavailable */ }
-  showLogin("Đã đăng xuất.");
-});
-window.clipvietVerifyAdminSession = verifyAdminSession;
-window.addEventListener("clipviet-admin-gesture", () => { void verifyAdminSession(); });
-void verifyAdminSession();
 const apiForm = $("#api-form");
 const apiUrl = $("#api-url");
 const apiToken = $("#api-token");

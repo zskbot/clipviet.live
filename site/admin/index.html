@@ -10,14 +10,8 @@
   <title>ClipViet.live — Admin Workspace</title>
   <link rel="stylesheet" href="./admin.css">
   <style>
-    .admin-login-gate{max-width:560px;margin:24px auto;padding:20px;border:1px solid #333;background:#090909}
-    .admin-login-gate[hidden]{display:none}
-    .admin-login-gate form{display:grid;gap:12px;margin:16px 0}
-    .admin-login-gate label{font:12px ui-monospace,monospace;color:#aaa}
-    .admin-login-gate input{width:100%;min-height:48px;border:1px solid #555;border-radius:0;background:#050505;color:#fff;padding:12px;font:16px ui-monospace,monospace}
-    .admin-login-gate button{border-radius:0;min-height:44px}
-    .admin-login-gate #admin-login-status{min-height:24px;color:#aaa}
-    #admin-workspace.admin-locked{opacity:.42;pointer-events:none;user-select:none}
+    .admin-preview-notice{max-width:1100px;margin:20px auto;padding:14px 16px;border:1px solid #444;background:#090909;color:#ccc;font:13px/1.6 ui-monospace,monospace}
+    [data-admin-protected].admin-locked{opacity:.48;user-select:none}
   </style>
   <link rel="stylesheet" href="./adultembed.css">
   <link rel="stylesheet" href="../clipform.css">
@@ -36,19 +30,10 @@
       <h1>API Video <span>Player</span></h1>
       <p>Kết nối JSON API của bạn hoặc dán URL phát trực tiếp để kiểm tra video ngay trên trình duyệt.</p>
     </section>
-    <section id="admin-login-gate" class="admin-login-gate" aria-labelledby="admin-login-title" hidden>
-      <p class="eyebrow">SERVER AUTHENTICATION</p>
-      <h2 id="admin-login-title">Đăng nhập quản trị</h2>
-      <p>Auto Admin tự khôi phục phiên hợp lệ. Chỉ yêu cầu PIN khi đăng nhập lần đầu hoặc phiên đã hết hạn; API luôn xác minh quyền ở máy chủ.</p>
-      <form id="admin-login-form" autocomplete="on">
-        <label for="admin-pin">ADMIN PIN · 6 chữ số</label>
-        <input id="admin-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="current-password" required>
-        <button class="primary" type="submit">ĐĂNG NHẬP</button>
-      </form>
-      <p id="admin-login-status" role="status" aria-live="polite">Đang kiểm tra phiên quản trị…</p>
-      <button id="admin-logout" class="secondary" type="button">ĐĂNG XUẤT</button>
+    <section class="admin-preview-notice" role="status" aria-live="polite">
+      PREVIEW MODE · Không yêu cầu PIN. Khu vực này chỉ dùng để xem thử giao diện; thao tác quản trị và CMS vẫn được khóa, API máy chủ tiếp tục xác thực độc lập.
     </section>
-    <div id="admin-workspace" data-admin-protected inert aria-disabled="true" class="admin-locked">
+    <div id="admin-workspace">
 
     <section class="clipform-suggestion" id="clipform-inbox" aria-labelledby="clipform-admin-title">
       <div class="clipform-suggestion-head"><div><p class="eyebrow">COMMUNITY / INBOX</p><h2 id="clipform-admin-title">Biểu mẫu đề xuất video</h2><p>Xem các phản hồi trong Clipform workspace. Đề xuất không được tự động nhập vào thư viện hoặc phát công khai.</p></div><a class="clipform-open" href="https://clipform.io/3d76a8c57" target="_blank" rel="noopener noreferrer">MỞ BIỂU MẪU ↗</a></div>

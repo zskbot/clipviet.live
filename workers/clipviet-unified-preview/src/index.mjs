@@ -24,16 +24,15 @@ function cleanPath(path) {
   return path || "/";
 }
 
-function copyHeaders(request) {
+function copyHeaders(request, preserveAccess = false) {
   const headers = new Headers(request.headers);
-  for (const name of ["host", "cookie", "authorization", "cf-access-jwt-assertion", "origin", "referer"]) {
-    headers.delete(name);
-  }
+  for (const name of ["host", "cookie", "authorization", "origin", "referer"]) headers.delete(name);
+  if (!preserveAccess) headers.delete("cf-access-jwt-assertion");
   headers.set("x-clipviet-preview-gateway", "1");
   return headers;
 }
 
-async function proxy(request, targetOrigin, targetPath) {
+async function proxy(request, targetOrigin, targetPath, preserveAccess = false) {
   const incoming = new URL(request.url);
   const target = new URL(targetPath + incoming.search, targetOrigin);
   const method = request.method.toUpperCase();
@@ -42,7 +41,7 @@ async function proxy(request, targetOrigin, targetPath) {
   }
   const upstream = new Request(target, {
     method,
-    headers: copyHeaders(request),
+    headers: copyHeaders(request, preserveAccess),
     redirect: "manual"
   });
   const response = await fetch(upstream);
@@ -64,18 +63,23 @@ export default {
         ok: true,
         service: "clipviet-unified-preview-gateway",
         environment: "preview",
-        routes: ["/", "/docs", "/video", "/tag", "/group", "/api/catalog/*"],
-        admin: "locked-pending-access-policy",
+        routes: ["/", "/docs", "/video", "/tag", "/group", "/api/videos", "/api/tags", "/api/groups", "/api/catalog/*", "/admin/*"],
+        admin: "cloudflare-access-mfa",
         uploads: "disabled-no-video-r2-bucket"
       });
     }
 
     const method = request.method.toUpperCase();
+    const modulesOrigin = origin(env.MODULES_ORIGIN, "MODULES_ORIGIN");
+    const videoCmsOrigin = origin(env.VIDEO_CMS_ORIGIN, "VIDEO_CMS_ORIGIN");
+    const frontendOrigin = origin(env.FRONTEND_ORIGIN, "FRONTEND_ORIGIN");
+
+    if (path.startsWith("/admin/api/")) {
+      if (!["GET", "POST", "PUT", "DELETE", "OPTIONS"].includes(method)) return json({ error: "Method not allowed." }, 405);
+      return proxy(request, videoCmsOrigin, path, true);
+    }
     if (path === "/admin" || path.startsWith("/admin/")) {
-      return json({
-        error: "Admin Preview is locked until the dedicated Cloudflare Access policy and metadata CMS are verified.",
-        code: "ADMIN_PREVIEW_LOCKED"
-      }, 423);
+      return proxy(request, modulesOrigin, path === "/admin" ? "/admin/" : path);
     }
 
     if (path === "/upload" || path.startsWith("/upload/")) {
@@ -85,13 +89,14 @@ export default {
       }, 501);
     }
 
-    const catalogOrigin = origin(env.CATALOG_API_ORIGIN, "CATALOG_API_ORIGIN");
+    if (path === "/api/videos") return proxy(request, videoCmsOrigin, "/public/videos");
+    if (path === "/api/tags") return proxy(request, videoCmsOrigin, "/public/tags");
+    if (path === "/api/groups") return proxy(request, videoCmsOrigin, "/public/groups");
+    if (path === "/api/catalog" || path.startsWith("/api/catalog/")) {
+      return proxy(request, modulesOrigin, path);
+    }
     if (path === "/api" || path.startsWith("/api/")) {
-      if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
-        return json({ error: "Catalog API is read-only in Preview." }, 405);
-      }
-      if (path.startsWith("/api/admin/")) return json({ error: "Admin API is locked." }, 423);
-      return proxy(request, catalogOrigin, path);
+      return json({ error: "API route not available in Preview." }, 404);
     }
 
     const modulesOrigin = origin(env.MODULES_ORIGIN, "MODULES_ORIGIN");

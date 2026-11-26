@@ -28,11 +28,23 @@ test("root routes to the primary frontend Preview", async () => {
 test("docs route to the secondary repository API documentation", async () => {
   await withFetch(async request => {
     assert.equal(new URL(request.url).origin, env.MODULES_ORIGIN);
-    assert.equal(new URL(request.url).pathname, "/api-docs/");
+    assert.equal(new URL(request.url).pathname, "/docs/");
     return new Response("docs");
   }, async () => {
     const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/docs"), env);
     assert.equal(await response.text(), "docs");
+  });
+});
+
+
+test("API reference has its own route", async () => {
+  await withFetch(async request => {
+    assert.equal(new URL(request.url).origin, env.MODULES_ORIGIN);
+    assert.equal(new URL(request.url).pathname, "/api-docs/");
+    return new Response("api-docs");
+  }, async () => {
+    const response = await gateway.fetch(new Request("https://router-preview.example.workers.dev/api-docs"), env);
+    assert.equal(await response.text(), "api-docs");
   });
 });
 

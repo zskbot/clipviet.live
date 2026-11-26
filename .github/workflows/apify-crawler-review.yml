@@ -27,13 +27,13 @@ jobs:
           node-version: 22
       - name: Fetch and normalize Apify dataset (review-only)
         env:
-          APIFY_TOKEN: \${{ secrets.APIFY_TOKEN }}
-          APIFY_DATASET_ID: \${{ inputs.dataset_id }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_DATASET_ID: ${{ inputs.dataset_id }}
         run: node scripts/ingest-apify-review.mjs
       - name: Upload crawler review artifact
         uses: actions/upload-artifact@v4
         with:
-          name: clipviet-apify-review-\${{ inputs.dataset_id }}
+          name: clipviet-apify-review-${{ inputs.dataset_id }}
           path: artifacts/apify-crawler-review.json
           retention-days: 14
           if-no-files-found: error

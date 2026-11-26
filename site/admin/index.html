@@ -1,152 +1,39 @@
 <!doctype html>
-<html lang="vi">
-<head>
-<link rel="stylesheet" href="/brand-ui.css">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#08090d">
-  <meta name="robots" content="noindex,nofollow">
-  <link rel="icon" href="../clipviet-logo.svg" type="image/svg+xml">
-  <title>ClipViet.live — Admin Workspace</title>
-  <link rel="stylesheet" href="./admin.css">
-  <style>
-    .admin-preview-notice{max-width:1100px;margin:20px auto;padding:14px 16px;border:1px solid #444;background:#090909;color:#ccc;font:13px/1.6 ui-monospace,monospace}
-    [data-admin-protected].admin-locked{opacity:.48;user-select:none}
-  </style>
-  <link rel="stylesheet" href="./adultembed.css">
-  <link rel="stylesheet" href="../clipform.css">
-<style>.brand-logo{display:block;width:34px;height:34px;flex:0 0 34px;object-fit:contain}.brand,.community-brand{display:inline-flex;align-items:center;gap:9px}.brand>span,.community-brand>span{display:inline-flex;align-items:baseline;white-space:nowrap}.community-brand .brand-logo{width:34px;height:34px}.community-brand .brand-accent{color:#f06472}</style>
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="../"><img class="brand-logo" src="../clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
-    <span class="top-label">ADMIN / VIDEO API</span>
-    <a class="back" href="../api-docs/">API DOCS</a><a class="back" href="../">← TRANG CHỦ</a>
-  </header>
-  <nav class="admin-nav" aria-label="Điều hướng quản trị"><p class="nav-caption">WORKSPACE</p><a href="#overview">Tổng quan</a><a href="#clipform-inbox">Đề xuất video</a><a href="#api-connection">Nguồn API</a><a href="#provider-validator">Kiểm tra nguồn</a><a href="#adultembed-preview">Provider Preview</a><a href="#vdclip-workflow">VDClip Workflow</a><a href="#direct-play">Phát bằng URL</a><a href="#library">Thư viện API</a><a href="#preview-player">Trình phát</a><a href="#cms-panel">Quản lý bài viết</a><a href="./sources/">Source Manager ↗</a></nav>
-  <main>
-    <section class="intro" id="overview">
-      <p class="eyebrow">VIDEO SOURCE CONTROL</p>
-      <h1>API Video <span>Player</span></h1>
-      <p>Kết nối JSON API của bạn hoặc dán URL phát trực tiếp để kiểm tra video ngay trên trình duyệt.</p>
-    </section>
-    <section class="admin-preview-notice" role="status" aria-live="polite">
-      PREVIEW MODE · Không yêu cầu PIN. Khu vực này chỉ dùng để xem thử giao diện; thao tác quản trị và CMS vẫn được khóa, API máy chủ tiếp tục xác thực độc lập.
-    </section>
-    <div id="admin-workspace">
-
-    <section class="clipform-suggestion" id="clipform-inbox" aria-labelledby="clipform-admin-title">
-      <div class="clipform-suggestion-head"><div><p class="eyebrow">COMMUNITY / INBOX</p><h2 id="clipform-admin-title">Biểu mẫu đề xuất video</h2><p>Xem các phản hồi trong Clipform workspace. Đề xuất không được tự động nhập vào thư viện hoặc phát công khai.</p></div><a class="clipform-open" href="https://clipform.io/3d76a8c57" target="_blank" rel="noopener noreferrer">MỞ BIỂU MẪU ↗</a></div>
-      <iframe title="Biểu mẫu đề xuất video ClipViet.live" src="https://clipform.io/3d76a8c57" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-      <p class="hint block">Quản lý phản hồi: <span data-admin-protected inert aria-disabled="true"><a href="https://app.clipform.io/ce617e6d-4c43-475b-9c9d-d7ee953e3181/forms/3c0b50ba-72f3-426e-a489-36325e012907/responses" target="_blank" rel="noopener noreferrer">Clipform Responses ↗</a></span></p>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><div><p class="eyebrow">01 / API CONNECTION</p><h2>Nguồn API JSON</h2></div><span class="local-tag">CẤU HÌNH TRÊN THIẾT BỊ</span></div>
-      <form id="api-form" class="form-grid">
-        <label class="wide">API endpoint URL<input id="api-url" type="url" inputmode="url" placeholder="https://api.example.com/videos" autocomplete="url" required></label>
-        <label class="wide">Host API được phép <span class="hint">(hostname chính xác, phân tách bằng dấu phẩy · lưu trên thiết bị)</span><input id="api-allowed-hosts" type="text" placeholder="api.example.com" autocomplete="off"></label>
-        <label class="wide">Host media được phép <span class="hint">(hostname chính xác, phân tách bằng dấu phẩy · lưu trên thiết bị)</span><input id="media-allowed-hosts" type="text" placeholder="cdn.example.com,stream.example.net" autocomplete="off"></label>
-        <label class="wide">Bearer token <span class="hint">(không bắt buộc · chỉ giữ trong phiên hiện tại)</span><input id="api-token" type="password" placeholder="Dán token nếu API yêu cầu" autocomplete="off"></label>
-        <div class="actions wide"><button class="primary" type="submit">LƯU & TẢI DANH SÁCH</button><button class="secondary" id="clear-api" type="button">XÓA CẤU HÌNH</button></div>
-      </form>
-      <p class="notice">Chỉ host khớp chính xác allowlist trên thiết bị mới được kết nối/phát. Request API chặn redirect, không gửi cookie. Allowlist lưu cục bộ; token chỉ giữ trong bộ nhớ tab.</p>
-      <p id="api-status" class="status" role="status">Chưa kết nối API.</p>
-    </section>
-
-    <section class="panel validator-panel" id="provider-validator" data-admin-protected inert aria-disabled="true">
-      <div class="panel-head"><div><p class="eyebrow">02 / PROVIDER GATE</p><h2>Kiểm tra Provider độc lập</h2></div><span class="local-tag">MẶC ĐỊNH TẮT</span></div>
-      <p class="hint block">Công cụ chỉ kiểm tra endpoint do bạn cung cấp. Không tự tìm nguồn, không scrape trang HTML, không tải video và không kích hoạt provider.</p>
-      <form id="provider-form" class="form-grid">
-        <label class="wide">Tên provider<input id="provider-name" type="text" maxlength="80" placeholder="Tên nguồn / đơn vị cung cấp" required></label>
-        <label class="wide">API endpoint HTTPS<input id="provider-url" type="url" inputmode="url" placeholder="https://api.example.com/videos" required></label>
-        <label class="wide">API hostname allowlist<input id="provider-api-hosts" type="text" placeholder="api.example.com" autocomplete="off" required></label>
-        <label class="wide">Media hostname allowlist<input id="provider-media-hosts" type="text" placeholder="cdn.example.com,stream.example.net" autocomplete="off" required></label>
-        <label class="wide">Thumbnail hostname allowlist <span class="hint">(có thể dùng cùng hostname media)</span><input id="provider-poster-hosts" type="text" placeholder="images.example.com" autocomplete="off"></label>
-        <label class="wide">Bearer token <span class="hint">(tùy chọn · chỉ lưu trong bộ nhớ tab, không lưu localStorage)</span><input id="provider-token" type="password" autocomplete="off" placeholder="Provider API token"></label>
-        <label class="attestation wide"><input id="provider-rights" type="checkbox" required><span>Tôi xác nhận có quyền sử dụng API, metadata, thumbnail và media được kiểm tra; nội dung đáp ứng yêu cầu độ tuổi, sự đồng thuận và quy định pháp luật.</span></label>
-        <div class="actions wide"><button class="primary" type="submit">CHẠY KIỂM TRA AN TOÀN</button><button class="secondary" id="provider-reset" type="button">XÓA KẾT QUẢ</button></div>
-      </form>
-      <div id="provider-result" class="provider-result" role="status" aria-live="polite">
-        <strong>CHƯA KIỂM TRA</strong>
-        <p>Provider chưa được xác minh. Không có nguồn nào được kích hoạt.</p>
-      </div>
-      <p class="notice">Kiểm tra API tối đa 1 MB JSON và 100 bản ghi; kiểm tra tối đa 3 media URL đầu tiên bằng Range request 1 byte. Kết quả phụ thuộc CORS và phản hồi của máy chủ. Đây không phải xác nhận quyền phân phối hay chứng nhận bảo mật.</p>
-    </section>
-
-    <section id="adultembed-preview" class="adultembed-panel" data-admin-protected inert aria-disabled="true" aria-labelledby="adultembed-title">
-      <div class="ae-head"><div><p class="eyebrow">PROVIDER REGISTRY / PREVIEW</p><h2 id="adultembed-title">AdultEmbed Adapter</h2><p class="hint">Tìm kiếm và chuẩn hóa metadata trong Preview. Không phát video và không công khai danh sách.</p></div><span class="ae-pill">PENDING · PREVIEW ONLY</span></div>
-      <div class="ae-lock">Chưa xác minh quyền nhúng/phân phối trên clipviet.live, quyền theo từng nội dung, hồ sơ tuổi & đồng thuận, và quy trình khiếu nại/gỡ video. Provider bị khóa ở PENDING.</div>
-      <p class="ae-status">API: <code id="adultembed-api-url"></code></p>
-      <div class="ae-actions"><button id="adultembed-api-check" class="primary" type="button">KIỂM TRA API</button><span id="adultembed-api-status" class="ae-status" role="status">Chưa kiểm tra.</span></div>
-      <form id="adultembed-search-form" class="ae-controls">
-        <input id="adultembed-query" type="search" maxlength="100" placeholder="Từ khóa tìm kiếm API…" aria-label="Từ khóa AdultEmbed">
-        <button id="adultembed-search" class="secondary" type="submit">TÌM & TẢI DANH SÁCH</button>
-      </form>
-      <p id="adultembed-search-status" class="ae-status" role="status">Chưa truy vấn.</p>
-      <p class="ae-status"><span id="adultembed-count">0 VIDEO</span></p>
-      <div class="ae-video-list" id="adultembed-results"><p class="empty">Danh sách Preview chưa được tải.</p></div>
-      <div class="ae-grid">
-        <section class="ae-box"><h3>JSON MẪU / RESPONSE</h3><pre id="adultembed-json" class="ae-json">Chưa có JSON. Nhấn “Kiểm tra API” hoặc tìm kiếm.</pre></section>
-        <section class="ae-box"><h3>ĐIỀU KIỆN CHUYỂN TRẠNG THÁI</h3><ul class="ae-checks">
-          <li>Văn bản cho phép nhúng/phân phối trên clipviet.live</li><li>Quyền sử dụng nội dung và metadata/thumbnail theo từng nội dung</li><li>Hồ sơ xác minh tuổi và đồng thuận của người xuất hiện</li><li>Quy trình tiếp nhận khiếu nại và xử lý gỡ video (takedown)</li><li>Kiểm tra kỹ thuật, player status, host allowlist và audit</li>
-        </ul></section>
-      </div>
-      <section class="ae-box" style="margin-top:16px"><div class="ae-head"><h3>NHẬT KÝ PHIÊN PREVIEW</h3><button id="adultembed-clear-logs" class="secondary" type="button">XÓA NHẬT KÝ</button></div><ol id="adultembed-logs" class="ae-log-list"></ol></section>
-      <p class="ae-note">Các request chỉ đọc API JSON; không tải file, không proxy media, không nhúng iframe. Nhật ký lưu tạm trong sessionStorage của tab. API có thể trả về hostname player/thumbnail khác theo tài liệu; adapter chỉ chấp nhận adultembed.com và pornalizer.app ở allowlist cố định.</p>
-    </section>
-    <section class="panel" id="vdclip-workflow" data-admin-protected inert aria-disabled="true">
-      <div class="panel-head"><div><p class="eyebrow">VDCLIP / RIGHTS-GATED HANDOFF</p><h2>VDClip Processing Bridge</h2></div><span class="local-tag">REVIEW REQUIRED</span></div>
-      <p class="hint block">Chuẩn bị gói bàn giao thủ công sang VDClip. Không scrape trang nguồn, không tải/proxy media và không tự động xuất bản. Chỉ dùng URL media trực tiếp mà bên cấp quyền cho phép xử lý.</p>
-      <form id="vdclip-intake-form" class="form-grid">
-        <label class="wide">Tiêu đề nội dung<input id="vdclip-title" maxlength="180" required placeholder="Tên nội dung đã được cấp phép"></label>
-        <label class="wide">Direct media URL (HTTPS)<input id="vdclip-source-url" type="url" inputmode="url" required placeholder="https://media.example.com/authorized-video.mp4"></label>
-        <label class="wide">URL hồ sơ bằng chứng quyền (HTTPS)<input id="vdclip-evidence-url" type="url" inputmode="url" required placeholder="https://rights.example.com/records/…"></label>
-        <label class="wide">Mã hồ sơ quyền trong Provider Registry<input id="vdclip-rights-record" maxlength="120" required placeholder="rights-record-id"></label>
-        <label class="wide" style="display:flex;gap:10px;align-items:flex-start"><input id="vdclip-rights-attested" type="checkbox" required style="width:18px;min-height:18px;flex:0 0 18px"><span>Tôi đã đối chiếu hồ sơ nguồn cụ thể, quyền chỉnh sửa và phân phối, giấy tờ độ tuổi, sự đồng thuận và quyền sử dụng thumbnail/metadata.</span></label>
-        <div class="actions wide"><button class="primary" type="submit">TẠO GÓI BÀN GIAO</button><button class="secondary" id="vdclip-copy-packet" type="button" disabled>SAO CHÉP JSON</button><button class="secondary" id="vdclip-open-app" type="button" disabled>MỞ VDCLIP ↗</button></div>
-      </form>
-      <p id="vdclip-status" class="status" role="status" aria-live="polite">Chưa tạo gói bàn giao. Provider vẫn PENDING.</p>
-      <pre id="vdclip-packet" class="provider-result" aria-label="VDClip handoff packet">Chưa tạo gói bàn giao.</pre>
-      <p class="notice">Giới hạn: checkbox chỉ là xác nhận của operator, không phải xác minh pháp lý độc lập. Công cụ này không cập nhật Provider Registry, không gọi API VDClip, không bật phát công khai. Reviewer phải xác minh quyền trước khi nhập URL vào VDClip.</p>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><div><p class="eyebrow">03 / DIRECT PLAY</p><h2>Phát bằng URL</h2></div></div>
-      <form id="direct-form" class="direct-form">
-        <label>URL media HTTPS<input id="direct-url" type="url" inputmode="url" placeholder="https://cdn.example.com/video.mp4 hoặc .m3u8" required></label>
-        <button class="primary" type="submit">PHÁT VIDEO</button>
-      </form>
-      <p class="hint block">MP4/WebM được hỗ trợ phổ biến. HLS (.m3u8) phát trực tiếp khi trình duyệt hỗ trợ native HLS, ví dụ Safari/iPhone. URL media phải cho phép truy cập và có quyền phát.</p>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><div><p class="eyebrow">04 / LIBRARY</p><h2>Danh sách từ API</h2></div><span id="video-count" class="count">0 VIDEO</span></div>
-      <div id="video-list" class="video-list"><p class="empty">Kết nối API JSON để tải danh sách video.</p></div>
-    </section>
-    <section class="panel player-panel" id="preview-player">
-      <div class="panel-head"><div><p class="eyebrow">05 / PREVIEW PLAYER</p><h2 id="player-title">Chưa chọn video</h2></div><span id="player-state" class="count">IDLE</span></div>
-      <video id="player" controls playsinline preload="metadata"></video>
-      <p id="player-message" class="hint block">Chọn một video trong danh sách hoặc nhập URL media ở phần Phát bằng URL.</p>
-    </section>
-    <section class="panel cms-panel" id="cms-panel" data-admin-protected inert aria-disabled="true">
-      <div class="panel-head"><div><p class="eyebrow">06 / CONTENT MANAGEMENT</p><h2>CMS · Quản lý bài viết</h2></div><span class="local-tag">D1 PERSISTENT STORAGE</span></div>
-      <p class="hint block">Bài viết lưu trong Cloudflare D1. Dashboard không có màn PIN; API máy chủ vẫn chặn thao tác ghi khi chưa có quyền quản trị.</p>
-      <form id="cms-form" class="form-grid">
-        <input id="cms-id" type="hidden">
-        <label>Tiêu đề<input id="cms-title" maxlength="160" required placeholder="Tiêu đề bài viết"></label>
-        <label>Slug URL<input id="cms-slug" maxlength="180" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="tieu-de-bai-viet"></label>
-        <label class="wide">Mô tả ngắn<input id="cms-excerpt" maxlength="320" placeholder="Mô tả hiển thị trong danh sách"></label>
-        <label class="wide">Nội dung bài viết<textarea id="cms-body" rows="10" maxlength="50000" required placeholder="Nội dung văn bản bài viết…"></textarea></label>
-        <label>Trạng thái<select id="cms-status"><option value="draft">Bản nháp</option><option value="published">Xuất bản</option></select></label>
-        <div class="actions"><button class="primary" type="submit">LƯU BÀI VIẾT</button><button class="secondary" id="cms-new" type="button">BÀI MỚI</button></div>
-      </form>
-      <p id="cms-status-message" class="status" role="status" aria-live="polite">CMS API vẫn bảo vệ thao tác ghi ở máy chủ.</p>
-      <div id="cms-list" class="cms-list"><p class="empty">Chưa tải dữ liệu.</p></div>
-    </section>
-    </div>
-    <footer><span>CLIPVIET.LIVE / ADMIN WORKSPACE</span><span>Dashboard Preview · Dữ liệu CMS vẫn được API bảo vệ</span></footer>
-  </main>
-  <script type="module" src="./admin.js"></script>
-  <script type="module" src="./adultembed-admin.mjs"></script>
-  <script type="module" src="./vdclip-workflow.mjs"></script>
-  <script type="module" src="./cms.js"></script>
-</body>
-</html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="robots" content="noindex,nofollow"><title>ClipViet · Video CMS Preview</title>
+<style>
+:root{color-scheme:dark;background:#050505;color:#f5f5f5;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;--line:#303030;--muted:#999;--red:#ef3340}*{box-sizing:border-box}body{margin:0;padding:24px 14px}main{max-width:1000px;margin:auto}a{color:#ff9aa2}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:16px}.eyebrow{font-size:10px;letter-spacing:.2em;color:#ff6975}h1{font-size:clamp(28px,7vw,54px);line-height:1.05;margin:18px 0}p{color:var(--muted);font-size:12px}.notice{border:1px solid #59402a;background:#15100a;padding:12px;margin:18px 0;color:#e7c99e}.panel,.video{border:1px solid var(--line);padding:16px;margin:14px 0;background:#0b0b0b}label{display:block;font-size:10px;color:#aaa;letter-spacing:.1em;margin:12px 0 6px}input,textarea{width:100%;background:#050505;color:#fff;border:1px solid #444;border-radius:0;padding:12px;font:13px ui-monospace,monospace}textarea{min-height:90px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wide{grid-column:1/-1}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}button{border:1px solid #666;border-radius:0;background:#111;color:#fff;padding:11px 14px;font:700 11px ui-monospace,monospace;letter-spacing:.08em;cursor:pointer}button.primary{background:var(--red);border-color:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}.status{min-height:24px;color:#ddd}.video-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.pill{border:1px solid #555;padding:3px 8px;font-size:10px;color:#ccc}.meta{font-size:11px;color:#999;overflow-wrap:anywhere}.empty{padding:18px;border:1px dashed #444;color:#999}.small{font-size:10px;color:#777}@media(max-width:600px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.top{align-items:flex-start;flex-direction:column}}
+</style></head><body><main>
+<header class="top"><div><p class="eyebrow">CLIPVIET / PREVIEW CMS</p><strong>VIDEO METADATA WORKSPACE</strong></div><nav><a href="/">Trang chủ</a> · <a href="/docs/">Docs</a></nav></header>
+<h1>Quản lý <span style="color:#ef3340">video</span></h1>
+<p>Phiên quản trị được bảo vệ bằng Cloudflare Access. Metadata lưu trong D1 Preview; nội dung chỉ được công khai sau bước xác minh quyền phân phối.</p>
+<div class="notice">PREVIEW ONLY · Upload tệp video đang tắt vì chưa có bucket R2 riêng. Có thể lưu metadata bản nháp. Không dùng bucket cache OpenNext để chứa video.</div>
+<section class="panel"><h2>Thêm video / metadata</h2>
+<form id="video-form" class="grid">
+<label class="wide">TIÊU ĐỀ<input name="title" required minlength="2" maxlength="160" placeholder="Tên video"></label>
+<label class="wide">MÔ TẢ<textarea name="description" maxlength="5000" placeholder="Mô tả nội dung"></textarea></label>
+<label class="wide">VIDEO URL HTTPS (TÙY CHỌN)<input name="videoUrl" type="url" placeholder="https://media.example/video.mp4"></label>
+<label class="wide">POSTER URL HTTPS (TÙY CHỌN)<input name="posterUrl" type="url" placeholder="https://images.example/poster.jpg"></label>
+<label>TAGS · PHÂN TÁCH BẰNG DẤU PHẨY<input name="tags" placeholder="documentary, open-movie"></label>
+<label>GROUPS · PHÂN TÁCH BẰNG DẤU PHẨY<input name="groups" placeholder="featured, library"></label>
+<label class="wide">URL BẰNG CHỨNG QUYỀN PHÂN PHỐI<input name="rightsEvidenceUrl" type="url" placeholder="https://..."></label>
+<label class="wide">GHI CHÚ KIỂM TRA QUYỀN<textarea name="rightsNotes" maxlength="2000" placeholder="Nguồn giấy phép, phạm vi sử dụng, người kiểm tra..."></textarea></label>
+<div class="wide actions"><button class="primary" type="submit">LƯU BẢN NHÁP</button><button type="button" id="refresh">TẢI LẠI DANH SÁCH</button></div>
+</form><p id="form-status" class="status" role="status"></p></section>
+<section><div class="video-head"><h2>Thư viện metadata</h2><span id="count" class="pill">0 RECORDS</span></div><div id="videos"><p class="empty">Đang tải dữ liệu…</p></div></section>
+<p class="small">Public API chỉ trả video đã xuất bản. Publish yêu cầu quyền đã duyệt, URL bằng chứng HTTPS và host video nằm trong MEDIA_HOST_ALLOWLIST. Không có quyền phân phối thì không xuất bản.</p>
+<script type="module">
+const form=document.querySelector("#video-form"),status=document.querySelector("#form-status"),root=document.querySelector("#videos"),count=document.querySelector("#count");
+const csv=value=>String(value||"").split(",").map(x=>x.trim()).filter(Boolean);
+async function api(path,options={}){const response=await fetch(path,{cache:"no-store",credentials:"same-origin",...options,headers:{"content-type":"application/json",...(options.headers||{})}});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||("HTTP "+response.status));return body}
+function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el}
+async function load(){root.replaceChildren(node("p","Đang tải…","empty"));try{const payload=await api("/admin/api/videos");const items=Array.isArray(payload.data)?payload.data:[];count.textContent=items.length+" RECORDS";root.replaceChildren();if(!items.length){root.append(node("p","Chưa có metadata. Tạo bản nháp đầu tiên ở biểu mẫu phía trên.","empty"));return}
+for(const item of items){const card=node("article",undefined,"video"),head=node("div",undefined,"video-head");head.append(node("strong",item.title),node("span",item.status+" · RIGHTS "+item.rightsStatus,"pill"));card.append(head,node("p",item.description||"Không có mô tả"),node("p","TAGS: "+(item.tags||[]).join(", ")+" · GROUPS: "+(item.groups||[]).join(", "),"meta"),node("p","VIDEO: "+(item.videoUrl||"chưa có URL")+" · RIGHTS EVIDENCE: "+(item.rightsEvidenceUrl||"chưa có"),"meta"));
+const actions=node("div",undefined,"actions");
+if(item.status==="draft"){const review=node("button","DUYỆT QUYỀN");review.addEventListener("click",async()=>{try{await api("/admin/api/videos/"+item.id+"/review",{method:"POST",body:JSON.stringify({decision:"approved",rightsEvidenceUrl:item.rightsEvidenceUrl,rightsNotes:item.rightsNotes})});status.textContent="Đã ghi nhận bước duyệt quyền cho bản nháp.";await load()}catch(e){status.textContent=e.message}});
+const publish=node("button","XUẤT BẢN");publish.addEventListener("click",async()=>{try{await api("/admin/api/videos/"+item.id+"/publish",{method:"POST",body:"{}"});status.textContent="Video đã xuất bản.";await load()}catch(e){status.textContent=e.message}});
+actions.append(review,publish)}
+card.append(actions);root.append(card)}
+}catch(e){root.replaceChildren(node("p","Không tải được CMS: "+e.message,"empty"));status.textContent=e.message}}
+form.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(form),body={title:f.get("title"),description:f.get("description"),videoUrl:f.get("videoUrl"),posterUrl:f.get("posterUrl"),tags:csv(f.get("tags")),groups:csv(f.get("groups")),rightsEvidenceUrl:f.get("rightsEvidenceUrl"),rightsNotes:f.get("rightsNotes")};try{const result=await api("/admin/api/videos",{method:"POST",body:JSON.stringify(body)});status.textContent="Đã lưu bản nháp: "+result.data.title;form.reset();await load()}catch(err){status.textContent=err.message}});
+document.querySelector("#refresh").addEventListener("click",load);load();
+</script></main></body></html>

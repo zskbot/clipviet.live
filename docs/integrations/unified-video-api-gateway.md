@@ -34,3 +34,6 @@ Provider approval alone never grants rights to every item returned by that provi
 
 ## Deployment boundary
 This change is Preview-only. Do not enable Production deployments, attach `clipviet.live`, modify DNS, change D1, or activate any provider as part of this rollout.
+
+
+Preview deployment trigger: branch is explicitly allowlisted in `clipviet-live-independent-preview`; verify the resulting deployment is tagged `preview` before testing. Production deployment remains disabled.

@@ -48,13 +48,13 @@ th{background:#111;color:#eee}td{color:#aaa}
 <main class="docs">
 <aside class="sidebar" aria-label="Điều hướng tài liệu">
 <strong>API REFERENCE</strong>
-<a href="#overview">Tổng quan</a><a href="#environments">Môi trường & Base URL</a><a href="#catalog">Catalog API</a><a href="#providers">Provider API</a><a href="#auth">Xác thực</a><a href="#cors">CORS & lỗi</a><a href="#playback">Playback & quyền</a><a href="#examples">Ví dụ tích hợp</a><a href="#limits">Giới hạn Preview</a>
+<a href="#overview">Tổng quan</a><a href="#environments">Môi trường & Base URL</a><a href="#unified-video-api">Unified Video API</a><a href="#catalog">Catalog API (legacy)</a><a href="#providers">Provider API</a><a href="#auth">Xác thực</a><a href="#cors">CORS & lỗi</a><a href="#playback">Playback & quyền</a><a href="#examples">Ví dụ tích hợp</a><a href="#limits">Giới hạn Preview</a>
 </aside>
 <section class="content">
 <p class="eyebrow">CLIPVIET / DEVELOPER DOCUMENTATION</p>
 <h1>API Reference</h1>
 <p class="lead">Tài liệu tích hợp cho ClipViet.live. Tra cứu endpoint, query parameters, phản hồi JSON, CORS và các ranh giới bảo mật của hệ thống.</p>
-<div class="callout"><strong>Trạng thái dịch vụ: Preview</strong><p>Các địa chỉ Worker bên dưới là endpoint Preview. Chưa công bố API Production tại <code>api.clipviet.live</code>. Không dùng URL Preview làm endpoint Production hoặc lưu credentials trong mã frontend.</p></div>
+<div class="callout"><strong>Trạng thái dịch vụ: Preview</strong><p>API hợp nhất hiện chỉ chạy trên Cloudflare Pages Preview. Chưa bật Production hoặc gắn domain <code>clipviet.live</code>. Không lưu credentials trong mã frontend.</p></div>
 <details class="toc-mobile"><summary>Mục lục tài liệu</summary><a href="#overview">Tổng quan</a><a href="#environments">Môi trường & Base URL</a><a href="#catalog">Catalog API</a><a href="#providers">Provider API</a><a href="#auth">Xác thực</a><a href="#cors">CORS & lỗi</a><a href="#playback">Playback & quyền</a><a href="#examples">Ví dụ tích hợp</a><a href="#limits">Giới hạn Preview</a></details>
 
 <h2 id="overview">1. Tổng quan</h2>
@@ -68,11 +68,41 @@ th{background:#111;color:#eee}td{color:#aaa}
 <pre>https://clipviet-provider-registry-preview.huynhthuongg2505-f9b.workers.dev</pre>
 <p>Trang web Cloudflare Pages Preview: <code>https://3e1ad354.clipviet-live-qa.pages.dev</code>. Hostname này chỉ được phép gọi API nếu đã nằm trong CORS allowlist của Worker.</p>
 
-<h2 id="catalog">3. Catalog API</h2>
+<h2 id="unified-video-api">3. Unified Video API</h2>
+<div class="callout"><strong>Single public read endpoint: <code>GET /api/videos</code></strong><p>Đây là API chuẩn duy nhất mà frontend ClipViet sử dụng. Năm provider API hiện được đăng ký trong cùng một gateway nhưng vẫn ở trạng thái <code>PENDING</code>; chưa có nguồn nào được cấp quyền phân phối đã xác minh, vì vậy API chưa gọi upstream và không trả URL media.</p></div>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/videos?page=1&amp;limit=30&amp;keyword={keyword}</code><p>Trả về catalog đã chuẩn hóa, phân trang thống nhất. Hiện tại trả <code>results: []</code>, trạng thái quyền và danh sách provider; chỉ các nguồn được duyệt mới được phép đóng góp dữ liệu.</p></div>
+<pre>{
+  "success": true,
+  "endpoint": "/api/videos",
+  "version": "1.0.0",
+  "mode": "rights-gated-unified",
+  "pending": true,
+  "results": [],
+  "items": [],
+  "page": 1,
+  "limit": 30,
+  "total": 0,
+  "pageCount": 0,
+  "providers": [
+    {"id":"souavzy","status":"PENDING","enabled":false},
+    {"id":"apiyutu","status":"PENDING","enabled":false},
+    {"id":"lbapi9","status":"PENDING","enabled":false},
+    {"id":"slapibf","status":"PENDING","enabled":false},
+    {"id":"jipinvip1","status":"PENDING","enabled":false}
+  ],
+  "rightsGate": {
+    "policy": "deny-by-default",
+    "perVideoApprovalRequired": true,
+    "publicPlaybackEnabled": false
+  }
+}</pre>
+<p>Không có API proxy tùy ý, tải xuống hoặc relay stream. Quyền ở cấp provider không thay thế quyền của từng video.</p>
+
+<h2 id="catalog">4. Catalog API (legacy alias)</h2>
 <div class="endpoint"><span class="method">GET</span><code class="path">/health</code><p>Kiểm tra trạng thái dịch vụ và cấu hình. Health response không phải bằng chứng rằng upstream provider hoặc video playback đang hoạt động.</p></div>
 <div class="endpoint"><span class="method">GET</span><code class="path">/api/providers</code><p>Liệt kê provider đã cấu hình và trạng thái cấu hình công khai. Không trả API key hoặc secret.</p></div>
-<div class="endpoint"><span class="method">GET</span><code class="path">/api/catalog/categories?sourceId={sourceId}</code><p>Lấy danh mục từ provider. Có thể bỏ <code>sourceId</code> để Worker áp dụng lựa chọn nguồn mặc định/failover theo cấu hình Preview.</p></div>
-<div class="endpoint"><span class="method">GET</span><code class="path">/api/catalog/videos?page=1&amp;sourceId={sourceId}&amp;keyword={keyword}&amp;categoryId={categoryId}</code><p>Truy vấn catalog có phân trang và bộ lọc tùy chọn. Tham số <code>page</code> bắt đầu từ 1.</p><pre>{
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/catalog/categories?sourceId={sourceId}</code><p>Lấy danh mục từ provider. Route cũ chỉ giữ tương thích và đang trả trạng thái chờ quyền. Ứng dụng frontend đã chuyển sang <code>/api/videos</code>.</p></div>
+<div class="endpoint"><span class="method">GET</span><code class="path">/api/catalog/videos?page=1</code><p>Truy vấn catalog có phân trang và bộ lọc tùy chọn. Tham số <code>page</code> bắt đầu từ 1.</p><pre>{
   "provider": { "id": "souavzy", "name": "Souavzy · Main" },
   "items": [],
   "page": 1,

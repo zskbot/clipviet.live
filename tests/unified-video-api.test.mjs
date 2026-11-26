@@ -12,7 +12,7 @@ test("unified video gateway has one canonical read-only contract", () => {
 
 test("all five source adapters remain disabled pending rights review", () => {
   for (const id of ["souavzy", "apiyutu", "lbapi9", "slapibf", "jipinvip1"]) {
-    assert.match(source, new RegExp('id: "' + id + '"'));
+    assert.match(source, new RegExp('"id": "' + id + '"'));
   }
   assert.match(source, /status: "PENDING"/);
   assert.match(source, /enabled: false/);

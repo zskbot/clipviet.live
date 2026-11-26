@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequest } from "../functions/api/videos.js";
+import { onRequest as onVideoIdRequest } from "../functions/api/videos/[id].js";
 
 const request = (path, method = "GET") => new Request("https://preview.example.test" + path, { method });
 
@@ -23,6 +24,18 @@ test("GET rejects invalid pagination and unsupported video IDs", async () => {
   assert.equal(invalidLimit.status, 400);
   const missing = await onRequest({ request: request("/api/videos?id=unknown-video") });
   assert.equal(missing.status, 404);
+  assert.equal(missing.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal((await missing.json()).code, "VIDEO_NOT_FOUND");
+});
+
+test("dynamic missing video path returns JSON 404 instead of Pages HTML fallback", async () => {
+  const missing = await onVideoIdRequest({
+    request: request("/api/videos/not-a-real-id"),
+    params: { id: "not-a-real-id" }
+  });
+  assert.equal(missing.status, 404);
+  assert.equal(missing.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal((await missing.json()).code, "VIDEO_NOT_FOUND");
 });
 
 test("HEAD, OPTIONS and POST have explicit HTTP semantics", async () => {

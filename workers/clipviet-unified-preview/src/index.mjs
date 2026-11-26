@@ -61,7 +61,7 @@ export default {
         service: "clipviet-unified-preview-gateway",
         environment: "preview",
         routes: ["/", "/docs", "/video", "/tag", "/group", "/api/videos", "/api/tags", "/api/groups", "/api/catalog/*", "/admin/*"],
-        admin: "cloudflare-access-mfa",
+        admin: "public-read-only-no-access",
         uploads: "disabled-no-video-r2-bucket"
       });
     }
@@ -72,8 +72,10 @@ export default {
     const frontendOrigin = origin(env.FRONTEND_ORIGIN, "FRONTEND_ORIGIN");
 
     if (path.startsWith("/admin/api/")) {
-      if (!["GET", "POST", "PUT", "DELETE", "OPTIONS"].includes(method)) return json({ error: "Method not allowed." }, 405);
-      return proxy(request, videoCmsOrigin, path, true);
+      if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+        return json({ error: "Public Admin is read-only. Write operations are disabled." }, 403);
+      }
+      return proxy(request, videoCmsOrigin, path);
     }
     if (path === "/admin" || path.startsWith("/admin/")) {
       return proxy(request, modulesOrigin, path === "/admin" ? "/admin/" : path);

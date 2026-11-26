@@ -6,11 +6,11 @@ if (!datasetId) throw new Error("Set APIFY_DATASET_ID or pass a dataset ID.");
 if (!token) throw new Error("Missing APIFY_TOKEN secret.");
 if (!/^[A-Za-z0-9]{8,64}$/.test(datasetId)) throw new Error("Invalid Apify dataset ID.");
 
-const response = await fetch(`https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?format=json&clean=true&limit=50000`, {
-  headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+const response = await fetch(\`https://api.apify.com/v2/datasets/\${encodeURIComponent(datasetId)}/items?format=json&clean=true&limit=50000\`, {
+  headers: { Authorization: \`Bearer \${token}\`, Accept: "application/json" },
   signal: AbortSignal.timeout(30000)
 });
-if (!response.ok) throw new Error(`Apify dataset fetch failed: HTTP ${response.status}`);
+if (!response.ok) throw new Error(\`Apify dataset fetch failed: HTTP \${response.status}\`);
 const raw = await response.json();
 if (!Array.isArray(raw)) throw new Error("Apify dataset response is not a JSON array.");
 
@@ -23,13 +23,13 @@ const normalizeUrl = (value) => {
     url.hash = "";
     for (const key of [...url.searchParams.keys()]) if (tracking.test(key)) url.searchParams.delete(key);
     url.searchParams.sort();
-    if (url.pathname.length > 1) url.pathname = url.pathname.replace(/\\/+$/, "");
+    if (url.pathname.length > 1) url.pathname = url.pathname.replace(/\/+$/, "");
     return url.href;
   } catch { return null; }
 };
 const getId = (url, item) => {
   const parsed = new URL(url);
-  return String(item.videoId || item.id || parsed.searchParams.get("video_key") || parsed.pathname.match(/video-(\\d+)\\.htm/i)?.[1] || parsed.pathname.split("/").filter(Boolean).at(-1) || "");
+  return String(item.videoId || item.id || parsed.searchParams.get("video_key") || parsed.pathname.match(/video-(\d+)\.htm/i)?.[1] || parsed.pathname.split("/").filter(Boolean).at(-1) || "");
 };
 const byKey = new Map();
 let invalid = 0, unsupported = 0;
@@ -46,7 +46,7 @@ for (const item of raw) {
     videoId,
     dedupeKey,
     sourceDomain: host,
-    title: String(item.title || item.name || videoId).replace(/\\s+/g, " ").trim().slice(0, 240),
+    title: String(item.title || item.name || videoId).replace(/\s+/g, " ").trim().slice(0, 240),
     canonicalUrl: candidate,
     videoUrl: candidate,
     discoveredFrom: normalizeUrl(item.discoveredFrom) || null,
@@ -57,7 +57,7 @@ for (const item of raw) {
     reviewedAt: null
   };
   const existing = byKey.get(dedupeKey);
-  if (!existing || (record.title.length > existing.title.length)) byKey.set(dedupeKey, record);
+  if (!existing || record.title.length > existing.title.length) byKey.set(dedupeKey, record);
 }
 const items = [...byKey.values()].sort((a,b)=>a.sourceDomain.localeCompare(b.sourceDomain)||a.title.localeCompare(b.title));
 const report = {
@@ -74,4 +74,4 @@ const report = {
 };
 await mkdir("artifacts", { recursive: true });
 await writeFile("artifacts/apify-crawler-review.json", JSON.stringify(report, null, 2) + "\n");
-console.log(JSON.stringify({datasetId,inputCount:report.inputCount,uniqueCount:report.uniqueCount,invalidCount:invalid,unsupportedDomainCount:unsupported,deduplicatedCount:report.deduplicatedCount},null,2));
+console.log(JSON.stringify({datasetId,inputCount:report.inputCount,uniqueCount:items.length,invalidCount:invalid,unsupportedDomainCount:unsupported,deduplicatedCount:report.deduplicatedCount},null,2));

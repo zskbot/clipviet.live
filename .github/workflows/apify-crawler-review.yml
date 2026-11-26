@@ -1,0 +1,38 @@
+name: Apify crawler review import
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset_id:
+        description: Apify dataset ID to import into the private review artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clipviet-apify-review
+  cancel-in-progress: false
+
+jobs:
+  import-review-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch and normalize Apify dataset (review-only)
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_DATASET_ID: ${{ inputs.dataset_id }}
+        run: node scripts/ingest-apify-review.mjs
+      - name: Upload private review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipviet-apify-review-${{ inputs.dataset_id }}
+          path: artifacts/apify-crawler-review.json
+          retention-days: 14
+          if-no-files-found: error

@@ -17,7 +17,7 @@ function validHttps(value) {
   try {
     const u = new URL(value);
     return u.protocol === "https:" && !u.username && !u.password && !u.port && !u.hash &&
-      u.hostname.includes(".") && u.hostname !== "localhost" && !/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(u.hostname);
+      u.hostname.includes(".") && u.hostname !== "localhost" && !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(u.hostname);
   } catch { return false; }
 }
 function unexpired(value) { const n = Date.parse(value || ""); return Number.isFinite(n) && n > Date.now(); }

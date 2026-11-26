@@ -48,15 +48,12 @@ function pageNumber(url) {
   return Number(pathMatch?.[1] || parsed.searchParams.get("page") || 1);
 }
 
-export function createRouter({ allowedDomains, maxPages, isAllowedByRobots }) {
+export function createRouter({ allowedDomains, maxPages, isAllowedByRobots, seen }) {
   const router = createCheerioRouter();
-  const seen = new Set();
-
   router.addDefaultHandler(async ({ request, $, enqueueLinks, log }) => {
     const current = new URL(request.url);
     const host = current.hostname.toLowerCase();
     if (!allowedDomains.includes(host)) return;
-
     const sourceRoot = request.userData.sourceRoot || current.origin;
     const pageDepth = Number(request.userData.pageDepth) || 1;
     const currentPage = pageNumber(request.url);
@@ -66,7 +63,6 @@ export function createRouter({ allowedDomains, maxPages, isAllowedByRobots }) {
         .filter((value) => new URL(value).origin === sourceRoot)
         .filter((value) => pageNumber(value) > currentPage)
         .sort((a, b) => pageNumber(a) - pageNumber(b))[0];
-
       if (nextUrl && await isAllowedByRobots(nextUrl)) {
         await enqueueLinks({
           urls: [nextUrl],
@@ -86,7 +82,6 @@ export function createRouter({ allowedDomains, maxPages, isAllowedByRobots }) {
       if (!canonical) return;
       const target = new URL(canonical);
       if (target.hostname.toLowerCase() !== host || !videoCandidate(canonical, host)) return;
-
       const title = String($(node).attr("title") || $(node).text() || "").replace(/\s+/g, " ").trim().slice(0, 240);
       const videoId = target.searchParams.get("video_key")
         || target.pathname.match(/video-(\d+)\.htm/i)?.[1]
@@ -95,7 +90,6 @@ export function createRouter({ allowedDomains, maxPages, isAllowedByRobots }) {
       const dedupeKey = host + ":" + String(videoId).toLowerCase();
       if (seen.has(dedupeKey)) return;
       seen.add(dedupeKey);
-
       output.push({
         recordType: "video_page",
         videoUrl: canonical,
@@ -109,10 +103,8 @@ export function createRouter({ allowedDomains, maxPages, isAllowedByRobots }) {
         rightsStatus: "PENDING"
       });
     });
-
     for (const record of output) await Actor.pushData(record);
     log.info("Listing processed", { url: request.url, candidates: output.length, pageDepth, maxPages });
   });
-
   return router;
 }

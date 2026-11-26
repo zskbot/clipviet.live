@@ -99,7 +99,7 @@ function render() {
   const params = new URLSearchParams({ page: String(currentPage) });
   if (query.trim()) params.set("keyword", query.trim().slice(0, 100));
   if (activeCategoryId) params.set("categoryId", activeCategoryId);
-  const url = API_BASE + "/api/catalog/videos?" + params.toString();
+  const url = API_BASE + "/api/videos?" + params.toString();
   count.textContent = "ĐANG TẢI…";
   empty.hidden = true;
   fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })

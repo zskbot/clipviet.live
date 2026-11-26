@@ -63,29 +63,14 @@ export async function onRequest({ request }) {
   }
 
   const url = new URL(request.url);
-  const params = new URLSearchParams(url.searchParams);
-  const aliases = [["keyword", "q"], ["search", "q"], ["pageSize", "limit"], ["per_page", "limit"], ["currentPage", "page"]];
-  for (const [legacy, canonical] of aliases) {
-    if (!params.has(canonical) && params.has(legacy)) params.set(canonical, params.get(legacy));
-  }
-  const rawPage = Number(params.get("page") || "1");
-  const rawLimit = Number(params.get("limit") || "30");
-  const query = (params.get("q") || "").trim().slice(0, 120);
-  const categoryId = (params.get("categoryId") || "").trim().slice(0, 120);
-  const category = (params.get("category") || "").trim().slice(0, 80);
+  const params = url.searchParams;
+  const rawPage = Number.parseInt(params.get("page") || params.get("currentPage") || "1", 10);
+  const rawLimit = Number.parseInt(params.get("limit") || params.get("pageSize") || params.get("per_page") || "30", 10);
+  const page = Number.isSafeInteger(rawPage) ? Math.max(1, Math.min(rawPage, 10000)) : 1;
+  const limit = Number.isSafeInteger(rawLimit) ? Math.max(1, Math.min(rawLimit, 100)) : 30;
+  const query = (params.get("q") || params.get("keyword") || params.get("search") || "").trim().slice(0, 120);
+  const categoryId = (params.get("categoryId") || params.get("category") || "").trim().slice(0, 120);
   const videoId = params.get("id");
-  if (!Number.isSafeInteger(rawPage) || rawPage < 1 || rawPage > 10000) {
-    return json({ success: false, error: "Page must be an integer between 1 and 10000." }, 400, request.method);
-  }
-  if (!Number.isSafeInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) {
-    return json({ success: false, error: "Limit must be an integer between 1 and 100." }, 400, request.method);
-  }
-  if ((params.get("q") || "").trim().length > 120 || (params.get("categoryId") || "").trim().length > 120 ||
-      (params.get("category") || "").trim().length > 80) {
-    return json({ success: false, error: "Search or category filter is too long." }, 400, request.method);
-  }
-  const page = rawPage;
-  const limit = rawLimit;
 
   if (videoId) {
     return json({
@@ -114,6 +99,7 @@ export async function onRequest({ request }) {
     total: 0,
     pageCount: 0,
     hasMore: false,
+    filters: { query, categoryId },
     source: "unified-gateway",
     providers: PROVIDERS,
     providerCount: PROVIDERS.length,

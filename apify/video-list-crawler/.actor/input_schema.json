@@ -1,0 +1,54 @@
+{
+  "title": "ClipViet Video List Crawler input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "startUrls": {
+      "title": "Listing start URLs",
+      "type": "array",
+      "editor": "requestListSources",
+      "description": "HTTPS listing pages from explicitly allowed domains.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "URL",
+            "editor": "textfield"
+          }
+        }
+      }
+    },
+    "maxPages": {
+      "title": "Maximum listing pages per source",
+      "type": "integer",
+      "default": 2,
+      "minimum": 1,
+      "maximum": 100
+    },
+    "maxRequestsPerCrawl": {
+      "title": "Maximum requests per run",
+      "type": "integer",
+      "default": 100,
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "allowedDomains": {
+      "title": "Allowed domains",
+      "type": "array",
+      "default": [
+        "hsex.men",
+        "sexonline.blog",
+        "sexvn.co",
+        "viet69.be",
+        "javhay.onl"
+      ],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "startUrls"
+  ]
+}

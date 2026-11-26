@@ -24,7 +24,12 @@ for (const entry of startUrls) {
   if (await isAllowedByRobots(url.href)) await queue.addRequest({ url: url.href, userData: { sourceRoot: url.origin, pageDepth: 1 } });
 }
 
-const router = createRouter({ allowedDomains, maxPages, isAllowedByRobots });
+// A named Apify Key-Value Store persists dedupe keys across separate Actor runs.
+const dedupeStore = await Actor.openKeyValueStore("clipviet-video-list-crawler-dedupe");
+const persistedKeys = await dedupeStore.getValue("SEEN_KEYS");
+const seen = new Set(Array.isArray(persistedKeys) ? persistedKeys : []);
+const router = createRouter({ allowedDomains, maxPages, isAllowedByRobots, seen });
+
 const crawler = new CheerioCrawler({
   requestQueue: queue,
   maxRequestsPerCrawl,
@@ -43,4 +48,5 @@ const crawler = new CheerioCrawler({
   }
 });
 await crawler.run();
+await dedupeStore.setValue("SEEN_KEYS", [...seen]);
 await Actor.exit();

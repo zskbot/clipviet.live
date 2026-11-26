@@ -3,33 +3,37 @@
 ## Ownership
 
 - `zskbot/clipviet` is the public-facing frontend source.
-- `zskbot/clipviet.live` supplies the documentation and secondary modules.
-- Cloudflare Workers provide the Preview path gateway and read-only catalog API.
-- GitLab CI verifies source changes; it is not the public website origin.
+- `zskbot/clipviet.live` supplies docs, admin and secondary modules.
+- Cloudflare Workers provide path routing and the Access-protected video metadata CMS.
+- Cloudflare D1 stores Preview metadata. The existing OpenNext R2 cache bucket is not a media bucket.
+- GitLab CI validates source; it is not the public website origin.
 
 ## Preview path map
 
-| Path | Preview destination | Access |
+| Path | Destination | Access |
 |---|---|---|
-| `/` | Primary Pages frontend | Public |
-| `/docs` | Secondary repository API documentation | Public |
-| `/video` | Secondary video module | Public |
-| `/tag` | Tag/category module | Public |
-| `/group` | Group/category module | Public |
-| `/api/catalog/*` | `clipviet-catalog-api-preview` | Read-only |
-| `/admin/*` | Locked until Access + metadata CMS acceptance | Restricted |
-| `/upload/*` | Disabled until a dedicated video storage bucket is approved | Disabled |
+| `/` | Primary Pages Preview from `zskbot/clipviet` | Public |
+| `/docs` | Secondary repo API docs | Public |
+| `/video` | Published video library | Public |
+| `/tag` | Published video tags | Public |
+| `/group` | Published video groups | Public |
+| `/api/videos`, `/api/tags`, `/api/groups` | D1-backed public CMS API | Published records only |
+| `/api/catalog/*` | Secondary Pages Functions rights gate | Deny by default |
+| `/admin/*` | D1 metadata CMS | Cloudflare Access MFA |
+| `/upload/*` | Disabled | No dedicated video R2 bucket |
 
-## Video update lifecycle
+## Metadata lifecycle
 
-The current Preview can read provider metadata through the read-only catalog Worker. It does not write catalog records and does not upload video bytes. The existing R2 bucket is an OpenNext cache bucket, not a video bucket. Do not bind it to video uploads.
-
-Before enabling writes, create a dedicated Preview metadata workflow with Cloudflare Access JWT validation, rights evidence fields, audit records, and a separate video storage decision. Public publishing must remain deny-by-default until distribution rights are verified.
+1. Admin creates or edits a draft in D1 Preview.
+2. Rights review records an HTTPS evidence URL and review notes.
+3. Publishing is allowed only after rights status is approved and the video host is in `MEDIA_HOST_ALLOWLIST`.
+4. Public APIs return only published records.
+5. Binary upload remains disabled until a dedicated R2 video bucket is approved and provisioned.
 
 ## Safety
 
-- This branch and Worker are Preview-only.
-- Do not attach `clipviet.live` or change DNS/Worker routes.
-- Do not deploy or promote Production.
-- Do not expose the static admin utility as a privileged CMS.
-- Do not use the existing cache bucket for media uploads.
+- Preview Worker has only a `workers.dev` hostname; no zone route or custom domain.
+- Do not attach `clipviet.live`, change DNS, promote Pages, or deploy Production.
+- Admin is protected by Cloudflare Access; no PIN is embedded in source.
+- Do not reuse `clipviet-live-opennext-cache` for media files.
+- External provider catalog stays disabled until provider-level and per-video rights are verified.

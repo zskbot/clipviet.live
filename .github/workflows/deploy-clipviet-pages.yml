@@ -7,6 +7,8 @@ on:
       - "site/**"
       - "scripts/sync-pages-catalog.mjs"
       - "scripts/discover-video-sources.mjs"
+      - "scripts/build-approved-apify-catalog.mjs"
+      - "data/apify-rights-approved.json"
       - "data/video-provider-discovery.json"
       - ".github/workflows/deploy-clipviet-pages.yml"
   schedule:
@@ -52,6 +54,9 @@ jobs:
           CATALOG_PAGES_PER_PROVIDER: ${{ inputs.pages_per_provider || '20' }}
         run: node scripts/sync-pages-catalog.mjs
 
+      - name: Merge only human-approved Apify records into public catalog
+        run: node scripts/build-approved-apify-catalog.mjs
+
       - name: Validate generated catalogue, discovery report and static pages
         run: |
           node --input-type=module <<'NODE'
@@ -61,7 +66,9 @@ jobs:
           if (!Array.isArray(catalog.videos)) throw new Error('catalog.videos must be an array');
           if (!Array.isArray(catalog.providers) || catalog.providers.length !== 5) throw new Error('expected exactly five provider registry records');
           if (catalog.providers.some(provider => provider.status !== 'PENDING' || provider.rightsStatus !== 'PENDING')) throw new Error('all five providers must remain PENDING until rights evidence is reviewed');
-          if (catalog.videos.length > 0) throw new Error('public catalog must remain empty while all providers are PENDING');
+          if (catalog.videos.length > 0) throw new Error('public AppleCMS catalog must remain empty while all providers are PENDING');
+          if (!Array.isArray(catalog.crawlerVideos)) throw new Error('catalog.crawlerVideos must be an array');
+          if (catalog.crawlerVideos.some(video => video.rightsStatus !== 'APPROVED' || !video.rightsEvidenceUrl || !video.reviewedBy || !video.reviewedAt)) throw new Error('unapproved crawler record found in public catalog');
           if (!Array.isArray(discovery.results) || discovery.results.length < 1) throw new Error('provider discovery report is missing');
           console.log('Validated five PENDING providers and', catalog.videos.length, 'public videos; discovered', discovery.results.length, 'official provider documentation candidates.');
           NODE

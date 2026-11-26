@@ -1,4 +1,4 @@
-import { createCheerioRouter } from "crawlee";
+import { Actor } from "apify";\nimport { createCheerioRouter } from "crawlee";
 
 const excludedPath = /\/(?:category|categories|tag|tags|page|author|search|feed|wp-json|wp-admin|login|register)(?:\/|$)/i;
 const trackingParams = /^(?:utm_.+|fbclid|gclid|ref|source|campaign)$/i;
@@ -40,7 +40,7 @@ function paginationCandidates(url, host, $) {
   return [...links];
 }
 
-export function createRouter({ allowedDomains, maxPages }) {
+export function createRouter({ allowedDomains, maxPages, isAllowedByRobots }) {
   const router = createCheerioRouter();
   router.addDefaultHandler(async ({ request, $, enqueueLinks, log }) => {
     const current = new URL(request.url);
@@ -54,7 +54,7 @@ export function createRouter({ allowedDomains, maxPages }) {
       const nextPages = paginationCandidates(request.url, host, $)
         .filter((value) => new URL(value).origin === sourceRoot)
         .slice(0, 20);
-      for (const nextUrl of nextPages) {
+      for (const nextUrl of nextPages) {\n        if (!(await isAllowedByRobots(nextUrl))) continue;
         await enqueueLinks({
           urls: [nextUrl],
           transformRequestFunction: (next) => {
@@ -78,7 +78,7 @@ export function createRouter({ allowedDomains, maxPages }) {
       const key = host + ":" + String(videoId).toLowerCase();
       count += 1;
       // Dataset consumers deduplicate again across runs using canonicalUrl/videoId.
-      Actor.pushData({
+      output.push({
         recordType: "video_page",
         videoUrl: canonical,
         canonicalUrl: canonical,

@@ -12,6 +12,7 @@ test("GET keeps results/items aliases and normalizes legacy frontend query param
   assert.deepEqual(payload.items, []);
   assert.equal(payload.page, 2);
   assert.equal(payload.limit, 12);
+  assert.equal(payload.category, "sci-fi");
   assert.deepEqual(payload.filters, { query: "demo", categoryId: "sci-fi" });
   assert.equal(payload.rightsGate.policy, "deny-by-default");
 });

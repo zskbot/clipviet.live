@@ -1,0 +1,10 @@
+{
+  "actorSpecification": 1,
+  "name": "clipviet-video-list-crawler",
+  "title": "ClipViet Video List Crawler",
+  "version": "0.1.0",
+  "buildTag": "latest",
+  "minMemoryMbytes": 256,
+  "maxMemoryMbytes": 1024,
+  "environmentVariables": {}
+}

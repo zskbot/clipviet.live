@@ -10,6 +10,7 @@ test("legacy aliases normalize to the unified API response contract", async () =
   const body = await response.json();
   assert.equal(response.status, 200);
   assert.equal(body.query, "hello");
+  assert.equal(body.category, "drama");
   assert.equal(body.categoryId, "drama");
   assert.equal(body.page, 2);
   assert.equal(body.limit, 20);

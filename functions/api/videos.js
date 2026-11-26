@@ -86,7 +86,7 @@ export async function onRequest({ request }) {
     success: true,
     endpoint: "/api/videos",
     query,
-    category,
+    category: categoryId,
     categoryId,
     version: "1.0.0",
     mode: "rights-gated-unified",

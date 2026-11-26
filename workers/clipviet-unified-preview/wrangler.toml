@@ -7,8 +7,8 @@ preview_urls = false
 [vars]
 ENVIRONMENT = "preview"
 # Fill these with the exact branch deployment origins after both Pages Preview builds finish.
-FRONTEND_ORIGIN = "https://preview-clipviet-unified-routing-2026-11-27.clipviet-live-preview.pages.dev"
-MODULES_ORIGIN = "https://preview-clipviet-unified-routing-2026-11-27.clipviet-live-independent-preview.pages.dev"
+FRONTEND_ORIGIN = "https://9a04d6b1.clipviet-live-qa.pages.dev"
+MODULES_ORIGIN = "https://3f322c89.clipviet-live-independent-preview.pages.dev"
 CATALOG_API_ORIGIN = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev"
 
 # No routes, custom domains, production bindings, secrets, or R2 video bucket.

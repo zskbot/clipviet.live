@@ -21,39 +21,6 @@ const safeArray = value => {
 const nowIso = () => new Date().toISOString();
 const slugify = value => String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 140);
 
-async function verifyAccess(request, env) {
-  const token = request.headers.get("cf-access-jwt-assertion") || "";
-  const parts = token.split(".");
-  if (parts.length !== 3 || !env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return false;
-  try {
-    const header = decodeJson(parts[0]);
-    const claims = decodeJson(parts[1]);
-    if (header.alg !== "RS256" || !header.kid) return false;
-    const issuer = "https://" + env.ACCESS_TEAM_DOMAIN;
-    if (claims.iss !== issuer || !Array.isArray(claims.aud) || !claims.aud.includes(env.ACCESS_AUD)) return false;
-    const now = Math.floor(Date.now() / 1000);
-    if (!Number.isFinite(claims.exp) || claims.exp <= now) return false;
-    if (claims.nbf && claims.nbf > now + 30) return false;
-    const response = await fetch(issuer + "/cdn-cgi/access/certs", { headers: { accept: "application/json" }, cf: { cacheTtl: 300 } });
-    if (!response.ok) return false;
-    const jwks = await response.json();
-    const jwk = (jwks.keys || []).find(key => key.kid === header.kid && key.kty === "RSA");
-    if (!jwk) return false;
-    const publicKey = await crypto.subtle.importKey("jwk", jwk, {
-      name: "RSASSA-PKCS1-v1_5",
-      hash: "SHA-256"
-    }, false, ["verify"]);
-    return await crypto.subtle.verify(
-      "RSASSA-PKCS1-v1_5",
-      publicKey,
-      decodePart(parts[2]),
-      encoder.encode(parts[0] + "." + parts[1])
-    );
-  } catch {
-    return false;
-  }
-}
-
 function allowedMediaUrl(value, env) {
   if (!value) return true;
   let url;
@@ -105,9 +72,6 @@ function videoRow(row) {
   };
 }
 
-async function adminRequired(request, env) {
-  return await verifyAccess(request, env);
-}
 
 async function handle(request, env) {
   const url = new URL(request.url);
@@ -138,11 +102,13 @@ async function handle(request, env) {
   }
 
   if (!path.startsWith("/admin/api/")) return json({ error: "Not found." }, 404);
-  if (!await adminRequired(request, env)) return json({ error: "Cloudflare Access authentication required." }, 401);
-
   if (path === "/admin/api/videos" && request.method === "GET") {
     const rows = await env.DB.prepare("SELECT * FROM clipviet_videos ORDER BY updated_at DESC LIMIT 200").all();
     return json({ data: (rows.results || []).map(videoRow), count: rows.results?.length || 0 });
+  }
+
+  if (path.startsWith("/admin/api/")) {
+    return json({ error: "Public Admin is read-only. Create, edit, review, publish and delete operations are disabled." }, 403);
   }
 
   if (path === "/admin/api/videos" && request.method === "POST") {

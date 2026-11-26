@@ -48,7 +48,7 @@ th{background:#111;color:#eee}td{color:#aaa}
 <main class="docs">
 <aside class="sidebar" aria-label="Điều hướng tài liệu">
 <strong>API REFERENCE</strong>
-<a href="#overview">Tổng quan</a><a href="#environments">Môi trường & Base URL</a><a href="#unified-video-api">Unified Video API</a><a href="#catalog">Catalog API (legacy)</a><a href="#providers">Provider API</a><a href="#auth">Xác thực</a><a href="#cors">CORS & lỗi</a><a href="#playback">Playback & quyền</a><a href="#examples">Ví dụ tích hợp</a><a href="#limits">Giới hạn Preview</a>
+<a href="#overview">Tổng quan</a><a href="#environments">Môi trường & Base URL</a><a href="#unified-video-api">Unified Video API</a><a href="#catalog">Catalog API (legacy)</a><a href="#providers">Provider Registry</a><a href="#auth">Xác thực</a><a href="#cors">CORS & lỗi</a><a href="#playback">Playback & quyền</a><a href="#examples">Ví dụ tích hợp</a><a href="#limits">Giới hạn Preview</a>
 </aside>
 <section class="content">
 <p class="eyebrow">CLIPVIET / DEVELOPER DOCUMENTATION</p>
@@ -111,16 +111,15 @@ th{background:#111;color:#eee}td{color:#aaa}
   "limit": 20
 }</pre></div>
 
-<h2 id="providers">4. Provider API</h2>
-<div class="endpoint"><span class="method">GET</span><code class="path">/api/providers/{sourceId}/categories</code><p>Lấy danh mục của một provider cụ thể.</p></div>
-<div class="endpoint"><span class="method">GET</span><code class="path">/api/providers/{sourceId}/videos?page=1&amp;keyword={keyword}&amp;categoryId={categoryId}</code><p>Lấy danh sách video của provider, hỗ trợ phân trang và lọc.</p></div>
-<div class="endpoint"><span class="method">GET</span><code class="path">/api/providers/{sourceId}/videos/{videoId}</code><p>Lấy metadata chi tiết video từ provider đã cấu hình. Không đảm bảo mọi video đều có URL phát hợp lệ.</p></div>
+<h2 id="providers">5. Provider Registry</h2>
+<p>Provider IDs được công bố trong payload của <code>GET /api/videos</code> để ứng dụng chỉ cần một endpoint. Các route upstream riêng theo từng provider không phải public contract của website và không được frontend gọi trực tiếp.</p>
+<div class="callout"><strong>Toàn bộ adapter đang chờ duyệt</strong><p>Năm nguồn bên dưới đều <code>PENDING</code>, <code>enabled=false</code>, <code>rightsApproved=false</code>. Chúng chưa được gọi upstream, chưa có dữ liệu video và không được phép phát công khai.</p></div>
 <h3>Provider IDs đã khai báo trong tài liệu Preview</h3>
 <div class="grid">
 <div class="card"><b>souavzy</b><p>Souavzy · Main</p></div><div class="card"><b>apiyutu</b><p>ApiYutu · Backup 1</p></div><div class="card"><b>lbapi9</b><p>LBApi9 · Backup 2</p></div><div class="card"><b>slapibf</b><p>Slapibf · Backup 3</p></div><div class="card"><b>jipinvip1</b><p>JipinVIP1 · Backup 4</p></div>
 </div>
 
-<h2 id="auth">5. Xác thực & quản trị</h2>
+<h2 id="auth">6. Xác thực & quản trị</h2>
 <p>Provider Registry Preview cung cấp luồng đăng nhập quản trị bằng session cookie HttpOnly. Không gửi token bootstrap hoặc mật khẩu qua query string, URL, log frontend hay kho mã nguồn.</p>
 <div class="callout"><strong>Quan trọng: Auth là same-origin, không phải CORS API</strong><p>Toàn bộ luồng đăng nhập và quản trị phải được gọi trên chính origin của Provider Registry Worker. Mở trang đăng nhập trực tiếp tại <code>https://clipviet-provider-registry-preview.huynhthuongg2505-f9b.workers.dev/login</code>; sau khi đăng nhập, tiếp tục dùng cùng hostname tại <code>/admin</code>. Không gọi các route Auth từ origin Cloudflare Pages hoặc một domain frontend khác.</p><p>Trong mã nguồn Worker, <code>handleAuth()</code> từ chối request có header <code>Origin</code> khác origin của Worker đối với các thao tác POST, trả <code>403 Origin mismatch</code>. Các route Auth được dispatch trước middleware CORS của Provider Registry; do đó CORS allowlist của API registry không cấp quyền cross-origin cho Auth.</p><p>Cookie phiên <code>cv_session</code> là cookie host-only với thuộc tính <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Strict</code>. Trình duyệt gửi cookie tự động khi điều hướng và gửi request same-origin; không đọc hoặc sao chép cookie từ JavaScript.</p></div>
 <table><thead><tr><th>Method</th><th>Path</th><th>Mô tả</th></tr></thead><tbody>
@@ -132,22 +131,20 @@ th{background:#111;color:#eee}td{color:#aaa}
 </tbody></table>
 <p>API quản trị yêu cầu role phù hợp. Các thao tác duyệt connector/quyền nội dung cần vai trò và bằng chứng tương ứng; không sử dụng endpoint quản trị như API catalog công khai.</p>
 
-<h2 id="cors">6. CORS, HTTP và lỗi</h2>
+<h2 id="cors">7. CORS, HTTP và lỗi</h2>
 <ul><li>Chỉ dùng HTTPS.</li><li>Browser cross-origin request cần Origin khớp allowlist; preflight sử dụng <code>OPTIONS</code>.</li><li>Không thêm path, query hoặc fragment vào CORS origin.</li><li>Không đưa Authorization token hoặc bootstrap secret vào URL.</li><li>Client cần xử lý tối thiểu các mã <code>400</code>, <code>401</code>, <code>403</code>, <code>404</code>, <code>409</code>, <code>429</code> và <code>5xx</code>.</li></ul>
 <table><thead><tr><th>Status</th><th>Ý nghĩa</th></tr></thead><tbody><tr><td>400</td><td>Tham số hoặc request không hợp lệ.</td></tr><tr><td>401</td><td>Chưa xác thực hoặc session không hợp lệ.</td></tr><tr><td>403</td><td>Origin, role hoặc policy không cho phép.</td></tr><tr><td>404</td><td>Không tìm thấy tài nguyên/route.</td></tr><tr><td>409</td><td>Xung đột trạng thái hoặc điều kiện nghiệp vụ chưa đạt.</td></tr><tr><td>429</td><td>Vượt giới hạn thử đăng nhập.</td></tr><tr><td>5xx</td><td>Lỗi dịch vụ hoặc upstream.</td></tr></tbody></table>
 
-<h2 id="playback">7. Playback & quyền phân phối</h2>
+<h2 id="playback">8. Playback & quyền phân phối</h2>
 <p>Catalog API chỉ cung cấp metadata/đường dẫn do upstream trả về. Trình phát phải kiểm tra HTTPS, MIME, HLS/MP4 và khả năng tương thích thiết bị. Không proxy hoặc relay media nếu chưa có thiết kế và quyền phù hợp.</p>
 <div class="callout"><strong>Rights gate</strong><p>Provider hoặc nội dung ở trạng thái <code>PENDING</code> không được coi là đã được cấp quyền. Chỉ phát nội dung có bằng chứng sở hữu/cấp phép, phạm vi sử dụng, khu vực và thời hạn còn hiệu lực được xác minh.</p></div>
 <p>Safari trên iPhone có thể phát HLS native khi media server hỗ trợ. Cần kiểm thử thiết bị thực tế; tài liệu này không tuyên bố playback đã được nghiệm thu.</p>
 
-<h2 id="examples">8. Ví dụ tích hợp</h2>
+<h2 id="examples">9. Ví dụ tích hợp</h2>
 <h3>Fetch danh sách video</h3>
-<pre>const API = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
-
-const url = new URL("/api/catalog/videos", API);
+<pre>const url = new URL("/api/videos", window.location.origin);
 url.searchParams.set("page", "1");
-url.searchParams.set("sourceId", "souavzy");
+url.searchParams.set("limit", "30");
 
 const response = await fetch(url, {
   method: "GET",
@@ -155,17 +152,17 @@ const response = await fetch(url, {
 });
 
 if (!response.ok) {
-  throw new Error(`Catalog API error: ${response.status}`);
+  throw new Error(`Video API error: ${response.status}`);
 }
 
 const catalog = await response.json();
-console.log(catalog.items);</pre>
+console.log(catalog.results, catalog.providers, catalog.rightsGate);</pre>
 <h3>Kiểm tra API health</h3>
 <pre>curl -i \
   -H "Accept: application/json" \
   "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev/health"</pre>
 
-<h2 id="limits">9. Giới hạn và trạng thái phát hành</h2>
+<h2 id="limits">10. Giới hạn và trạng thái phát hành</h2>
 <ul><li>Tài liệu này mô tả API Preview, không phải cam kết SLA hoặc API Production.</li><li>Không có Production API base URL được xác nhận trong bản phát hành này.</li><li>Provider status và rights status phải được kiểm tra trực tiếp; không suy luận từ việc provider xuất hiện trong danh sách.</li><li>Không công bố API key, Telegram token, bootstrap token hoặc thông tin đăng nhập.</li><li>Đường dẫn API có thể thay đổi khi Worker contract được cập nhật; hãy đối chiếu với bản triển khai thực tế trước khi tích hợp Production.</li></ul>
 <p><a class="primary-link" href="../diagnostics/">MỞ TRANG KIỂM TRA TRÌNH DUYỆT ↗</a></p>
 </section>

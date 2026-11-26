@@ -181,12 +181,14 @@ async function handle(request, env) {
     const description = String(body.description ?? existing.description).trim().slice(0,5000);
     const videoUrl = String(body.videoUrl ?? existing.video_url).trim();
     const posterUrl = String(body.posterUrl ?? existing.poster_url).trim();
-    if (title.length < 2 || title.length > 160 || !validHttpsUrl(videoUrl) || !validHttpsUrl(posterUrl)) return json({ error: "Title or HTTPS media URL is invalid." }, 400);
+    const rightsEvidenceUrl = String(body.rightsEvidenceUrl ?? existing.rights_evidence_url).trim();
+    const rightsNotes = String(body.rightsNotes ?? existing.rights_notes).trim().slice(0,2000);
+    if (title.length < 2 || title.length > 160 || !validHttpsUrl(videoUrl) || !validHttpsUrl(posterUrl) || !validHttpsUrl(rightsEvidenceUrl)) return json({ error: "Title or HTTPS URL is invalid." }, 400);
     const slug = slugify(body.slug || title) || existing.slug;
     const now = nowIso();
     try {
-      await env.DB.prepare("UPDATE clipviet_videos SET slug=?,title=?,description=?,video_url=?,poster_url=?,tags_json=?,groups_json=?,updated_at=? WHERE id=?")
-        .bind(slug,title,description,videoUrl,posterUrl,JSON.stringify(cleanList(body.tags ?? safeArray(existing.tags_json))),JSON.stringify(cleanList(body.groups ?? safeArray(existing.groups_json))),now,id).run();
+      await env.DB.prepare("UPDATE clipviet_videos SET slug=?,title=?,description=?,video_url=?,poster_url=?,tags_json=?,groups_json=?,rights_evidence_url=?,rights_notes=?,updated_at=? WHERE id=?")
+        .bind(slug,title,description,videoUrl,posterUrl,JSON.stringify(cleanList(body.tags ?? safeArray(existing.tags_json))),JSON.stringify(cleanList(body.groups ?? safeArray(existing.groups_json))),rightsEvidenceUrl,rightsNotes,now,id).run();
     } catch { return json({ error: "Could not update draft. The slug may already exist." }, 409); }
     const row = await env.DB.prepare("SELECT * FROM clipviet_videos WHERE id=?").bind(id).first();
     return json({ ok: true, data: videoRow(row) });

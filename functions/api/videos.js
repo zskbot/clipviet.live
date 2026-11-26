@@ -43,6 +43,7 @@ function json(data, status = 200, method = "GET") {
     "x-content-type-options": "nosniff",
     "referrer-policy": "no-referrer"
   };
+  if (status === 405) headers.allow = "GET, HEAD, OPTIONS";
   return new Response(method === "HEAD" ? null : JSON.stringify(data), { status, headers });
 }
 

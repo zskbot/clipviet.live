@@ -1,0 +1,15 @@
+{
+  "name": "clipviet-video-list-crawler",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Metadata-only Apify crawler for ClipViet; collects public video page URLs, never media streams.",
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "apify": "^3.4.0",
+    "crawlee": "^3.13.0",
+    "cheerio": "^1.0.0"
+  }
+}

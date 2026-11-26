@@ -73,5 +73,5 @@ const report = {
   items
 };
 await mkdir("artifacts", { recursive: true });
-await writeFile("artifacts/apify-crawler-review.json", JSON.stringify(report, null, 2) + "\\n");
+await writeFile("artifacts/apify-crawler-review.json", JSON.stringify(report, null, 2) + "\n");
 console.log(JSON.stringify({datasetId,inputCount:report.inputCount,uniqueCount:report.uniqueCount,invalidCount:invalid,unsupportedDomainCount:unsupported,deduplicatedCount:report.deduplicatedCount},null,2));

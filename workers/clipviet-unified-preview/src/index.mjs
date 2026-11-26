@@ -36,14 +36,11 @@ async function proxy(request, targetOrigin, targetPath, preserveAccess = false) 
   const incoming = new URL(request.url);
   const target = new URL(targetPath + incoming.search, targetOrigin);
   const method = request.method.toUpperCase();
-  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
-    return json({ error: "Read-only Preview gateway. Write operations are disabled." }, 405);
-  }
-  const upstream = new Request(target, {
-    method,
-    headers: copyHeaders(request, preserveAccess),
-    redirect: "manual"
-  });
+  const allowed = preserveAccess ? ["GET", "HEAD", "OPTIONS", "POST", "PUT", "DELETE"] : ["GET", "HEAD", "OPTIONS"];
+  if (!allowed.includes(method)) return json({ error: "Method not allowed by Preview gateway." }, 405);
+  const init = { method, headers: copyHeaders(request, preserveAccess), redirect: "manual" };
+  if (preserveAccess && !["GET", "HEAD"].includes(method) && request.body) init.body = request.body;
+  const upstream = new Request(target, init);
   const response = await fetch(upstream);
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");
@@ -99,8 +96,6 @@ export default {
       return json({ error: "API route not available in Preview." }, 404);
     }
 
-    const modulesOrigin = origin(env.MODULES_ORIGIN, "MODULES_ORIGIN");
-    const frontendOrigin = origin(env.FRONTEND_ORIGIN, "FRONTEND_ORIGIN");
     if (path === "/docs" || path.startsWith("/docs/")) {
       const suffix = path.slice("/docs".length);
       return proxy(request, modulesOrigin, "/api-docs/" + suffix.replace(/^\//, ""));

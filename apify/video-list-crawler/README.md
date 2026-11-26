@@ -16,7 +16,7 @@ This directory is the repository source for the metadata-only crawler. It does n
 - `javhay.onl`: root-level slug candidates; taxonomy paths excluded.
 - `buomtv.biz`, `xnhau.plus`: unverified/timeouts in the supplied test notes; do not mark healthy until separately tested.
 
-The crawler respects robots.txt, same-host navigation, request limits, and HTTPS where available. Candidate links are not proof that a page is a video or that distribution is authorized. Every output record has `rightsStatus: "PENDING"`.
+The crawler checks robots.txt before queuing listing pages and pagination links, restricts navigation to the same host, enforces request limits, and requires HTTPS for start URLs. Candidate links are not proof that a page is a video or that distribution is authorized. Every output record has `rightsStatus: "PENDING"`.
 
 ## Run
 Use the Apify Console or Apify CLI with the dependencies in this directory. Do not commit API tokens. Example input:

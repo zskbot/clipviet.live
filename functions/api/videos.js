@@ -52,7 +52,8 @@ export async function onRequest({ request }) {
       status: 204,
       headers: {
         "allow": "GET, HEAD, OPTIONS",
-        "access-control-max-age": "600"
+        "access-control-max-age": "600",
+        "access-control-allow-methods": "GET, HEAD, OPTIONS"
       }
     });
   }
@@ -61,11 +62,29 @@ export async function onRequest({ request }) {
   }
 
   const url = new URL(request.url);
-  const rawPage = Number.parseInt(url.searchParams.get("page") || "1", 10);
-  const rawLimit = Number.parseInt(url.searchParams.get("limit") || "30", 10);
-  const page = Number.isSafeInteger(rawPage) ? Math.max(1, Math.min(rawPage, 10000)) : 1;
-  const limit = Number.isSafeInteger(rawLimit) ? Math.max(1, Math.min(rawLimit, 100)) : 30;
-  const videoId = url.searchParams.get("id");
+  const params = new URLSearchParams(url.searchParams);
+  const aliases = [["keyword", "q"], ["search", "q"], ["pageSize", "limit"], ["per_page", "limit"], ["currentPage", "page"]];
+  for (const [legacy, canonical] of aliases) {
+    if (!params.has(canonical) && params.has(legacy)) params.set(canonical, params.get(legacy));
+  }
+  const rawPage = Number(params.get("page") || "1");
+  const rawLimit = Number(params.get("limit") || "30");
+  const query = (params.get("q") || "").trim().slice(0, 120);
+  const categoryId = (params.get("categoryId") || "").trim().slice(0, 120);
+  const category = (params.get("category") || "").trim().slice(0, 80);
+  const videoId = params.get("id");
+  if (!Number.isSafeInteger(rawPage) || rawPage < 1 || rawPage > 10000) {
+    return json({ success: false, error: "Page must be an integer between 1 and 10000." }, 400, request.method);
+  }
+  if (!Number.isSafeInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) {
+    return json({ success: false, error: "Limit must be an integer between 1 and 100." }, 400, request.method);
+  }
+  if ((params.get("q") || "").trim().length > 120 || (params.get("categoryId") || "").trim().length > 120 ||
+      (params.get("category") || "").trim().length > 80) {
+    return json({ success: false, error: "Search or category filter is too long." }, 400, request.method);
+  }
+  const page = rawPage;
+  const limit = rawLimit;
 
   if (videoId) {
     return json({
@@ -80,6 +99,9 @@ export async function onRequest({ request }) {
   return json({
     success: true,
     endpoint: "/api/videos",
+    query,
+    category,
+    categoryId,
     version: "1.0.0",
     mode: "rights-gated-unified",
     pending: true,

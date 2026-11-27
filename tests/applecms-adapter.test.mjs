@@ -64,7 +64,7 @@ test("maps source-scoped metadata, HTTPS posters and description fallback", () =
   assert.equal(item.playbackEnabled, false);
   assert.equal(item.rightsStatus, "PENDING");
   assert.deepEqual(item.lines, [{ lineName: "Fixture", episodes: [{ name: "Episode 1" }] }]);
-  assert.equal(mapAppleCmsVideo({ vod_id: 43, vod_name: "Student story" }, { sourceId: "fixture" }), null);
+  assert.equal(mapAppleCmsVideo({ vod_id: 43, vod_name: "Nữ sinh story" }, { sourceId: "fixture" }), null);
   assert.equal(mapAppleCmsVideo({ vod_id: 44, vod_name: "Unsafe poster", vod_pic: "javascript:alert(1)" }, { sourceId: "fixture" }).poster, "");
 });
 

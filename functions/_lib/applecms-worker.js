@@ -297,7 +297,7 @@ export async function listAppleCmsVideos(request, env) {
   return {
     success: true, provider: { id, name: provider.name, status: "ACTIVE" },
     items, page: Number(payload.page) || page, pageCount: Number(payload.pagecount) || 0,
-    total: Number(payload.total) || items.length, limit: Number(payload.limit) || limit,
+    total: Number(payload.total) || items.length, limit: Number(payload.limit) || items.length || 10,
     catalogMode: provider.rights.playbackMode === "metadata_only" ? "metadata-only" : "rights-scoped"
   };
 }

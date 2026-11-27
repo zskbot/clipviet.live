@@ -34,7 +34,7 @@ The current allowlist is empty unless explicitly configured. Do not add a video 
 
 - `GET /api/integrations/apivideo/status`: returns only configuration booleans, approved ID count, and validation state.
 - `GET /api/integrations/apivideo/playback?id=...`: returns a player ID only when it is in the server-side allowlist; otherwise returns 404.
-- `POST /api/admin/integrations/apivideo/videos`: admin-authenticated, sandbox-first creation of a private api.video object from an approved HTTPS source URL. Requires the explicit ingestion feature flag, explicit rights confirmation, and an exact source-host allowlist match. Production writes are locked unless an additional server flag is explicitly enabled.
+- `POST /api/admin/integrations/apivideo/videos`: admin-authenticated, sandbox-first creation of a private api.video object from an approved HTTPS source URL. Requires the explicit ingestion feature flag, explicit rights confirmation, and an exact source-host allowlist match. Production writes are rejected by this Preview integration.
 
 ## Important compatibility boundary
 
@@ -44,7 +44,7 @@ The api.video Player SDK controls api.video's hosted HTML5 player by video ID. I
 
 - Unit tests cover deny-by-default, allowlist parsing, duplicate IDs, live-stream flag, malformed configuration, and secret non-disclosure.
 - No api.video account key was supplied or configured during this change.
-- The API create route defaults to the api.video Sandbox environment; Sandbox videos are watermarked and deleted after 24 hours per provider documentation.
+- The API create route is hard-locked to the api.video Sandbox environment; Production API writes return 403. Sandbox videos are watermarked and deleted after 24 hours per provider documentation.
 - `APIVIDEO_INGEST_ENABLED` is not set by this change, so the API create route remains disabled.
 - The create route was not called. No video was uploaded, ingested, transcoded, published, or played through the external service.
 - No Production, DNS, custom domain, D1, R2, or existing media data was changed.

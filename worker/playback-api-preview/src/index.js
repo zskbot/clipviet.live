@@ -1,4 +1,4 @@
-import { evaluatePlaybackRights, parsePlaybackLines } from "./policy.mjs";
+import { evaluatePlaybackRights, parsePlaybackLines, isAllowedMediaUrl } from "./policy.mjs";
 
 const PROVIDERS = [
   { id: "souavzy", name: "Souavzy · Main", host: "api.souavzy.vip" },
@@ -217,6 +217,80 @@ async function diagnoseProvider(provider) {
   }
 }
 
+async function readTextLimited(response, maxBytes = 256 * 1024) {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("media_manifest_empty");
+  const chunks = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) { await reader.cancel(); throw new Error("media_manifest_too_large"); }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return new TextDecoder().decode(bytes);
+}
+function mediaCorsOk(response, origin) {
+  if (!origin) return null;
+  const allowed = response.headers.get("access-control-allow-origin");
+  return allowed === "*" || allowed === origin;
+}
+async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
+  const parsed = new URL(rawUrl);
+  const path = parsed.pathname.toLowerCase();
+  const isHls = /\.m3u8$/.test(path);
+  const isMp4 = /\.mp4$/.test(path);
+  const base = { mediaType: isHls ? "hls" : isMp4 ? "mp4" : "unknown",
+    httpStatus: null, mimeOk: false, corsOk: requestOrigin ? false : null,
+    rangeSupported: null, manifestOk: null, firstResourceReachable: null, passed: false };
+  if (!isHls && !isMp4) return { ...base, reason: "unsupported_media_type" };
+  const headers = { accept: isHls ? "application/vnd.apple.mpegurl, application/x-mpegURL" : "video/mp4",
+    "user-agent": USER_AGENT };
+  if (requestOrigin) headers.origin = requestOrigin;
+  try {
+    if (isMp4) {
+      const head = await fetch(parsed.href, { method: "HEAD", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
+      const contentType = String(head.headers.get("content-type") || "").toLowerCase();
+      const mimeOk = contentType.startsWith("video/mp4");
+      const corsOk = mediaCorsOk(head, requestOrigin);
+      const ranged = await fetch(parsed.href, { method: "GET",
+        headers: { ...headers, range: "bytes=0-1" }, redirect: "error", signal: AbortSignal.timeout(9000) });
+      const contentRange = String(ranged.headers.get("content-range") || "");
+      const rangeSupported = ranged.status === 206 && /^bytes\s+0-1\//i.test(contentRange);
+      await ranged.body?.cancel();
+      return { ...base, httpStatus: head.status, mimeOk, corsOk, rangeSupported,
+        passed: head.ok && mimeOk && corsOk !== false && rangeSupported,
+        reason: !head.ok ? "media_head_failed" : !mimeOk ? "mp4_mime_invalid" :
+          corsOk === false ? "media_cors_missing" : !rangeSupported ? "mp4_byte_range_not_supported" : "ok" };
+    }
+    const manifest = await fetch(parsed.href, { method: "GET", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
+    const contentType = String(manifest.headers.get("content-type") || "").toLowerCase();
+    const mimeOk = /^(application\/(?:vnd\.apple\.mpegurl|x-mpegurl)|audio\/(?:mpegurl|x-mpegurl))(?:\s*;|$)/i.test(contentType);
+    const corsOk = mediaCorsOk(manifest, requestOrigin);
+    const text = manifest.ok && mimeOk ? await readTextLimited(manifest) : "";
+    const firstResource = text.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.startsWith("#"));
+    let firstResourceReachable = false;
+    if (firstResource) {
+      const resourceUrl = new URL(firstResource, parsed);
+      if (isAllowedMediaUrl(resourceUrl.href, mediaHosts)) {
+        const resource = await fetch(resourceUrl.href, { method: "HEAD", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
+        firstResourceReachable = resource.ok;
+        await resource.body?.cancel();
+      }
+    }
+    return { ...base, httpStatus: manifest.status, mimeOk, corsOk,
+      manifestOk: manifest.ok && mimeOk && Boolean(firstResource), firstResourceReachable,
+      passed: manifest.ok && mimeOk && corsOk !== false && Boolean(firstResource) && firstResourceReachable,
+      reason: !manifest.ok ? "hls_manifest_request_failed" : !mimeOk ? "hls_mime_invalid" :
+        corsOk === false ? "media_cors_missing" : !firstResource ? "hls_manifest_has_no_media_uri" :
+          !firstResourceReachable ? "hls_first_resource_unreachable_or_unapproved" : "ok" };
+  } catch { return { ...base, reason: "media_probe_failed" }; }
+}
+
 async function fetchProviderVideo(provider, videoId) {
   const url = new URL("https://" + provider.host + "/api.php/provide/vod/");
   url.searchParams.set("ac", "detail");
@@ -302,6 +376,35 @@ async function handle(request, env) {
     } catch {
       return json({ error: "Provider registry unavailable", code: "PROVIDER_REGISTRY_UNAVAILABLE" }, 503, headers);
     }
+  }
+
+  const diagnosticMatch = path.match(/^\\/api\\/playback\\/providers\\/([a-z0-9-]+)\\/videos\\/([0-9]+)\\/diagnostics$/);
+  if (diagnosticMatch) {
+    const [, providerId, videoId] = diagnosticMatch;
+    const provider = PROVIDERS.find(item => item.id === providerId);
+    if (!provider) return json({ error: "Unknown provider", code: "UNKNOWN_PROVIDER" }, 404, headers);
+    const region = String(request.cf?.country || "VN").toUpperCase();
+    const rights = await loadApprovedRights(providerId, videoId, env, region);
+    if (!rights.allowed) return json({ error: "Media diagnostics require approved provider and video rights.",
+      code: rights.reason, playbackEnabled: false, diagnostics: "BLOCKED_BY_RIGHTS_GATE" }, rights.status || 403, headers);
+    let row;
+    try { row = await fetchProviderVideo(provider, videoId); }
+    catch { return json({ error: "Provider detail request failed.", code: "UPSTREAM_UNAVAILABLE" }, 502, headers); }
+    if (!row) return json({ error: "Video not found.", code: "SOURCE_VIDEO_NOT_FOUND" }, 404, headers);
+    const lines = parsePlaybackLines(row.vod_play_url, row.vod_play_from, rights.mediaHosts);
+    const probes = [];
+    for (const line of lines) {
+      for (const episode of line.episodes.slice(0, 4 - probes.length)) {
+        probes.push({ line: line.lineName, episode: episode.name,
+          ...(await diagnoseMediaUrl(episode.url, origin || "", rights.mediaHosts)) });
+      }
+      if (probes.length >= 4) break;
+    }
+    return json({ data: { providerId, videoId, playbackMode: "owner_hosted_stream",
+      rightsStatus: "APPROVED", checked: probes.length, passed: probes.filter(item => item.passed).length,
+      results: probes },
+      note: "No media URLs are included in diagnostic results. Live checks run only after provider and video rights approval."
+    }, 200, headers);
   }
 
   const match = path.match(/^\/api\/playback\/providers\/([a-z0-9-]+)\/videos\/([0-9]+)$/);

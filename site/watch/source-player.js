@@ -129,6 +129,12 @@ function applyQuality() {
   else hls.currentLevel = Number(selectedQuality);
 }
 function play() {
+  if (!data?.playbackEnabled || !data?.playbackRightsApproved || data?.rightsStatus !== "APPROVED") {
+    destroy();
+    hidePlayButton();
+    say("Video chưa được cấp quyền phát trực tiếp. ClipViet chỉ mở Play khi nguồn và video đã được duyệt.");
+    return;
+  }
   const episode = currentEpisode();
   if (!episode || typeof episode.url !== "string") { failed("Không có URL phát hợp lệ."); return; }
   let mediaUrl;
@@ -253,9 +259,13 @@ setImageFilter();
     let response;
     let payload;
     try {
-      response = await fetch("https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev/api/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", signal: controller.signal, headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error("Không tải được chi tiết video · HTTP " + response.status);
+      response = await fetch("https://clipviet-playback-api-preview.huynhthuongg2505-f9b.workers.dev/api/playback/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", signal: controller.signal, headers: { Accept: "application/json" } });
       payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || ("Không thể phát video · HTTP " + response.status));
+      const playback = payload.data;
+      if (!playback || playback.playbackEnabled !== true || playback.playbackRightsApproved !== true || playback.rightsStatus !== "APPROVED") {
+        throw new Error("Nguồn chưa xác nhận quyền phát trực tiếp cho video này.");
+      }
     } catch (error) {
       if (error?.name === "AbortError") throw new Error("Nguồn chi tiết video quá thời gian chờ 15 giây. Hãy thử lại hoặc đổi nguồn.");
       throw error;
@@ -264,7 +274,10 @@ setImageFilter();
     }
     data = payload.data || null;
     if (!data) throw new Error(payload.error || "Video không còn tại nguồn.");
-    if (!Array.isArray(data.lines) || !data.lines.length) throw new Error("Nguồn chưa cung cấp đường phát trực tiếp hợp lệ.");
+    if (data.playbackEnabled !== true || data.playbackRightsApproved !== true || data.rightsStatus !== "APPROVED") {
+      throw new Error("Video chưa được duyệt quyền phát trực tiếp.");
+    }
+    if (!Array.isArray(data.lines) || !data.lines.length) throw new Error("Nguồn chưa trả luồng media thuộc host đã được phê duyệt.");
     title.textContent = data.title;
     $("meta").textContent = [data.sourceName, data.year, data.area, data.categoryName, data.duration].filter(Boolean).join(" · ");
     $("description").textContent = data.description || "";

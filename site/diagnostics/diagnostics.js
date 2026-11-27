@@ -153,7 +153,8 @@ async function runChecks(){
    add("Video list · "+provider.id,"pass",(list.items||[]).length+" metadata đã qua rights gate");
    for(const item of (list.items||[]).slice(0,10)){
     const detail=await requestJson("/api/providers/applecms/videos/"+encodeURIComponent(item.sourceContentId)+query,"Video detail");
-    if(JSON.stringify(detail).match(/https?:[^" ]+\\.(?:m3u8|mp4)/i)) throw new Error("Video detail đang để lộ media URL ngoài playback endpoint");
+    const detailText=JSON.stringify(detail).toLowerCase();
+    if(detailText.includes(".m3u8")||detailText.includes(".mp4")) throw new Error("Video detail đang để lộ media URL ngoài playback endpoint");
     const playPath="/api/providers/applecms/videos/"+encodeURIComponent(item.sourceContentId)+"/playback"+query;
     const response=await fetch(API+playPath,{headers:{Accept:"application/json"},cache:"no-store",credentials:"omit",redirect:"error"});
     if(response.status===403) continue;
@@ -164,10 +165,12 @@ async function runChecks(){
      if(source.episodes){
       for(const episode of source.episodes){
        const url=episode.url||"";
-       if(!samples.hls&&/\\.m3u8(?:$|[?#])/i.test(url)) samples.hls={url,provider:provider.id};
-       if(!samples.mp4&&/\\.mp4(?:$|[?#])/i.test(url)) samples.mp4={url,provider:provider.id};
+       let mediaPath="";
+       try{mediaPath=new URL(url,location.href).pathname.toLowerCase();}catch{}
+       if(!samples.hls&&mediaPath.endsWith(".m3u8")) samples.hls={url,provider:provider.id};
+       if(!samples.mp4&&mediaPath.endsWith(".mp4")) samples.mp4={url,provider:provider.id};
       }
-     }else if(source.url&&/\\/embed\\//i.test(source.url)){
+     }else if(source.url&&source.url.toLowerCase().includes("/embed/")){
       samples.embed=samples.embed||{url:source.url,provider:provider.id};
      }
     }

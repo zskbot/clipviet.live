@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import ApiVideoPlayer from "@/components/ApiVideoPlayer";
+import ApiVideoPlayer from "@/app/components/ApiVideoPlayer";
 
 export default function WatchPage() {
   const params = useParams();

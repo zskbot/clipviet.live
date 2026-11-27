@@ -30,9 +30,11 @@
 5. Production remains locked until technical and legal gates are independently complete.
 
 ## Current blockers
-- No D1 database is provisioned or bound by this PR.
-- No Preview Worker deployment is performed by this PR.
 - No CDN media host allowlists are populated.
 - No provider rights documents or per-clip licenses are recorded.
 - DNS/network reachability may be unavailable from the execution environment; such outcomes remain `UNVERIFIED`.
-- The provider seed migration is idempotent; it does not overwrite an existing provider row.
+
+## Pages Preview routing
+- Exact branch: `preview/playback-api-diagnostics-20261127`.
+- This branch is enabled in the Cloudflare Pages Preview branch allowlist for the independent Preview project.
+- Production deployments remain disabled; no DNS or custom-domain changes are part of this Preview.

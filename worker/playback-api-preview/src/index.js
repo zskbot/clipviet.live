@@ -299,7 +299,10 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
         corsOk === false || firstResourceCorsOk === false ? "media_cors_missing" :
           !firstResource ? "hls_manifest_has_no_media_uri" :
             !firstResourceReachable ? "hls_first_resource_unreachable_or_unapproved" : "ok" };
-  } catch { return { ...base, reason: "media_probe_failed" }; }
+  } catch (error) {
+    console.error("media_probe_failed", error?.name || "UnknownError");
+    return { ...base, reason: error?.name === "TypeError" ? "media_probe_type_error" : "media_probe_failed" };
+  }
 }
 
 async function fetchProviderVideo(provider, videoId) {

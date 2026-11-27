@@ -1,4 +1,5 @@
-const API = window.CLIPVIET_API_BASE || "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
+const API = window.CLIPVIET_API_BASE || location.origin;
+const ADMIN_API = window.CLIPVIET_ADMIN_API_BASE || "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
 const $ = (id) => document.getElementById(id);
 const results = $("results");
 const video = $("test-video");
@@ -117,12 +118,12 @@ async function checkAdminAccess(){
 
 async function checkAdminApi(){
  try{
-  const session=await fetch(API+"/api/admin/session",{headers:{Accept:"application/json"},credentials:"omit",redirect:"error",cache:"no-store"});
+  const session=await fetch(ADMIN_API+"/api/admin/session",{headers:{Accept:"application/json"},credentials:"omit",redirect:"error",cache:"no-store"});
   if(session.status===401||session.status===403)add("Admin session API","pass","Không có token hợp lệ · HTTP "+session.status);
   else if(session.status===404)add("Admin session API","fail","Endpoint /api/admin/session chưa được triển khai (404)");
   else if(session.ok)add("Admin session API","fail","API chấp nhận phiên không có token (HTTP "+session.status+")");
   else add("Admin session API","warn","HTTP "+session.status+" · cần kiểm tra phản hồi");
-  const login=await fetch(API+"/api/admin/login",{method:"POST",headers:{Accept:"application/json","Content-Type":"text/plain"},body:"{}",credentials:"omit",redirect:"error",cache:"no-store"});
+  const login=await fetch(ADMIN_API+"/api/admin/login",{method:"POST",headers:{Accept:"application/json","Content-Type":"text/plain"},body:"{}",credentials:"omit",redirect:"error",cache:"no-store"});
   if(login.status===400||login.status===422)add("Admin login API","pass","Endpoint tồn tại và kiểm tra payload · HTTP "+login.status);
   else if(login.status===404||login.status===405)add("Admin login API","fail","Endpoint đăng nhập chưa được triển khai hoặc POST bị từ chối · HTTP "+login.status);
   else if(login.status===401)add("Admin login API","pass","Endpoint từ chối payload không hợp lệ · HTTP 401");
@@ -130,38 +131,61 @@ async function checkAdminApi(){
  }catch(error){add("Admin auth API","fail","Không thể gọi API đăng nhập/phiên: "+(error.message||String(error)));}
 }
 async function runChecks(){
- run.disabled=true;run.textContent="ĐANG KIỂM TRA…";results.replaceChildren();checks.length=0;video.removeAttribute("src");video.load();await checkAdminAccess();await checkAdminApi();
+ run.disabled=true;run.textContent="ĐANG KIỂM TRA…";results.replaceChildren();checks.length=0;video.pause();video.removeAttribute("src");video.load();
+ await checkAdminAccess();await checkAdminApi();
  try{
-  const health=await requestJson("/health","Health");
-  add("Worker health",health.ok?"pass":"fail",health.service+" · "+health.environment);
-  const providers=await requestJson("/api/providers","Providers");
-  const configured=(providers.data||[]).filter(x=>x.configured);
-  add("Provider registry",configured.length?"pass":"fail",configured.length+"/"+(providers.data||[]).length+" provider đã cấu hình");
-  const categories=await requestJson("/api/catalog/categories","Categories");
-  add("Categories API",Array.isArray(categories.data)?"pass":"fail",(categories.data||[]).length+" danh mục · "+categories.sourceId);
-  const list=await requestJson("/api/catalog/videos?page=1","Videos");
-  if(!Array.isArray(list.items)||!list.items.length)throw new Error("Catalog API không trả video");
-  add("Videos API","pass",list.items.length+" video · "+list.provider?.name);
-  const samples={hls:null,mp4:null};
-  for(const item of list.items.slice(0,10)){
-   const response=await requestJson("/api/providers/"+encodeURIComponent(item.sourceId)+"/videos/"+encodeURIComponent(item.id),"Video detail");
-   const episodes=(response.data?.lines||[]).flatMap(line=>line.episodes||[]);
-   if(!samples.hls)samples.hls=episodes.find(ep=>/\.m3u8(?:$|[?#])/i.test(ep.url||""))||null;
-   if(!samples.mp4)samples.mp4=episodes.find(ep=>{try{return /\.mp4$/i.test(new URL(ep.url,location.href).pathname);}catch{return false;}})||null;
+  const registry=await requestJson("/api/providers/applecms/status","Provider status");
+  const providers=Array.isArray(registry.providers)?registry.providers:[];
+  add("Provider registry",providers.length===5?"pass":"fail",providers.length+"/5 AppleCMS providers · "+providers.map(item=>item.id+":"+item.status).join(" · "));
+  const playbackProviders=providers.filter(item=>item.status==="PLAYBACK_APPROVED");
+  const metadataProviders=providers.filter(item=>item.status==="METADATA_ONLY");
+  const pendingProviders=providers.filter(item=>item.status==="PENDING_RIGHTS"||item.status==="NOT_CONFIGURED");
+  add("Rights state",pendingProviders.length?"warn":"pass",pendingProviders.length+" provider đang chờ cấu hình/quyền · "+metadataProviders.length+" chỉ metadata · "+playbackProviders.length+" được phép phát cấp provider");
+  if(!playbackProviders.length){
+   add("Media diagnostics","pending","Không có provider được duyệt phát. Đã bỏ qua kiểm tra URL media; không tự lấy hoặc phát stream chưa được cấp quyền.");
+   summary.textContent="API trạng thái đã kiểm tra. HLS/MP4, MIME, CORS, byte-range và khung hình chỉ chạy khi có video được cấp quyền phát cụ thể.";
+   return;
+  }
+  const samples={hls:null,mp4:null,embed:null};
+  for(const provider of playbackProviders){
+   const query="?sourceId="+encodeURIComponent(provider.id);
+   const list=await requestJson("/api/providers/applecms/videos"+query+"&page=1&limit=20","Videos "+provider.id);
+   add("Video list · "+provider.id,"pass",(list.items||[]).length+" metadata đã qua rights gate");
+   for(const item of (list.items||[]).slice(0,10)){
+    const detail=await requestJson("/api/providers/applecms/videos/"+encodeURIComponent(item.sourceContentId)+query,"Video detail");
+    if(JSON.stringify(detail).match(/https?:[^" ]+\\.(?:m3u8|mp4)/i)) throw new Error("Video detail đang để lộ media URL ngoài playback endpoint");
+    const playPath="/api/providers/applecms/videos/"+encodeURIComponent(item.sourceContentId)+"/playback"+query;
+    const response=await fetch(API+playPath,{headers:{Accept:"application/json"},cache:"no-store",credentials:"omit",redirect:"error"});
+    if(response.status===403) continue;
+    if(!response.ok) throw new Error("Playback info "+provider.id+" HTTP "+response.status);
+    const info=await response.json();
+    const sources=info.data?.sources||[];
+    for(const source of sources){
+     if(source.episodes){
+      for(const episode of source.episodes){
+       const url=episode.url||"";
+       if(!samples.hls&&/\\.m3u8(?:$|[?#])/i.test(url)) samples.hls={url,provider:provider.id};
+       if(!samples.mp4&&/\\.mp4(?:$|[?#])/i.test(url)) samples.mp4={url,provider:provider.id};
+      }
+     }else if(source.url&&/\\/embed\\//i.test(source.url)){
+      samples.embed=samples.embed||{url:source.url,provider:provider.id};
+     }
+    }
+    if(samples.hls&&samples.mp4)break;
+   }
    if(samples.hls&&samples.mp4)break;
   }
-  if(!samples.hls&&!samples.mp4)throw new Error("10 video đầu không có MP4/HLS URL hợp lệ");
-  add("Video detail","pass","Đã tìm URL media trong 10 video đầu");
-  if(samples.hls)await inspectMedia(samples.hls.url,"HLS");
-  else add("HLS sample","warn","10 video đầu không trả HLS .m3u8 URL");
-  if(samples.mp4)await inspectMedia(samples.mp4.url,"MP4");
-  else add("MP4 sample","warn","10 video đầu không trả MP4 URL");
-  if(samples.hls)await testPlayer(samples.hls.url,true,"HLS");
-  if(samples.mp4)await testPlayer(samples.mp4.url,false,"MP4");
-  summary.textContent="Hoàn tất. Kiểm tra này chạy trên "+navigator.userAgent+" · Origin "+location.origin;
+  add("Playback endpoint","pass","Thông tin phát được truy xuất riêng; metadata API không phát tán URL media.");
+  if(samples.embed) add("Official embed","pass","Embed được cấp phép bởi "+samples.embed.provider+"; không thử tải trực tiếp nội dung iframe.");
+  if(samples.hls){await inspectMedia(samples.hls.url,"HLS · "+samples.hls.provider);await testPlayer(samples.hls.url,true,"HLS");}
+  else add("HLS .m3u8","pending","Không có manifest HLS trong các video đã duyệt phát.");
+  if(samples.mp4){await inspectMedia(samples.mp4.url,"MP4 · "+samples.mp4.provider);await testPlayer(samples.mp4.url,false,"MP4");}
+  else add("MP4","pending","Không có MP4 trong các video đã duyệt phát.");
+  if(!samples.hls&&!samples.mp4&&!samples.embed) add("Playback samples","pending","Provider đã duyệt nhưng chưa có URL phát/official embed phù hợp để chạy probe.");
+  summary.textContent="Hoàn tất kiểm tra trên "+navigator.userAgent+" · Origin "+location.origin;
  }catch(error){
   add("Luồng kiểm tra","fail",error.message||String(error));
-  summary.textContent="Có bước chưa đạt. Gửi ảnh chụp kết quả này để tiếp tục xử lý.";
+  summary.textContent="Có bước chưa đạt. Kết quả chi tiết được liệt kê ngay trên trang này.";
  }finally{
   run.disabled=false;run.textContent="CHẠY LẠI KIỂM TRA";
  }

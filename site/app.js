@@ -319,11 +319,16 @@ function renderFeatured() {
     image.alt = "Chưa có video nổi bật";
     $("#featured-index").textContent = "—";
     $("#featured-watch").disabled = true;
+    $("#featured-watch").hidden = true;
+    if (playButton) playButton.hidden = true;
     $("#featured-open").disabled = true;
     return;
   }
   const video = featuredVideos[featuredIndex % featuredVideos.length];
-  $("#featured-watch").disabled = false;
+  const playbackAllowed = video.playbackEnabled === true && video.playbackRightsApproved === true;
+  $("#featured-watch").disabled = !playbackAllowed;
+  $("#featured-watch").hidden = !playbackAllowed;
+  if (playButton) playButton.hidden = !playbackAllowed;
   $("#featured-open").disabled = false;
   image.src = video.poster || "./poster-fallback.svg";
   image.alt = video.title || "Video nổi bật";

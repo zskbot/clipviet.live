@@ -305,7 +305,7 @@ test("MP4 diagnostics verify video MIME, CORS and HTTP byte ranges", async () =>
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.equal(body.data.checked, 1);
-    assert.equal(body.data.passed, 1);
+    assert.equal(body.data.passed, 1, JSON.stringify(body.data.results));
     assert.equal(body.data.results[0].mediaType, "mp4");
     assert.equal(body.data.results[0].mimeOk, true);
     assert.equal(body.data.results[0].corsOk, true);

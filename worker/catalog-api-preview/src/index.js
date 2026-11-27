@@ -1,4 +1,4 @@
-import { listProviders, getProviderCategories, listProviderVideos, getProviderVideo } from "./applecms.js";
+import { listProviders, listProviderStatuses, checkAllProviderHealth, getProviderCategories, listProviderVideos, getProviderVideo } from "./applecms.js";
 import { evaluateAdultGeoPolicy } from "./adult-geo-policy.mjs";
 
 function json(data, status=200, headers={}) {
@@ -168,8 +168,12 @@ async function handle(request, env) {
   if(request.method!=="GET") return json({error:"Method not allowed"},405,{"allow":"GET, OPTIONS",...headers});
   if(path==="/health") return json({ok:true,service:"clipviet-catalog-api-preview",environment:"preview",providers:listProviders(env)},200,headers);
   if(path==="/api/providers") {
-    const data=listProviders(env);
-    return json({data,count:data.length,protocol:"AppleCMS V10"},200,headers);
+    const data=await listProviderStatuses(env);
+    return json({data,providers:data,count:data.length,protocol:"AppleCMS V10",rightsGate:{policy:"deny-by-default",providerAndPerVideoApprovalRequired:true,playbackEnabled:false}},200,headers);
+  }
+  if(path==="/api/providers/diagnostics") {
+    const data=await checkAllProviderHealth(env);
+    return json({success:true,data,providers:data,count:data.length,checkedAt:new Date().toISOString()},200,headers);
   }
   if(path==="/api/catalog/categories") {
     const explicit=url.searchParams.get("sourceId");

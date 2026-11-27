@@ -18,3 +18,9 @@ APPLECMS_JIPINVIP1_URL = "https://jipinvip1.com/api.php/provide/vod/"
 binding = "DB"
 database_name = "clipviet-cms-preview"
 database_id = "1e613e7b-5aa3-4927-bf78-552f383c9dce"
+
+# Read-only in application code: provider and per-video legal approvals.
+[[d1_databases]]
+binding = "PROVIDER_DB"
+database_name = "clipviet-provider-registry-preview"
+database_id = "9d26b841-680c-4fa2-bb3e-0f1fa537ad22"

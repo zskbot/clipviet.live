@@ -109,7 +109,7 @@ function render() {
   if (query.trim()) params.set("keyword", query.trim().slice(0, 100));
   if (activeCategoryId) params.set("categoryId", activeCategoryId);
   if (activeQuickFilter === "latest") params.set("sort", "latest");
-  const url = API_BASE + "/api/videos?" + params.toString();
+  const url = API_BASE + "/api/catalog/videos?" + params.toString();
   count.textContent = "ĐANG TẢI…";
   empty.hidden = true;
   fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })

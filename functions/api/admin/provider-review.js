@@ -1,5 +1,3 @@
-import { json } from "../../_lib/http.js";
-
 export async function onRequest({ request, env }) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response(JSON.stringify({ success: false, error: "Read-only endpoint", allow: ["GET", "HEAD"] }), {

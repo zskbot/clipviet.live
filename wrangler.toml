@@ -15,4 +15,4 @@ binding = "PROVIDER_DB"
 database_name = "clipviet-provider-rights-preview"
 database_id = "9d26b841-680c-4fa2-bb3e-0f1fa537ad22"
 
-<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0c3085d98f04406cab66c122dbaa21be"}'></script><!-- End Cloudflare Web Analytics -->
+ type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0c3085d98f04406cab66c122dbaa21be"}'>

@@ -421,9 +421,10 @@ function openDetail(video) {
   if (video.apiManaged && video.playbackRightsApproved !== true) {
     detail.querySelector(".detail-source").textContent += " · Chỉ hiển thị metadata; phát bị khóa cho đến khi xác minh quyền phân phối.";
   }
-  if (video.apiManaged && video.sourceId && video.id && video.playbackEnabled === true && video.playbackRightsApproved === true) {
+  if (video.apiManaged && video.sourceId && video.id) {
     const link = detail.querySelector(".watch-link");
     link.hidden = false;
+    link.textContent = "KIỂM TRA QUYỀN PHÁT ↗";
     link.href = "./watch/source.html?sourceId=" + encodeURIComponent(video.sourceId) + "&vodId=" + encodeURIComponent(video.id);
   }
   dialog.showModal();

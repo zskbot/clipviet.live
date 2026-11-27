@@ -1,0 +1,11 @@
+name = "clipviet-playback-api-preview"
+main = "src/index.js"
+compatibility_date = "2026-11-25"
+workers_dev = true
+preview_urls = false
+
+# Dedicated Preview-only, read-only binding to the provider rights registry.
+[[d1_databases]]
+binding = "PROVIDER_DB"
+database_name = "clipviet-provider-registry-preview"
+database_id = "9d26b841-680c-4fa2-bb3e-0f1fa537ad22"

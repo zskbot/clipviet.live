@@ -1,0 +1,10 @@
+name = "clipviet-live-independent-preview"
+pages_build_output_dir = "./site"
+compatibility_date = "2026-11-25"
+
+# Preview-only binding: Pages Functions read the isolated ClipViet Preview D1.
+# No D1 binding is configured for production.
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "clipviet-cms-preview"
+database_id = "1e613e7b-5aa3-4927-bf78-552f383c9dce"

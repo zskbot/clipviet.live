@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseMacCmsPlayUrl, normalizeMacCmsItem, getMacCmsFeed } from "../lib/maccms-provider.mjs";
+import { parseMacCmsPlayUrl, normalizeMacCmsItem, getMacCmsFeed, getMacCmsCategories } from "../lib/maccms-provider.mjs";
 
 test("MacCMS play URL parser handles route and episode delimiters", () => {
   const items = parseMacCmsPlayUrl("HD$https://cdn.example.com/a.m3u8#Tập 2$https://cdn.example.com/b.mp4$$$Backup$https://cdn.example.com/c.mp4");
@@ -125,6 +125,46 @@ test("MacCMS video feed uses ac=list and preserves provider pagination metadata"
     assert.equal(provider.total, 240);
     assert.equal(provider.limit, 100);
     assert.equal(provider.state, "ok");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("MacCMS categories use ac=list and expose leaf categories only", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestedUrl;
+  globalThis.fetch = async input => {
+    requestedUrl = new URL(String(input));
+    return new Response(JSON.stringify({
+      code: 1,
+      class: [
+        { type_id: 10, type_pid: 0, type_name: "Parent" },
+        { type_id: 11, type_pid: 10, type_name: "Leaf" },
+        { type_id: 12, type_pid: 0, type_name: "Other parent" }
+      ]
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  try {
+    const env = {
+      VIDEO_MACCMS_PROVIDERS_JSON: JSON.stringify([{
+        id: "souavzy", name: "Souavzy Main",
+        apiUrl: "https://api.souavzy.vip/api.php/provide/vod/"
+      }]),
+      VIDEO_API_ALLOWED_HOSTS: "api.souavzy.vip",
+      VIDEO_PROVIDER_RIGHTS_JSON: JSON.stringify({
+        "maccms:souavzy": {
+          approved: true, enabled: true, rightsHolder: "Test rights holder",
+          licenseReference: "TEST-LICENSE-001",
+          evidenceUrl: "https://rights.example.test/provider-evidence",
+          documentationUrl: "https://rights.example.test/provider-docs",
+          expiresAt: "2099-01-01T00:00:00.000Z",
+          authMode: "none", playbackMode: "metadata_only", regions: ["VN"]
+        }
+      })
+    };
+    const categories = await getMacCmsCategories("souavzy", env);
+    assert.equal(requestedUrl.searchParams.get("ac"), "list");
+    assert.deepEqual(categories, [{ id: 11, parentId: 10, name: "Leaf" }]);
   } finally {
     globalThis.fetch = originalFetch;
   }

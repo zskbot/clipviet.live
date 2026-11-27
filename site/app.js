@@ -349,7 +349,7 @@ function setFeaturedVideos(items) {
   featuredIndex = 0;
   renderFeatured();
   if (featuredTimer) clearInterval(featuredTimer);
-  if (featuredVideos.length > 1) featuredTimer = setInterval(() => {
+  if (featuredVideos.length > 1 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && document.visibilityState === "visible") featuredTimer = setInterval(() => {
     featuredIndex = (featuredIndex + 1) % featuredVideos.length;
     renderFeatured();
   }, 10000);
@@ -524,5 +524,21 @@ suggestionForm?.addEventListener("submit", async (event) => {
   } catch {
     status.textContent = "Trình duyệt không cho phép sao chép. Hãy kiểm tra lại URL và thử trên HTTPS.";
     status.dataset.state = "error";
+  }
+});
+
+
+// Pause featured rotation while the tab is hidden; resume only when motion is allowed.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (featuredTimer) clearInterval(featuredTimer);
+    featuredTimer = null;
+    return;
+  }
+  if (featuredVideos.length > 1 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && !featuredTimer) {
+    featuredTimer = setInterval(() => {
+      featuredIndex = (featuredIndex + 1) % featuredVideos.length;
+      renderFeatured();
+    }, 10000);
   }
 });

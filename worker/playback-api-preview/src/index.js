@@ -260,7 +260,7 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
       const contentType = String(ranged.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
       const mimeOk = contentType === "video/mp4";
       const contentRange = String(ranged.headers.get("content-range") || "");
-      const rangeSupported = ranged.status === 206 && /^bytes\\s+0-1\\//i.test(contentRange);
+      const rangeSupported = ranged.status === 206 && contentRange.toLowerCase().startsWith("bytes 0-1/");
       const corsOk = mediaCorsOk(ranged, requestOrigin);
       const httpStatus = ranged.status;
       await ranged.body?.cancel();

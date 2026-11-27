@@ -34,3 +34,12 @@ The Worker returns 403 with a stable `code` when any requirement is not met. It 
 ## Playback/CORS note
 
 The upstream media host must permit browser playback from the Preview Pages origins. HLS.js requires CORS on manifests and segments; native Safari playback still depends on a valid media URL and supported stream format.
+
+
+## Live source connectivity diagnostics
+
+- `GET /api/providers/diagnostics` checks all five configured AppleCMS list endpoints.
+- `GET /api/providers/{providerId}/diagnostics` checks one provider.
+- The diagnostic reports reachability, HTTP status, response latency, AppleCMS response code and catalog item count only.
+- It never returns episode URLs, playback lines, tokens or other stream data.
+- A reachable metadata API is not proof of content ownership or a playback license. The response always keeps `playbackEnabled: false`; the playback endpoint continues to require the separate provider, connector, per-video rights and media-host approvals.

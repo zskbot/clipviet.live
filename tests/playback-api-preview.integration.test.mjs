@@ -239,6 +239,98 @@ test("approved playback returns only HTTPS media URLs on the licensed host allow
   }
 });
 
+
+test("HLS diagnostics verify manifest MIME, CORS and first segment without returning URLs", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    calls.push({ url, method: init.method || "GET", headers: init.headers || {} });
+    if (url.startsWith("https://api.souavzy.vip/")) return jsonResponse({
+      code: 1, list: [{ vod_id: 123, vod_name: "Licensed HLS",
+        vod_play_from: "CDN", vod_play_url: "Episode$https://cdn.example.com/master.m3u8" }]
+    });
+    if (url === "https://cdn.example.com/master.m3u8") return new Response("#EXTM3U\\n#EXT-X-TARGETDURATION:6\\nsegment.ts\\n", {
+      status: 200, headers: { "content-type": "application/vnd.apple.mpegurl",
+        "access-control-allow-origin": PREVIEW_ORIGIN }
+    });
+    if (url === "https://cdn.example.com/segment.ts") return new Response(null, {
+      status: 200, headers: { "content-type": "video/mp2t", "access-control-allow-origin": PREVIEW_ORIGIN }
+    });
+    throw new Error("unexpected URL " + url);
+  };
+  try {
+    const response = await playbackWorker.fetch(new Request(
+      "https://worker.example/api/playback/providers/souavzy/videos/123/diagnostics",
+      { headers: { Origin: PREVIEW_ORIGIN } }
+    ), { PROVIDER_DB: makeDb(approvedRightsRow()) });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.data.checked, 1);
+    assert.equal(body.data.passed, 1);
+    assert.equal(body.data.results[0].mediaType, "hls");
+    assert.equal(body.data.results[0].mimeOk, true);
+    assert.equal(body.data.results[0].corsOk, true);
+    assert.equal(body.data.results[0].firstResourceReachable, true);
+    assert.equal(JSON.stringify(body).includes("cdn.example.com"), false);
+    assert.equal(calls.some(call => call.url.endsWith("segment.ts") && call.method === "HEAD"), true);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("MP4 diagnostics verify video MIME, CORS and HTTP byte ranges", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    calls.push({ url, method: init.method || "GET", headers: init.headers || {} });
+    if (url.startsWith("https://api.souavzy.vip/")) return jsonResponse({
+      code: 1, list: [{ vod_id: 123, vod_name: "Licensed MP4",
+        vod_play_from: "CDN", vod_play_url: "Episode$https://cdn.example.com/video.mp4" }]
+    });
+    if (url === "https://cdn.example.com/video.mp4" && init.method === "HEAD") return new Response(null, {
+      status: 200, headers: { "content-type": "video/mp4", "accept-ranges": "bytes",
+        "access-control-allow-origin": PREVIEW_ORIGIN }
+    });
+    if (url === "https://cdn.example.com/video.mp4" && init.method === "GET") return new Response(new Uint8Array([0, 1]), {
+      status: 206, headers: { "content-type": "video/mp4", "content-range": "bytes 0-1/100",
+        "access-control-allow-origin": PREVIEW_ORIGIN }
+    });
+    throw new Error("unexpected URL " + url);
+  };
+  try {
+    const response = await playbackWorker.fetch(new Request(
+      "https://worker.example/api/playback/providers/souavzy/videos/123/diagnostics",
+      { headers: { Origin: PREVIEW_ORIGIN } }
+    ), { PROVIDER_DB: makeDb(approvedRightsRow()) });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.data.checked, 1);
+    assert.equal(body.data.passed, 1);
+    assert.equal(body.data.results[0].mediaType, "mp4");
+    assert.equal(body.data.results[0].mimeOk, true);
+    assert.equal(body.data.results[0].corsOk, true);
+    assert.equal(body.data.results[0].rangeSupported, true);
+    assert.equal(calls.some(call => call.method === "GET" &&
+      new Headers(call.headers).get("range") === "bytes=0-1"), true);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("media diagnostics cannot probe URLs while provider rights are pending", async () => {
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => { called = true; throw new Error("must not fetch"); };
+  try {
+    const response = await playbackWorker.fetch(new Request(
+      "https://worker.example/api/playback/providers/souavzy/videos/123/diagnostics",
+      { headers: { Origin: PREVIEW_ORIGIN } }
+    ), { PROVIDER_DB: makeDb(approvedRightsRow({ provider_status: "PENDING" })) });
+    const body = await response.json();
+    assert.equal(response.status, 403);
+    assert.equal(body.diagnostics, "BLOCKED_BY_RIGHTS_GATE");
+    assert.equal(called, false);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test("Worker accepts only the configured Preview Pages project origins", async () => {
   const qa = await playbackWorker.fetch(
     new Request("https://worker.example/health", { headers: { Origin: QA_ORIGIN } }), {}

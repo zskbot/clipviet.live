@@ -78,7 +78,7 @@ let requestSequence = 0;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
-const API_BASE = "https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev";
+const API_BASE = "";
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.
 // Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.
@@ -200,7 +200,7 @@ function render() {
         img.src = video.poster || "./poster-fallback.svg";
         img.alt = video.title || "Video";
         img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
-        card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : "CHỜ DUYỆT";
+        card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.licenseLabel || "CHỈ XEM");
         card.querySelector("h3").textContent = video.title || "Video";
         card.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
         card.addEventListener("click", () => openDetail(video));
@@ -354,7 +354,7 @@ function renderFeatured() {
   $("#featured-title").textContent = video.title || "Video nổi bật";
   $("#featured-meta").textContent = video.isSample
     ? "PHIM MỞ · " + (video.license || "CREATIVE COMMONS") + " · " + (video.sourceName || "BLENDER FOUNDATION")
-    : [video.year, video.duration, video.country, video.category].filter(Boolean).join(" · ");
+    : [video.year, video.duration, video.country, video.category, video.licenseLabel].filter(Boolean).join(" · ");
   $("#featured-description").textContent = video.description || "Khám phá video đang được quan tâm trên ClipViet.";
   $("#featured-index").textContent = String(featuredIndex + 1).padStart(2, "0");
   featuredRoot.querySelector(".eyebrow").textContent = video.isSample
@@ -474,7 +474,7 @@ function openDetail(video) {
   detail.querySelector(".meta").textContent = [video.year, video.duration, video.rating, video.country].filter(Boolean).join(" · ");
   detail.querySelector(".detail-source").textContent = video.isSample
     ? "Nguồn: " + (video.sourceName || "Open Movie") + " · " + (video.license || "Creative Commons") + " · " + (video.attribution || "") + " · " + (video.licenseUrl || "")
-    : video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) : "Bản ghi demo.";
+    : video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) + " · " + (video.licenseLabel || "Metadata only") + " · " + (video.sourceUrl || "") : "Bản ghi demo.";
   if (video.apiManaged && video.playbackRightsApproved !== true) {
     detail.querySelector(".detail-source").textContent += " · Chỉ hiển thị metadata; phát bị khóa cho đến khi xác minh quyền phân phối.";
   }

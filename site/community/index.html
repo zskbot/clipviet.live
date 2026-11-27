@@ -28,7 +28,7 @@
       <div>
         <p class="eyebrow">CLIPVIET / COMMUNITY</p>
         <h1>Một cộng đồng.<br><span>Nhiều góc nhìn.</span></h1>
-        <p class="community-lead">Không gian để khám phá chủ đề, gửi đề xuất, trao đổi và cùng xây dựng thư viện nội dung có trách nhiệm.</p>
+        <p class="community-lead">Không gian độc lập của ClipViet để theo dõi hoạt động, khám phá các khu vực cộng đồng và gửi nhiều URL nguồn HTTPS trong một lần đề xuất.</p>
         <div class="community-hero-actions">
           <a class="community-primary-action" href="#share">GỬI ĐỀ XUẤT ↗</a>
           <a class="community-secondary-action" href="#community-rules">XEM NỘI QUY</a>
@@ -75,9 +75,27 @@
       <p class="community-no-results" id="community-no-results" hidden>Không tìm thấy chuyên mục phù hợp.</p>
     </section>
 
-    <section class="community-feature-row" id="share">
-      <div><p class="eyebrow">CONTRIBUTE / SUGGEST</p><h2>Đóng góp cho thư viện</h2><p>Gửi đề xuất video qua biểu mẫu đã có. Mọi URL sẽ được xem xét về nguồn gốc, sự đồng thuận và quyền phân phối trước khi được đưa vào catalog.</p><a class="community-primary-action" href="../#video-suggestion">MỞ FORM ĐỀ XUẤT ↗</a></div>
-      <div class="community-feature-meta"><span>01 / SUBMIT</span><span>02 / REVIEW RIGHTS</span><span>03 / APPROVE OR REJECT</span></div>
+    <section class="community-feature-row community-contribute" id="share">
+      <div class="community-contribute-intro">
+        <p class="eyebrow">CONTRIBUTE / SOURCE SUBMISSION</p>
+        <h2>Đề xuất nhiều nguồn cùng lúc</h2>
+        <p>Gửi tiêu đề và một hoặc nhiều URL nguồn HTTPS. Mỗi địa chỉ được kiểm tra định dạng trước khi tạo nội dung đề xuất. Việc gửi biểu mẫu không tự động thêm nguồn vào catalog.</p>
+        <div class="community-feature-meta"><span>01 / NHẬP THÔNG TIN</span><span>02 / KIỂM TRA HTTPS</span><span>03 / DUYỆT QUYỀN PHÂN PHỐI</span></div>
+      </div>
+      <form id="community-suggestion-form" class="community-suggestion-form" novalidate>
+        <label for="community-suggest-title">TIÊU ĐỀ ĐỀ XUẤT</label>
+        <input id="community-suggest-title" name="title" type="text" maxlength="160" placeholder="Nhập tiêu đề video hoặc nhóm nguồn" required>
+        <div class="source-url-heading"><label>URL NGUỒN HTTPS</label><span id="source-url-count">01 / 20</span></div>
+        <div id="source-url-list" class="source-url-list">
+          <div class="source-url-row"><input name="sourceUrls[]" type="url" inputmode="url" placeholder="https://example.com/video" aria-label="URL nguồn HTTPS 1" required><button type="button" class="remove-source-url" aria-label="Xóa URL nguồn" disabled>×</button></div>
+        </div>
+        <button id="add-source-url" class="add-source-url" type="button">＋ THÊM URL NGUỒN</button>
+        <label for="community-suggest-reason">GHI CHÚ / GIẤY PHÉP / LÝ DO (KHÔNG BẮT BUỘC)</label>
+        <textarea id="community-suggest-reason" name="reason" rows="3" maxlength="1000" placeholder="Thông tin nguồn gốc, chủ sở hữu hoặc giấy phép phân phối…"></textarea>
+        <button class="community-primary-action community-submit" type="submit">KIỂM TRA & SAO CHÉP ĐỀ XUẤT</button>
+        <p id="community-suggestion-status" class="community-suggestion-status" role="status" aria-live="polite">Tối đa 20 URL HTTPS. Nội dung chỉ được sao chép để gửi qua kênh tiếp nhận; chưa lưu lên máy chủ.</p>
+        <textarea id="community-payload-fallback" class="community-payload-fallback" aria-label="Nội dung đề xuất để sao chép thủ công" readonly hidden></textarea>
+      </form>
     </section>
 
     <section class="community-policy" id="community-rules">
@@ -91,7 +109,7 @@
     </section>
   </main>
 
-  <footer class="community-footer"><a class="community-brand" href="../"><img class="brand-logo" src="../clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><span>COMMUNITY PREVIEW · © <span id="year"></span></span><a href="../">VỀ TRANG CHỦ ↗</a></footer>
+  <footer class="community-footer"><a class="community-brand" href="../"><img class="brand-logo" src="../clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a><span>COMMUNITY / CLIPVIET · © <span id="year"></span></span><a href="../">VỀ TRANG CHỦ ↗</a></footer>
   <script src="./community.js" defer></script>
 </body>
 </html>

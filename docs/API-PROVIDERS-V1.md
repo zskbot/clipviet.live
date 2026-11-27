@@ -142,7 +142,7 @@ It is gated by the same provider + connector + per-video license, territory, sou
 
 For up to four approved media entries:
 - HLS: manifest status, Apple HLS MIME, browser CORS and first allowlisted media resource reachability/CORS.
-- MP4: HEAD status, `video/mp4` MIME, CORS on HEAD and ranged GET, `Range: bytes=0-1`, HTTP 206 and `Content-Range`.
+- MP4: ranged GET status, `video/mp4` MIME, CORS, `Range: bytes=0-1`, HTTP 206 and `Content-Range`.
 - The report omits raw URLs and manifest content.
 
 No actual provider media has been certified while the supplied provider records remain pending. A passing fixture-based test proves the diagnostic logic, not the remote CDN or Safari playback.

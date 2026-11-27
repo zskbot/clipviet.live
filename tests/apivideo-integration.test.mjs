@@ -49,7 +49,7 @@ test("API source ingestion is restricted to explicitly approved HTTPS hosts", ()
   assert.equal(validateApiVideoSourceUrl("https://localhost/file.mp4", { APIVIDEO_APPROVED_SOURCE_HOSTS_JSON: '["localhost"]' }), null);
 });
 
-test("API writes default to sandbox and production uses an explicit environment", () => {
+test("Preview API writes default to Sandbox and reject Production", () => {
   assert.equal(getApiVideoApiBaseUrl({}), "https://sandbox.api.video");
   assert.equal(getApiVideoApiBaseUrl({ APIVIDEO_ENV: "production" }), null);
 });

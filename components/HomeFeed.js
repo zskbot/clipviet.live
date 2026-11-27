@@ -36,7 +36,7 @@ export default function HomeFeed() {
           if (!response.ok || !data.success) throw new Error(data.error || "Không tải được video feed");
           allResults.push(...(data.results || []));
           hasMore = Boolean(data.hasMore);
-          if (active) { setCatalogState(data.catalogState || "UNKNOWN"); setProviderStates(data.providers || []); setCatalogMessage(data.message || ""); }
+          if (active) { setCatalogState(data.catalogState || "UNKNOWN"); setProviderStates(data.providers || data.providerStatus || []); setCatalogMessage(data.message || ""); }
           page += 1;
         }
         if (active) { setVideos(allResults); setError(""); }

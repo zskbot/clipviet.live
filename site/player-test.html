@@ -161,8 +161,8 @@
   $("test-hls").addEventListener("click", () => load("hls"));
   $("test-mp4").addEventListener("click", () => load("mp4"));
   $("stop").addEventListener("click", () => {
-    video.pause(); if(video._qaHls){video._qaHls.destroy();video._qaHls=null;}
-    video.removeAttribute("src"); video.load(); status("Đã reset","Chọn lại HLS hoặc MP4 để chạy bài kiểm tra.");
+    resetMedia();
+    status("ĐÃ RESET","Player đã dừng và giải phóng nguồn. Chọn HLS hoặc MP4 để chạy bài kiểm tra.");
   });
   $("copy").addEventListener("click", async () => {
     let buffered = []; try { for (let i = 0; i < video.buffered.length; i++) buffered.push({ start: video.buffered.start(i), end: video.buffered.end(i) }); } catch {} const report = JSON.stringify({browser,userAgent:navigator.userAgent,nativeHls:video.canPlayType("application/vnd.apple.mpegurl"),mediaSource:"MediaSource" in window,readyState:video.readyState,networkState:video.networkState,videoWidth:video.videoWidth,videoHeight:video.videoHeight,duration:video.duration,currentTime:video.currentTime,paused:video.paused,ended:video.ended,buffered,error:video.error?.code||null,events:logs},null,2);

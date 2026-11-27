@@ -59,7 +59,7 @@ function playApiVideo(video, videoId) {
     player.hidden = true;
   }
   if (image) image.hidden = true;
-  if (playButton) playButton.hidden = true;
+  if (playButton) playButton.hidden = false;
   if (settingsToggle) settingsToggle.disabled = true;
   resetQualityOptions("API.video player");
   setResolution(0, 0);
@@ -77,8 +77,9 @@ function playApiVideo(video, videoId) {
   loadApiVideoSdk().then((PlayerSdk) => {
     if (!apiVideoHost || activeVideo !== video) return;
     apiVideoPlayer = new PlayerSdk(apiVideoHost, { id: videoId, autoplay: false, muted: false, hotkeys: true });
-    apiVideoPlayer.addEventListener("ready", () => setStatus("api.video player đã sẵn sàng. Nhấn Play trong trình phát."));
+    apiVideoPlayer.addEventListener("ready", () => { if (playButton) playButton.hidden = true; setStatus("api.video player đã sẵn sàng. Nhấn Play trong trình phát."); });
     apiVideoPlayer.addEventListener("error", () => {
+      if (playButton) playButton.hidden = false;
       setStatus("api.video không thể phát video này. Kiểm tra videoId, trạng thái video và quyền truy cập.");
       setFallback(video.originalUrl || video.sourceUrl || "");
     });
@@ -205,10 +206,11 @@ function loadHlsLibrary() {
 function showPlayer() {
   if (player) player.hidden = false;
   if (image) image.hidden = true;
-  if (playButton) playButton.hidden = true;
+  if (playButton) playButton.hidden = false;
   if (settingsToggle) settingsToggle.disabled = false;
 }
 function handlePlayFailure(error) {
+  if (playButton) playButton.hidden = false;
   setStatus(error?.name === "NotAllowedError"
     ? "Trình duyệt yêu cầu thao tác Play trên thanh điều khiển video."
     : "Không thể bắt đầu phát. Kiểm tra kết nối hoặc mở video gốc.");
@@ -219,6 +221,7 @@ function attemptPlayback() {
   if (attempt && typeof attempt.catch === "function") attempt.catch(handlePlayFailure);
 }
 function onMediaError() {
+  if (playButton) playButton.hidden = false;
   setStatus("Không thể tải luồng video. Nguồn có thể lỗi, bị giới hạn CORS hoặc không hỗ trợ định dạng.");
   setFallback(activeVideo?.originalUrl || activeVideo?.sourceUrl);
 }
@@ -385,7 +388,10 @@ function initFeaturedPlayer() {
     });
   }
   player.addEventListener("error", onMediaError);
-  player.addEventListener("playing", () => setStatus("", false));
+  player.addEventListener("play", () => { if (playButton) playButton.hidden = true; });
+  player.addEventListener("pause", () => { if (playButton && activeVideo) playButton.hidden = false; });
+  player.addEventListener("ended", () => { if (playButton) playButton.hidden = false; });
+  player.addEventListener("playing", () => { if (playButton) playButton.hidden = true; setStatus("", false); });
   player.addEventListener("loadedmetadata", () => setResolution(player.videoWidth, player.videoHeight));
   setImageFilter();
   resetFeaturedPlayer();

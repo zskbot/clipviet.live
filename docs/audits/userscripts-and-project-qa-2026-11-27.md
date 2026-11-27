@@ -3,10 +3,10 @@
 ## Scope
 
 - Repositories: `zskbot/clipviet` and `zskbot/clipviet.live`
-- Base branch: `main`
 - Working branch: `preview/jzvd-android-sdk-view-button-20261127`
 - Upstream userscript source: `CodeSenbot/UserScripts`
-- No Production deployment, DNS/domain edits, secrets, provider data or database writes.
+- Preview-only source changes; no Production deployment, DNS/domain edits, secrets, provider data or database writes.
+- QA is performed independently from GitHub Actions/GitHub-hosted runners.
 
 ## Userscripts integration
 
@@ -24,12 +24,15 @@
 4. Expanded editable-target detection so keyboard shortcuts do not intercept input, buttons, links or contenteditable controls.
 5. Removed unload cleanup that could leave the userscript UI detached after Safari restores a page from the back-forward cache.
 
-## Automated QA added
+## QA tooling added
 
 - `scripts/audit-static-site.mjs` checks local HTML `href`, `src`, `poster` and `action` references, path traversal and escaped-newline markup.
-- `.github/workflows/preview-quality.yml` runs npm install, lint, unit tests, static-link audit, JavaScript syntax checks, Next.js build and PHP syntax checks on Preview branches and PRs.
-- The GitLab relay now treats a missing `GITLAB_API_TOKEN` as a skipped external relay instead of a false project-code failure. The native Preview Quality Gate is the code-validation path.
+- `tests/userscripts-safety.test.mjs` verifies the local userscript is valid JavaScript, restricted to ClipViet hosts, has no network/GM grants and only exposes curated upstream install links.
+- These scripts are reusable in an independent Node environment; no new GitHub Actions workflow is used as the Preview build or QA dependency.
 
-## Known validation boundary
+## Validation boundary
 
-The previous GitHub Preview Artifact checks were reported as failed, but the connector could not retrieve their expired/unavailable job-log blobs. The new workflow is intended to produce fresh, actionable logs for the complete validation run. A green Pages deployment alone does not prove that provider playback works on a physical iPhone.
+- JavaScript syntax was statically checked across all `site/` JavaScript modules in both repositories; no syntax errors were found in those checked files.
+- The GitHub Pages Preview and external GitLab checks reported failures in recent runs, but the connector could not retrieve their job-log blobs. Their exact failure causes remain unverified; no green CI claim is made.
+- Static link auditing and full `npm test` / `npm run lint` / Next.js build still need an independent Node environment run.
+- A successful Pages deployment alone does not prove provider playback works on a physical iPhone.

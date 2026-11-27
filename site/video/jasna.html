@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08090d">
+  <meta name="description" content="Jasna local GPU bridge for ClipViet. Process authorized local video files on your own desktop GPU.">
+  <link rel="stylesheet" href="../styles.css">
+  <title>Jasna GPU · ClipViet</title>
+  <style>
+    .jasna-shell{max-width:980px;margin:0 auto;padding:46px 18px 84px}
+    .jasna-shell h1{font-size:clamp(34px,7vw,62px);letter-spacing:-2.8px;margin:14px 0}
+    .jasna-lead,.jasna-note,.jasna-help{color:#a5a6af;font-size:13px;line-height:1.85;max-width:780px}
+    .jasna-panel{border:1px solid var(--line);background:var(--panel);padding:22px;margin:24px 0}
+    .jasna-panel label{display:block;color:#c6c7ce;font-size:11px;line-height:1.7;margin:14px 0}
+    .jasna-panel input[type=password],.jasna-panel input[type=file]{width:100%;min-height:44px;padding:10px;background:#08090d;color:#fff;border:1px solid var(--line);margin-top:7px}
+    .jasna-check{display:flex!important;gap:10px;align-items:flex-start}
+    .jasna-check input{margin-top:4px;accent-color:var(--red);width:17px;height:17px;flex:0 0 auto}
+    .jasna-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+    .jasna-actions button{min-height:44px;padding:0 16px;border:1px solid var(--red);background:var(--red);color:#fff;font-size:10px;font-weight:900;letter-spacing:1px;border-radius:0}
+    .jasna-actions button.secondary{background:transparent;border-color:#454751}
+    .jasna-actions button:disabled{opacity:.4;cursor:not-allowed}
+    .jasna-status{padding:13px 15px;border-left:2px solid var(--red);background:#12131a;color:#e7e7eb;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+    .jasna-status[data-state=success]{border-color:#48b879}.jasna-status[data-state=error]{border-color:#e35b63}
+    .jasna-platform{padding:14px;border:1px solid #454751;color:#d5d5db;font-size:12px;line-height:1.8;margin:18px 0}
+    .jasna-links{display:flex;gap:18px;flex-wrap:wrap;margin-top:20px;font-size:12px}
+    .jasna-links a{text-decoration:underline;text-underline-offset:3px}
+    .jasna-small{font-size:10px;color:#81838d;line-height:1.8}
+    @media(max-width:600px){.jasna-shell{padding:34px 15px 60px}.jasna-panel{padding:15px}.jasna-actions button{width:100%}}
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../" aria-label="ClipViet trang chủ"><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
+  <nav><a href="../">Trang chủ</a><a href="../browse/">Khám phá</a><a href="../watch/">Trình phát</a></nav>
+</header>
+<main class="jasna-shell">
+  <p class="eyebrow">CLIPVIET / LOCAL GPU PROCESSING</p>
+  <h1>Jasna <span class="brand-accent">GPU Bridge</span></h1>
+  <p class="jasna-lead">Kết nối trang ClipViet với ứng dụng Jasna đã cài trên máy tính của bạn. Video được gửi tới dịch vụ localhost trên chính máy đó, xử lý bằng GPU cục bộ và lưu kết quả tại máy của bạn.</p>
+  <div class="jasna-platform"><strong>Giới hạn nền tảng:</strong> Jasna là ứng dụng Python/GPU cho Windows/Linux desktop. Không chạy trực tiếp trên iPhone Safari, Cloudflare Pages hoặc trình duyệt không có bridge cục bộ. Không có video nào được tải lên máy chủ ClipViet.</div>
+  <section class="jasna-panel" aria-labelledby="bridge-heading">
+    <h2 id="bridge-heading">Kết nối local bridge</h2>
+    <p class="jasna-note">Khởi động <code>tools/jasna-bridge/bridge.py</code> theo hướng dẫn cài đặt trước. Bridge chỉ lắng nghe trên 127.0.0.1:8765.</p>
+    <label for="bridge-token">LOCAL ACCESS TOKEN
+      <input id="bridge-token" type="password" autocomplete="off" spellcheck="false" placeholder="Dán token vừa in trong terminal">
+    </label>
+    <div class="jasna-actions"><button id="bridge-check" class="secondary" type="button">KIỂM TRA KẾT NỐI</button></div>
+    <p id="bridge-status" class="jasna-status" role="status" aria-live="polite" data-state="info">Chưa kiểm tra bridge.</p>
+  </section>
+  <section class="jasna-panel" aria-labelledby="job-heading">
+    <h2 id="job-heading">Tạo tác vụ xử lý video</h2>
+    <label for="jasna-file">CHỌN VIDEO TỪ MÁY TÍNH
+      <input id="jasna-file" type="file" accept="video/mp4,video/x-matroska,video/quicktime,video/webm,video/x-msvideo,.m4v,.mkv,.avi">
+    </label>
+    <label class="jasna-check"><input id="rights-confirm" type="checkbox"><span>Tôi có quyền sở hữu hoặc văn bản cho phép xử lý video này và sử dụng kết quả.</span></label>
+    <label class="jasna-check"><input id="consent-confirm" type="checkbox"><span>Tôi xác nhận tất cả người xuất hiện đều là người trưởng thành và đã đồng ý rõ ràng với việc xử lý video.</span></label>
+    <div class="jasna-actions"><button id="jasna-start" type="button" disabled>BẮT ĐẦU XỬ LÝ GPU</button><button id="jasna-download" class="secondary" type="button" hidden>TẢI VIDEO ĐÃ XỬ LÝ</button></div>
+    <p id="job-status" class="jasna-status" role="status" aria-live="polite" data-state="info">Chưa có tác vụ.</p>
+    <p class="jasna-small">Tệp chỉ được gửi tới 127.0.0.1 trên máy đang chạy bridge. Token không được lưu vào localStorage, cookie hoặc URL. Định dạng đầu ra mặc định: MKV.</p>
+  </section>
+  <p class="jasna-help">Jasna chuyên khôi phục vùng mosaic. Chỉ xử lý nội dung bạn có quyền và sự đồng thuận cần thiết; không xử lý người chưa thành niên hoặc nội dung thân mật không có sự đồng thuận. Không sử dụng công cụ này để vượt DRM, quyền truy cập, hoặc giới hạn phân phối của nguồn video.</p>
+  <div class="jasna-links"><a href="https://github.com/zskbot/jasna" target="_blank" rel="noopener noreferrer">Jasna fork · GitHub ↗</a><a href="https://github.com/Kruk2/jasna" target="_blank" rel="noopener noreferrer">Upstream ↗</a><a href="../../tools/jasna-bridge/README.md">Hướng dẫn cài local bridge</a><a href="../watch/">← Trình phát ClipViet</a></div>
+  <p class="jasna-small">Jasna được cấp phép AGPL-3.0; model weights, binary releases và dependencies có thể có điều khoản riêng. ClipViet không đóng gói mã nguồn, model hoặc license key của Jasna.</p>
+</main>
+<script src="./jasna.js" defer></script>
+</body>
+</html>

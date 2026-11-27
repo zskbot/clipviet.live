@@ -91,6 +91,13 @@ function playApiVideo(video, videoId) {
 const imageDefaults = { brightness: 100, contrast: 100, saturation: 100 };
 const imageSettings = { ...imageDefaults };
 
+function isPlaybackAuthorized(video) {
+  const expiry = Date.parse(video?.rightsExpiresAt || video?.licenseExpiresAt || "");
+  return video?.rightsVerified === true && video?.rightsStatus === "APPROVED" &&
+    Number.isFinite(expiry) && expiry > Date.now() &&
+    video?.playbackEnabled === true && video?.playbackRightsApproved === true;
+}
+
 function setStatus(message, show = true) {
   if (!status) return;
   status.textContent = message;
@@ -98,7 +105,8 @@ function setStatus(message, show = true) {
 }
 function setFallback(url) {
   if (!fallback) return;
-  const target = url || activeVideo?.originalUrl || activeVideo?.original_url || activeVideo?.sourceUrl || activeVideo?.source_url || "";
+  const candidate = url || activeVideo?.originalUrl || activeVideo?.original_url || activeVideo?.sourceUrl || activeVideo?.source_url || "";
+  const target = isPlaybackAuthorized(activeVideo) ? candidate : "";
   fallback.href = target || "#";
   fallback.hidden = !target;
 }
@@ -218,7 +226,7 @@ function playFeaturedVideo(video) {
   if (!player || !video) return;
   const apiVideoId = getApiVideoId(video);
   if (apiVideoId) {
-    if (video.playbackEnabled !== true || video.playbackRightsApproved !== true) {
+    if (!isPlaybackAuthorized(video)) {
       destroyHls();
       destroyApiVideoPlayer();
       if (player) {
@@ -232,6 +240,17 @@ function playFeaturedVideo(video) {
       return;
     }
     playApiVideo(video, apiVideoId);
+    return;
+  }
+  if (!isPlaybackAuthorized(video)) {
+    destroyHls();
+    destroyApiVideoPlayer();
+    player.pause();
+    player.removeAttribute("src");
+    player.load();
+    activeVideo = video;
+    setStatus("Video đang bị khóa: quyền phát chưa được xác minh hoặc đã hết hạn.");
+    setFallback("");
     return;
   }
   destroyApiVideoPlayer();

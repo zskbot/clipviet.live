@@ -121,7 +121,9 @@ function render() {
   $("prev").textContent="← TRANG TRƯỚC";$("next").textContent="TRANG SAU →";
 }
 function loadVideos() {
-  const filtered=catalog.videos.filter(matches);\n  if(quickCategory==="latest")filtered.sort((a,b)=>new Date(b.publishedAt||b.createdAt||b.updatedAt||0)-new Date(a.publishedAt||a.createdAt||a.updatedAt||0)||Number(b.year||0)-Number(a.year||0));\n  const total=filtered.length;
+  const filtered=catalog.videos.filter(matches);
+  if(quickCategory==="latest")filtered.sort((a,b)=>new Date(b.publishedAt||b.createdAt||b.updatedAt||0)-new Date(a.publishedAt||a.createdAt||a.updatedAt||0)||Number(b.year||0)-Number(a.year||0));
+  const total=filtered.length;
   pageCount=Math.min(MAX_PAGES,Math.max(1,Math.ceil(total/PAGE_SIZE)));
   page=Math.min(page,pageCount);items=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
   $("count").dataset.total=String(total);render();

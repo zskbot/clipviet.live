@@ -19,5 +19,23 @@
 <div class="endpoint"><span class="method">POST</span><code>/admin/api/videos/{id}/review</code><p>Ghi nhận quyết định duyệt quyền. Phải có URL bằng chứng HTTPS và ghi chú kiểm tra.</p></div>
 <div class="endpoint"><span class="method">POST</span><code>/admin/api/videos/{id}/publish</code><p>Chỉ xuất bản khi rights status được duyệt, có bằng chứng và video host nằm trong allowlist.</p></div>
 <h2>Video storage</h2><div class="note">Upload tệp video trả <code>501 VIDEO_STORAGE_NOT_PROVISIONED</code>. Bucket hiện có là OpenNext cache, không được tái sử dụng để lưu video. Khi có bucket R2 riêng và được duyệt chi phí, mới bật upload.</div>
+<h2>api.video · VOD Player SDK</h2>
+<p>Tích hợp tùy chọn SDK <code>@api.video/player-sdk</code> để phát video được lưu trữ trên api.video. SDK chỉ được tải khi bản ghi có <code>apiVideoId</code> hoặc <code>api_video_id</code> hợp lệ. Các video HLS/MP4 từ nhà cung cấp khác tiếp tục dùng HTML5/HLS.js hiện tại.</p>
+<div class="note"><strong>Quyền phát:</strong> SDK chỉ khởi tạo khi <code>playbackEnabled === true</code> và <code>playbackRightsApproved === true</code>. Chỉ có videoId không chứng minh quyền phân phối hoặc quyền truy cập video riêng tư. Không đặt API access key trong trình duyệt.</div>
+<div class="endpoint"><span class="method">PLAYER</span><code>apiVideoId</code><p>ID video api.video. Có thể đặt ở cấp video hoặc dùng <code>provider: "api.video"</code> cùng <code>videoId</code>. Video phải được cấp quyền phát trước khi hiển thị player.</p></div>
+<pre>{
+  "provider": "api.video",
+  "videoId": "YOUR_PUBLIC_VIDEO_ID",
+  "playbackEnabled": true,
+  "playbackRightsApproved": true
+}</pre>
+<p>Player SDK được tải từ <code>https://unpkg.com/@api.video/player-sdk</code> theo nhu cầu, khởi tạo với autoplay tắt và có thể hủy khi đổi video. Trên iPhone/Safari, người xem chủ động nhấn Play trong player nhúng.</p>
+<h3>Nguồn tham chiếu và giấy phép</h3>
+<ul>
+<li><a href="https://github.com/apivideo/api.video-documentation" target="_blank" rel="noopener noreferrer">api.video official documentation</a> — tài liệu VOD, Live, Delivery, API và SDK.</li>
+<li><a href="https://github.com/apivideo/api.video-player-sdk" target="_blank" rel="noopener noreferrer">api.video Player SDK upstream</a> — mã nguồn SDK chính chủ; MIT License. Bản mirror <code>zskbot/api.video-player-sdk</code> không được dùng làm nguồn phát hành độc lập.</li>
+<li><a href="https://github.com/zskbot/api.video-documentation" target="_blank" rel="noopener noreferrer">zskbot documentation mirror</a> — mirror tài liệu, không tải trùng vào ứng dụng.</li>
+<li><a href="https://github.com/zskbot/api-video" target="_blank" rel="noopener noreferrer">zskbot/api-video</a> — hồ sơ API Evangelist, chỉ metadata/tài liệu, không phải SDK hoặc backend.</li>
+</ul>
 <h2>Đường dẫn giao diện</h2><div class="grid"><div class="endpoint"><a href="/video/">/video</a><p>Video đã xuất bản</p></div><div class="endpoint"><a href="/tag/">/tag</a><p>Tags công khai</p></div><div class="endpoint"><a href="/group/">/group</a><p>Groups công khai</p></div><div class="endpoint"><a href="/admin/">/admin</a><p>CMS yêu cầu Access MFA</p></div></div>
 </main></body></html>

@@ -78,7 +78,7 @@ let requestSequence = 0;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
-const API_BASE = "https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev";
+const API_BASE = "";
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.
 // Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.
@@ -132,9 +132,18 @@ function render() {
       if (sequence !== requestSequence) return;
       const rawRows = Array.isArray(payload.items) ? payload.items : [];
       const excludedAgeLabel = /under[\s_-]*age|minor|loli|shota|school[\s_-]*(?:girl|boy|student)|teen[\s_-]*(?:girl|boy)|học[\s_-]*sinh|nữ[\s_-]*sinh|nam[\s_-]*sinh|thiếu[\s_-]*niên|vị[\s_-]*thành[\s_-]*niên/i;
-      const rows = rawRows.filter((item) => item.rightsVerified === true && item.rightsStatus === "APPROVED" &&
-        Number.isFinite(Date.parse(item.rightsExpiresAt)) && Date.parse(item.rightsExpiresAt) > Date.now() &&
+      // Catalog metadata can remain visible; AppleCMS presence does not prove distribution rights.
+      // Playback requires an explicit, verified, unexpired approval and an explicit playback grant.
+      const rows = rawRows.filter((item) =>
         !excludedAgeLabel.test([item.title, item.categoryName, item.description, item.actors, item.director].filter(Boolean).join(" ")));
+      const hasApprovedPlaybackRights = (item) =>
+        item.rightsVerified === true &&
+        item.rightsStatus === "APPROVED" &&
+        Number.isFinite(Date.parse(item.rightsExpiresAt)) &&
+        Date.parse(item.rightsExpiresAt) > Date.now() &&
+        item.playbackEnabled === true &&
+        item.playbackRightsApproved === true;
+      const approvedCount = rows.filter(hasApprovedPlaybackRights).length;
       if (loadingState) loadingState.hidden = true;
       totalResults = Math.max(0, Number(payload.total) || rows.length);
       pageSize = Math.max(1, Number(payload.limit) || 30);
@@ -152,18 +161,23 @@ function render() {
         return;
       }
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-      const pageItems = rows.map((item) => ({
-        ...item,
-        category: item.categoryName || "Khác",
-        genre: item.categoryName || "",
-        country: item.area || "",
-        apiManaged: true,
-        sources: (Array.isArray(item.lines) ? item.lines : []).flatMap((line) => (Array.isArray(line.episodes) ? line.episodes : []).map((episode) => ({
-          url: episode.url,
-          type: /\\.m3u8(?:$|\\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
-        }))),
-        rating: "18+"
-      }));
+      const pageItems = rows.map((item) => {
+        const playbackApproved = hasApprovedPlaybackRights(item);
+        return ({
+          ...item,
+          category: item.categoryName || "Khác",
+          genre: item.categoryName || "",
+          country: item.area || "",
+          apiManaged: true,
+          playbackEnabled: playbackApproved,
+          playbackRightsApproved: playbackApproved,
+          sources: playbackApproved ? (Array.isArray(item.lines) ? item.lines : []).flatMap((line) => (Array.isArray(line.episodes) ? line.episodes : []).map((episode) => ({
+            url: episode.url,
+            type: /\\.m3u8(?:$|\\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
+          }))) : [],
+          rating: playbackApproved ? "18+" : "Chỉ xem metadata"
+        });
+      });
       grid.replaceChildren();
       count.textContent = totalResults.toLocaleString("vi-VN") + " VIDEO";
       empty.hidden = pageItems.length > 0;
@@ -186,13 +200,17 @@ function render() {
         img.src = video.poster || "./poster-fallback.svg";
         img.alt = video.title || "Video";
         img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
-        card.querySelector(".poster-label").textContent = "18+";
+        card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.badgeLabel || video.licenseLabel || "CHỈ XEM");
         card.querySelector("h3").textContent = video.title || "Video";
         card.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
         card.addEventListener("click", () => openDetail(video));
         grid.append(card);
       }
-      setMenuApiStatus("Đã xác minh quyền · " + totalResults.toLocaleString("vi-VN") + " video.", "success");
+      setMenuApiStatus(
+        approvedCount.toLocaleString("vi-VN") + " video đã duyệt phát · " +
+        (rows.length - approvedCount).toLocaleString("vi-VN") + " bản ghi chỉ xem metadata.",
+        approvedCount === rows.length ? "success" : "warning"
+      );
     })
     .catch((error) => {
       if (sequence !== requestSequence) return;
@@ -336,7 +354,7 @@ function renderFeatured() {
   $("#featured-title").textContent = video.title || "Video nổi bật";
   $("#featured-meta").textContent = video.isSample
     ? "PHIM MỞ · " + (video.license || "CREATIVE COMMONS") + " · " + (video.sourceName || "BLENDER FOUNDATION")
-    : [video.year, video.duration, video.country, video.category].filter(Boolean).join(" · ");
+    : [video.year, video.duration, video.country, video.category, video.licenseLabel].filter(Boolean).join(" · ");
   $("#featured-description").textContent = video.description || "Khám phá video đang được quan tâm trên ClipViet.";
   $("#featured-index").textContent = String(featuredIndex + 1).padStart(2, "0");
   featuredRoot.querySelector(".eyebrow").textContent = video.isSample
@@ -456,7 +474,10 @@ function openDetail(video) {
   detail.querySelector(".meta").textContent = [video.year, video.duration, video.rating, video.country].filter(Boolean).join(" · ");
   detail.querySelector(".detail-source").textContent = video.isSample
     ? "Nguồn: " + (video.sourceName || "Open Movie") + " · " + (video.license || "Creative Commons") + " · " + (video.attribution || "") + " · " + (video.licenseUrl || "")
-    : video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) : "Bản ghi demo.";
+    : video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) + " · " + (video.licenseLabel || "Metadata only") + " · " + (video.sourceUrl || "") : "Bản ghi demo.";
+  if (video.apiManaged && video.playbackRightsApproved !== true) {
+    detail.querySelector(".detail-source").textContent += " · Chỉ hiển thị metadata; phát bị khóa cho đến khi xác minh quyền phân phối.";
+  }
   if (video.isSample && video.videoUrl) {
     const link = detail.querySelector(".watch-link");
     link.hidden = false;

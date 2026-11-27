@@ -254,8 +254,9 @@ test("HLS diagnostics verify manifest MIME, CORS and first segment without retur
       status: 200, headers: { "content-type": "application/vnd.apple.mpegurl",
         "access-control-allow-origin": PREVIEW_ORIGIN }
     });
-    if (url === "https://cdn.example.com/segment.ts") return new Response(null, {
-      status: 200, headers: { "content-type": "video/mp2t", "access-control-allow-origin": PREVIEW_ORIGIN }
+    if (url === "https://cdn.example.com/segment.ts" && init.method === "GET") return new Response(new Uint8Array([0, 1]), {
+      status: 206, headers: { "content-type": "video/mp2t", "content-range": "bytes 0-1/100",
+        "access-control-allow-origin": PREVIEW_ORIGIN }
     });
     throw new Error("unexpected URL " + url);
   };
@@ -273,7 +274,7 @@ test("HLS diagnostics verify manifest MIME, CORS and first segment without retur
     assert.equal(body.data.results[0].corsOk, true);
     assert.equal(body.data.results[0].firstResourceReachable, true);
     assert.equal(JSON.stringify(body).includes("cdn.example.com"), false);
-    assert.equal(calls.some(call => call.url.endsWith("segment.ts") && call.method === "HEAD"), true);
+    assert.equal(calls.some(call => call.url.endsWith("segment.ts") && call.method === "GET"), true);
   } finally { globalThis.fetch = originalFetch; }
 });
 

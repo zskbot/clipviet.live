@@ -388,12 +388,14 @@ function showCatalogUnavailable(message) {
   count.textContent = "0 VIDEO ĐƯỢC DUYỆT QUYỀN";
   empty.hidden = false;
   empty.textContent = message;
-  setFeaturedVideos([]);
+  // Keep the AppleCMS catalog blocked, but provide a separate, clearly labeled
+  // licensed open-movie demo so the featured player always has a real Play path.
+  setFeaturedVideos(openLicensedVideos);
   renderPagination(0);
   activeFiltersRoot.replaceChildren();
   activeFiltersRoot.hidden = true;
   const note = document.querySelector(".data-note");
-  if (note) note.textContent = message + " · KHÔNG HIỂN THỊ VIDEO DEMO THAY THẾ";
+  if (note) note.textContent = message + " · TRÌNH PHÁT MẪU DÙNG PHIM MỞ CÓ GIẤY PHÉP; KHÔNG MỞ KHÓA APPLECMS.";
 }
 
 const openLicensedVideos = [

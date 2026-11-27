@@ -33,3 +33,15 @@ These HTML pages are not documented APIs. This Preview does not crawl, scrape, r
 ## Isolated Pages Preview
 
 The Cloudflare Pages project `clipviet-live-independent-preview` now explicitly includes branch `preview/clipviet-catalog-integration-20261128` in its Preview branch allowlist. The project production branch remains `main` and automatic Production deployments remain disabled.
+
+## Catalog, detail and player routes
+
+- `GET /api/videos?page=N&limit=100` reads the same upstream page N from each rights-approved provider and merges those page results. It does not slice the merged page a second time. `hasMore` is derived from provider page counts for the existing HomeFeed pagination loop.
+- The catalog response includes the explicit empty-state reason, per-provider rights/operational state, provider errors and a deny-by-default rights summary.
+- HomeFeed displays a provider-review or outage explanation rather than presenting an unexplained blank grid. Metadata category names are normalized for filtering.
+- `GET /api/providers/applecms/diagnostics` contacts only providers whose configuration and provider-level rights are approved. Pending/unconfigured providers are not probed.
+- The watch page resolves provider ID + source content ID through the AppleCMS detail route. The Play action separately requests the playback endpoint after a user gesture; only an approved official embed or allowlisted owner-hosted HTTPS media URL is rendered. Safari uses the native video element for HLS/MP4 and reports playback errors.
+
+## SEO
+
+The Preview includes a sitemap and robots policy. Administrative and API routes are excluded from crawling. No analytics tag or Search Console verification is fabricated; Lion AI reporting requires an authorized workspace and bound GA4/Search Console connections.

@@ -1,0 +1,73 @@
+name: Preview Quality Gate
+
+on:
+  push:
+    branches:
+      - "preview/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node-quality:
+    name: Lint, tests, static links and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint application
+        run: npm run lint
+
+      - name: Run unit and contract tests
+        run: npm test
+
+      - name: Audit all static HTML links and markup
+        run: node scripts/audit-static-site.mjs
+
+      - name: Syntax-check project JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          for root in site app lib scripts worker workers; do
+            [[ -d "$root" ]] || continue
+            while IFS= read -r -d '' file; do
+              echo "Checking $file"
+              node --input-type=module --check < "$file"
+            done < <(find "$root" -type f \( -name '*.js' -o -name '*.mjs' \) -print0)
+          done
+
+      - name: Build Next.js application
+        run: npm run build
+
+  php-quality:
+    name: PHP API syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: Check PHP syntax
+        shell: bash
+        run: |
+          if [[ -d php-api ]]; then
+            find php-api -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l
+          fi

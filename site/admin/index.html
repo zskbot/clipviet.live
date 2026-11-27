@@ -1,40 +1,56 @@
 <!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="robots" content="noindex,nofollow"><title>ClipViet · Video CMS Preview</title>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex,nofollow">
+<title>ClipViet · Public Read-only Admin Preview</title>
 <style>
-:root{color-scheme:dark;background:#050505;color:#f5f5f5;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;--line:#303030;--muted:#999;--red:#ef3340}*{box-sizing:border-box}body{margin:0;padding:24px 14px}main{max-width:1000px;margin:auto}a{color:#ff9aa2}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:16px}.eyebrow{font-size:10px;letter-spacing:.2em;color:#ff6975}h1{font-size:clamp(28px,7vw,54px);line-height:1.05;margin:18px 0}p{color:var(--muted);font-size:12px}.notice{border:1px solid #59402a;background:#15100a;padding:12px;margin:18px 0;color:#e7c99e}.panel,.video{border:1px solid var(--line);padding:16px;margin:14px 0;background:#0b0b0b}label{display:block;font-size:10px;color:#aaa;letter-spacing:.1em;margin:12px 0 6px}input,textarea{width:100%;background:#050505;color:#fff;border:1px solid #444;border-radius:0;padding:12px;font:13px ui-monospace,monospace}textarea{min-height:90px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wide{grid-column:1/-1}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}button{border:1px solid #666;border-radius:0;background:#111;color:#fff;padding:11px 14px;font:700 11px ui-monospace,monospace;letter-spacing:.08em;cursor:pointer}button.primary{background:var(--red);border-color:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}.status{min-height:24px;color:#ddd}.video-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.pill{border:1px solid #555;padding:3px 8px;font-size:10px;color:#ccc}.meta{font-size:11px;color:#999;overflow-wrap:anywhere}.empty{padding:18px;border:1px dashed #444;color:#999}.small{font-size:10px;color:#777}@media(max-width:600px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.top{align-items:flex-start;flex-direction:column}}
-</style></head><body><main>
-<header class="top"><div><p class="eyebrow">CLIPVIET / PREVIEW CMS</p><strong>VIDEO METADATA WORKSPACE</strong></div><nav><a href="/">Trang chủ</a> · <a href="/docs/">Docs</a></nav></header>
-<h1>Quản lý <span style="color:#ef3340">video</span></h1>
-<p>Phiên quản trị được bảo vệ bằng Cloudflare Access. Metadata lưu trong D1 Preview; nội dung chỉ được công khai sau bước xác minh quyền phân phối.</p>
-<div class="notice">PREVIEW ONLY · Upload tệp video đang tắt vì chưa có bucket R2 riêng. Có thể lưu metadata bản nháp. Không dùng bucket cache OpenNext để chứa video.</div>
-<section class="panel"><h2>Thêm video / metadata</h2>
-<form id="video-form" class="grid">
-<label class="wide">TIÊU ĐỀ<input name="title" required minlength="2" maxlength="160" placeholder="Tên video"></label>
-<label class="wide">MÔ TẢ<textarea name="description" maxlength="5000" placeholder="Mô tả nội dung"></textarea></label>
-<label class="wide">VIDEO URL HTTPS (TÙY CHỌN)<input name="videoUrl" type="url" placeholder="https://media.example/video.mp4"></label>
-<label class="wide">POSTER URL HTTPS (TÙY CHỌN)<input name="posterUrl" type="url" placeholder="https://images.example/poster.jpg"></label>
-<label>TAGS · PHÂN TÁCH BẰNG DẤU PHẨY<input name="tags" placeholder="documentary, open-movie"></label>
-<label>GROUPS · PHÂN TÁCH BẰNG DẤU PHẨY<input name="groups" placeholder="featured, library"></label>
-<label class="wide">URL BẰNG CHỨNG QUYỀN PHÂN PHỐI<input name="rightsEvidenceUrl" type="url" placeholder="https://..."></label>
-<label class="wide">GHI CHÚ KIỂM TRA QUYỀN<textarea name="rightsNotes" maxlength="2000" placeholder="Nguồn giấy phép, phạm vi sử dụng, người kiểm tra..."></textarea></label>
-<div class="wide actions"><button class="primary" type="submit">LƯU BẢN NHÁP</button><button type="button" id="refresh">TẢI LẠI DANH SÁCH</button></div>
-</form><p id="form-status" class="status" role="status"></p></section>
-<section><div class="video-head"><h2>Thư viện metadata</h2><span id="count" class="pill">0 RECORDS</span></div><div id="videos"><p class="empty">Đang tải dữ liệu…</p></div></section>
-<p class="small">Public API chỉ trả video đã xuất bản. Publish yêu cầu quyền đã duyệt, URL bằng chứng HTTPS và host video nằm trong MEDIA_HOST_ALLOWLIST. Không có quyền phân phối thì không xuất bản.</p>
+:root{color-scheme:dark;background:#050505;color:#f5f5f5;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;--line:#303030;--muted:#999;--accent:#ef3340}
+*{box-sizing:border-box}body{margin:0;padding:24px 14px}main{max-width:1000px;margin:auto}a{color:#ff9aa2}
+header{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:16px;flex-wrap:wrap}
+.eyebrow{font-size:10px;letter-spacing:.2em;color:#ff6975}h1{font-size:clamp(28px,7vw,54px);line-height:1.05;margin:24px 0 8px}
+p{color:var(--muted);font-size:12px}.notice{border:1px solid #31543d;background:#0a140d;padding:12px;margin:18px 0;color:#b8e5c4}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:24px 0 12px}
+button{border:1px solid #666;border-radius:0;background:#111;color:#fff;padding:10px 14px;font:700 11px ui-monospace,monospace;letter-spacing:.08em;cursor:pointer}
+.card{border:1px solid var(--line);padding:16px;margin:12px 0;background:#0b0b0b}
+.card-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.pill{border:1px solid #555;padding:3px 8px;font-size:10px;color:#ccc}.meta{font-size:11px;color:#999;overflow-wrap:anywhere}
+.empty{padding:18px;border:1px dashed #444;color:#999}.status{min-height:24px;color:#ddd}
+@media(max-width:600px){header{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body><main>
+<header><div><p class="eyebrow">CLIPVIET / PREVIEW CMS</p><strong>PUBLIC READ-ONLY WORKSPACE</strong></div><nav><a href="/">Trang chủ</a> · <a href="/docs/">Docs</a></nav></header>
+<h1>Thư viện <span style="color:#ef3340">video</span></h1>
+<p>Admin Preview công khai, không yêu cầu đăng nhập hoặc Cloudflare Access. Trang này chỉ hiển thị metadata; mọi thao tác tạo, sửa, duyệt, xuất bản và xóa đều bị khóa ở máy chủ.</p>
+<div class="notice">PREVIEW ONLY · READ-ONLY · Upload video và toàn bộ thao tác ghi/xóa/xuất bản đang tắt. Dữ liệu được đọc từ D1 Preview.</div>
+<section>
+<div class="toolbar"><strong>THƯ VIỆN METADATA</strong><span id="count" class="pill">0 RECORDS</span></div>
+<div id="videos"><p class="empty">Đang tải dữ liệu…</p></div>
+<p id="status" class="status" role="status"></p>
+</section>
 <script type="module">
-const form=document.querySelector("#video-form"),status=document.querySelector("#form-status"),root=document.querySelector("#videos"),count=document.querySelector("#count");let editingId=null;
-const csv=value=>String(value||"").split(",").map(x=>x.trim()).filter(Boolean);
-async function api(path,options={}){const response=await fetch(path,{cache:"no-store",credentials:"same-origin",...options,headers:{"content-type":"application/json",...(options.headers||{})}});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||("HTTP "+response.status));return body}
+const root=document.querySelector("#videos"),count=document.querySelector("#count"),status=document.querySelector("#status");
 function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el}
-async function load(){root.replaceChildren(node("p","Đang tải…","empty"));try{const payload=await api("/admin/api/videos");const items=Array.isArray(payload.data)?payload.data:[];count.textContent=items.length+" RECORDS";root.replaceChildren();if(!items.length){root.append(node("p","Chưa có metadata. Tạo bản nháp đầu tiên ở biểu mẫu phía trên.","empty"));return}
-for(const item of items){const card=node("article",undefined,"video"),head=node("div",undefined,"video-head");head.append(node("strong",item.title),node("span",item.status+" · RIGHTS "+item.rightsStatus,"pill"));card.append(head,node("p",item.description||"Không có mô tả"),node("p","TAGS: "+(item.tags||[]).join(", ")+" · GROUPS: "+(item.groups||[]).join(", "),"meta"),node("p","VIDEO: "+(item.videoUrl||"chưa có URL")+" · RIGHTS EVIDENCE: "+(item.rightsEvidenceUrl||"chưa có"),"meta"));
-const actions=node("div",undefined,"actions");
-if(item.status==="draft"){const edit=node("button","SỬA BẢN NHÁP");edit.addEventListener("click",()=>{editingId=item.id;for(const [key,value] of Object.entries({title:item.title,description:item.description,videoUrl:item.videoUrl,posterUrl:item.posterUrl,tags:(item.tags||[]).join(", "),groups:(item.groups||[]).join(", "),rightsEvidenceUrl:item.rightsEvidenceUrl,rightsNotes:item.rightsNotes})){const field=form.elements.namedItem(key);if(field)field.value=value||""}form.querySelector('button[type="submit"]').textContent="CẬP NHẬT BẢN NHÁP";status.textContent="Đang sửa: "+item.title;form.scrollIntoView({behavior:"smooth",block:"start"})});
-const review=node("button","DUYỆT QUYỀN");review.addEventListener("click",async()=>{try{await api("/admin/api/videos/"+item.id+"/review",{method:"POST",body:JSON.stringify({decision:"approved",rightsEvidenceUrl:item.rightsEvidenceUrl,rightsNotes:item.rightsNotes})});status.textContent="Đã ghi nhận bước duyệt quyền cho bản nháp.";await load()}catch(e){status.textContent=e.message}});
-const publish=node("button","XUẤT BẢN");publish.addEventListener("click",async()=>{try{await api("/admin/api/videos/"+item.id+"/publish",{method:"POST",body:"{}"});status.textContent="Video đã xuất bản.";await load()}catch(e){status.textContent=e.message}});
-actions.append(edit,review,publish)}
-card.append(actions);root.append(card)}
-}catch(e){root.replaceChildren(node("p","Không tải được CMS: "+e.message,"empty"));status.textContent=e.message}}
-form.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(form),body={title:f.get("title"),description:f.get("description"),videoUrl:f.get("videoUrl"),posterUrl:f.get("posterUrl"),tags:csv(f.get("tags")),groups:csv(f.get("groups")),rightsEvidenceUrl:f.get("rightsEvidenceUrl"),rightsNotes:f.get("rightsNotes")};try{const result=await api(editingId?("/admin/api/videos/"+editingId):"/admin/api/videos",{method:editingId?"PUT":"POST",body:JSON.stringify(body)});status.textContent=(editingId?"Đã cập nhật: ":"Đã lưu bản nháp: ")+result.data.title;editingId=null;form.reset();form.querySelector('button[type="submit"]').textContent="LƯU BẢN NHÁP";await load()}catch(err){status.textContent=err.message}});
-document.querySelector("#refresh").addEventListener("click",load);load();
-</script></main></body></html>
+async function load(){root.replaceChildren(node("p","Đang tải…","empty"));try{
+ const response=await fetch("/admin/api/videos",{cache:"no-store",credentials:"omit"});
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(payload.error||("HTTP "+response.status));
+ const items=Array.isArray(payload.data)?payload.data:[];
+ count.textContent=items.length+" RECORDS";root.replaceChildren();
+ if(!items.length){root.append(node("p","Chưa có metadata trong D1 Preview.","empty"));return}
+ for(const item of items){
+  const card=node("article",undefined,"card"),head=node("div",undefined,"card-head");
+  head.append(node("strong",item.title||"Không có tiêu đề"),node("span",(item.status||"unknown")+" · RIGHTS "+(item.rightsStatus||"unknown"),"pill"));
+  card.append(head,node("p",item.description||"Không có mô tả"),node("p","TAGS: "+(item.tags||[]).join(", ")+" · GROUPS: "+(item.groups||[]).join(", "),"meta"));
+  if(item.videoUrl)card.append(node("p","VIDEO: "+item.videoUrl,"meta"));
+  if(item.posterUrl)card.append(node("p","POSTER: "+item.posterUrl,"meta"));
+  card.append(node("p","UPDATED: "+(item.updatedAt||"—"),"meta"));root.append(card);
+ }
+ status.textContent="Đang ở chế độ chỉ xem. Không có thao tác ghi nào được cung cấp.";
+}catch(error){root.replaceChildren(node("p","Không tải được danh sách: "+error.message,"empty"));status.textContent=error.message}}
+load();
+</script>
+</main></body></html>

@@ -85,11 +85,11 @@ test("catalog routes pass through the secondary Pages rights gate", async () => 
   });
 });
 
-test("admin API forwards Access JWT but never forwards browser cookies", async () => {
+test("public Admin API allows anonymous read-only GET and strips identity headers", async () => {
   await withFetch(async request => {
     assert.equal(new URL(request.url).origin, env.VIDEO_CMS_ORIGIN);
     assert.equal(new URL(request.url).pathname, "/admin/api/videos");
-    assert.equal(request.headers.get("cf-access-jwt-assertion"), "preview-jwt");
+    assert.equal(request.headers.get("cf-access-jwt-assertion"), null);
     assert.equal(request.headers.get("cookie"), null);
     assert.equal(request.headers.get("authorization"), null);
     return Response.json({ data: [] });
@@ -99,6 +99,8 @@ test("admin API forwards Access JWT but never forwards browser cookies", async (
     }), env);
     assert.equal(response.status, 200);
   });
+  const write = await gateway.fetch(new Request("https://router-preview.example.workers.dev/admin/api/videos", { method: "POST" }), env);
+  assert.equal(write.status, 403);
 });
 
 test("admin page routes to the secondary repository and upload remains disabled", async () => {

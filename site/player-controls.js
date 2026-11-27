@@ -219,6 +219,13 @@ function playFeaturedVideo(video) {
   const apiVideoId = getApiVideoId(video);
   if (apiVideoId) {
     if (video.playbackEnabled !== true || video.playbackRightsApproved !== true) {
+      destroyHls();
+      destroyApiVideoPlayer();
+      if (player) {
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+      }
       activeVideo = video;
       setStatus("Video api.video đang bị khóa: chưa có xác nhận quyền phát hợp lệ.");
       setFallback(video.originalUrl || video.sourceUrl || "");

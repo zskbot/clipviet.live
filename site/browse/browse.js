@@ -5,10 +5,16 @@ const MAX_PAGES = 1000;
 let catalog = { videos: [], categories: [], providers: [] };
 let page = 1, pageCount = 1, activeProvider = "", categoryId = "", keyword = "", country = "", duration = "";
 let items = [], trendingTimer = null, trendingIndex = 0, trendingItems = [], quickCategory = "";
-const initialQuickCategory = new URLSearchParams(location.search).get("quick") || "";
-if (["jav","china","europe","vietnam","vietsub","south-asia","actors","genres","uncensored","beauty","amateur","xvideos","xnxx"].includes(initialQuickCategory)) quickCategory = initialQuickCategory;
+const browseParams = new URLSearchParams(location.search);
+const initialQuickCategory = browseParams.get("quick") || "";
+keyword = browseParams.get("q") || "";
+activeProvider = browseParams.get("source") || "";
+categoryId = browseParams.get("category") || "";
+if (["latest","adult","jav","china","europe","vietnam","vietsub","south-asia","actors","genres","uncensored","beauty","amateur","xvideos","xnxx","buomtv","hsex","xnhau","vlxx"].includes(initialQuickCategory)) quickCategory = initialQuickCategory;
 
 const gate = $("age-gate");
+if ($("keyword")) $("keyword").value = keyword;
+if ($("source")) $("source").value = activeProvider;
 try { if (sessionStorage.getItem("clipviet-age-confirmed") === "yes") gate.hidden = true; } catch {}
 $("confirm").addEventListener("click", () => { try { sessionStorage.setItem("clipviet-age-confirmed", "yes"); } catch {} gate.hidden = true; });
 $("leave").addEventListener("click", () => location.replace("https://www.google.com/"));
@@ -53,6 +59,7 @@ function matches(item) {
   // Never surface content labeled as minors, schoolchildren, or youth in adult-content recommendations.
   const unsafeMinor=/(học\s*sinh|nữ\s*sinh|nam\s*sinh|school\s*(girl|boy|student)|underage|minor|loli|shota|teen\s*(girl|boy))/i.test(hay);
   const quickMatchers = {
+    adult: /(adult|18\\+|người trưởng thành|người lớn)/i,
     jav: /\b(jav|japan|japanese|nhật|nhat)\b/i,
     china: /(trung quốc|china|chinese|cn)/i,
     europe: /(châu âu|europe|european|pháp|đức|anh|italy|spanish)/i,
@@ -63,9 +70,9 @@ function matches(item) {
     beauty: /(gái xinh|beautiful|beauty|hot girl)/i,
     amateur: /(nghiệp dư|amateur|homemade|user generated)/i,
     xvideos: /xvideos/i,
-    xnxx: /xnxx/i
+    xnxx: /xnxx/i, buomtv: /buomtv/i, hsex: /hsex/i, xnhau: /xnhau/i, vlxx: /vlxx/i
   };
-  const quickMatch = !quickCategory || (quickCategory === "actors" ? Boolean(item.actors) : quickCategory === "genres" ? Boolean(item.categoryName || item.categoryId) : Boolean(quickMatchers[quickCategory]?.test(hay)));
+  const quickMatch = !quickCategory || quickCategory === "latest" || (quickCategory === "actors" ? Boolean(item.actors) : quickCategory === "genres" ? Boolean(item.categoryName || item.categoryId) : Boolean(quickMatchers[quickCategory]?.test(hay)));
   return !unsafeMinor && quickMatch && (!activeProvider||item.sourceId===activeProvider) &&
     (!categoryId||item.categoryId===categoryId) && (!country||String(item.area||"").toLocaleLowerCase("vi")===country.toLocaleLowerCase("vi")) &&
     (!keyword||hay.includes(keyword.toLocaleLowerCase("vi"))) && durationMatches(item);
@@ -121,7 +128,9 @@ function render() {
   $("prev").textContent="← TRANG TRƯỚC";$("next").textContent="TRANG SAU →";
 }
 function loadVideos() {
-  const filtered=catalog.videos.filter(matches),total=filtered.length;
+  const filtered=catalog.videos.filter(matches);
+  if(quickCategory==="latest")filtered.sort((a,b)=>new Date(b.publishedAt||b.createdAt||b.updatedAt||0)-new Date(a.publishedAt||a.createdAt||a.updatedAt||0)||Number(b.year||0)-Number(a.year||0));
+  const total=filtered.length;
   pageCount=Math.min(MAX_PAGES,Math.max(1,Math.ceil(total/PAGE_SIZE)));
   page=Math.min(page,pageCount);items=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
   $("count").dataset.total=String(total);render();
@@ -158,7 +167,7 @@ $("next").addEventListener("click",()=>{if(page<pageCount){page++;loadVideos();w
     if(!response.ok)throw new Error("catalog.json HTTP "+response.status);
     catalog=await response.json();
     if(!Array.isArray(catalog.videos)||!Array.isArray(catalog.providers)||!Array.isArray(catalog.categories))throw new Error("Catalog format is invalid");
-    populateCategories();populateSelect("country",catalog.videos.map(x=>x.area),"Tất cả quốc gia");
+    populateCategories();populateSelect("country",catalog.videos.map(x=>x.area),"Tất cả quốc gia"); if(categoryId) $("category").value=activeProvider+":"+categoryId;
     setupTrending();$("count").dataset.total=String(catalog.videos.length);loadVideos();
   }catch(error){status("Không tải được catalog: "+error.message);$("empty").hidden=false;}
 })();

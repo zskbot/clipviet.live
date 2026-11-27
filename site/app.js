@@ -6,7 +6,7 @@ const grid = $("#video-grid");
 const featuredRoot = $("#featured-video");
 const count = $("#result-count");
 const empty = $("#empty-state");
-const search = $("#search");
+const search = $("#navigation-search");
 const dialog = $("#detail-dialog");
 const detail = $("#detail-content");
 const ageDialog = $("#age-dialog");
@@ -51,6 +51,7 @@ function filterButton(label, root, current, setValue) {
 
 let activeCategoryId = "";
 let activeCategoryName = "";
+let activeQuickFilter = "latest";
 function renderCategories(values) {
   categoryRoot.replaceChildren();
   const all = { id: "", name: "Tất cả" };
@@ -94,11 +95,20 @@ const sampleVideo = {
   isSample: true
 };
 
+function setMenuApiStatus(message, state = "info") {
+  const status = $("#menu-api-status");
+  if (status) {
+    status.textContent = message;
+    status.dataset.state = state;
+  }
+}
+
 function render() {
   const sequence = ++requestSequence;
   const params = new URLSearchParams({ page: String(currentPage) });
   if (query.trim()) params.set("keyword", query.trim().slice(0, 100));
   if (activeCategoryId) params.set("categoryId", activeCategoryId);
+  if (activeQuickFilter === "latest") params.set("sort", "latest");
   const url = API_BASE + "/api/videos?" + params.toString();
   count.textContent = "ĐANG TẢI…";
   empty.hidden = true;
@@ -154,11 +164,11 @@ function render() {
         card.addEventListener("click", () => openDetail(video));
         grid.append(card);
       }
-      const note = document.querySelector(".data-note");
-      if (note) note.textContent = "CLOUDFLARE PREVIEW API · TRANG " + currentPage + "/" + totalPages + " · " + totalResults.toLocaleString("vi-VN") + " VIDEO";
+      setMenuApiStatus("API danh mục đã kết nối · " + totalResults.toLocaleString("vi-VN") + " video.", "success");
     })
     .catch((error) => {
       if (sequence !== requestSequence) return;
+      setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
       renderSampleVideo("Catalog API tạm thời không khả dụng: " + error.message);
     });
 }
@@ -375,9 +385,16 @@ function openDetail(video) {
 }
 
 let menuReturnFocus = null;
+let menuScrollY = 0;
 function closeMenu(returnFocus = false) {
   menu.hidden = true;
   document.body.classList.remove("menu-open");
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  window.scrollTo(0, menuScrollY);
   menuToggle.setAttribute("aria-expanded", "false");
   menuToggle.setAttribute("aria-label", "Mở menu điều hướng");
   if (returnFocus) (menuReturnFocus || menuToggle).focus();
@@ -386,15 +403,21 @@ menuToggle?.addEventListener("click", () => {
   const opening = menu.hidden;
   if (opening) {
     menuReturnFocus = document.activeElement;
+    menuScrollY = window.scrollY;
     menu.hidden = false;
     document.body.classList.add("menu-open");
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + menuScrollY + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
     menuToggle.setAttribute("aria-expanded", "true");
     menuToggle.setAttribute("aria-label", "Đóng menu điều hướng");
-    requestAnimationFrame(() => menu.querySelector(".drawer-nav a")?.focus());
+    requestAnimationFrame(() => menu.querySelector("#navigation-search")?.focus());
   } else closeMenu(true);
 });
 $("#menu-close")?.addEventListener("click", () => closeMenu(true));
-menu?.querySelectorAll(".drawer-nav a").forEach((link) => link.addEventListener("click", () => closeMenu()));
+menu?.querySelectorAll("a[href]").forEach((link) => link.addEventListener("click", () => closeMenu()));
 document.addEventListener("keydown", (event) => {
   if (!menu || menu.hidden) return;
   if (event.key === "Escape") { event.preventDefault(); closeMenu(true); return; }
@@ -411,6 +434,11 @@ $("#reset-filters")?.addEventListener("click", () => {
   activeGenre = "";
   activeCategoryId = "";
   activeCategoryName = "";
+  activeQuickFilter = "latest";
+  query = "";
+  if (search) search.value = "";
+  const url = new URL(location.href); url.searchParams.delete("q"); history.replaceState({}, "", url);
+  document.querySelectorAll("[data-quick-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.quickFilter === "latest")));
   currentPage = 1;
   categoryRoot.querySelectorAll("button").forEach((button, index) => button.setAttribute("aria-pressed", String(index === 0)));
   countryRoot?.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", "false"));
@@ -419,17 +447,33 @@ $("#reset-filters")?.addEventListener("click", () => {
 });
 $("#close-detail")?.addEventListener("click", () => dialog.close());
 dialog?.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
-$("#search-form")?.addEventListener("submit", (event) => {
+$("#menu-search-form")?.addEventListener("submit", (event) => {
   event.preventDefault();
-  query = search.value;
+  query = search.value.trim();
   currentPage = 1;
   const url = new URL(location.href);
   if (query) url.searchParams.set("q", query); else url.searchParams.delete("q");
   history.replaceState({}, "", url);
   render();
+  closeMenu();
 });
-search?.addEventListener("input", () => { query = search.value; currentPage = 1; render(); });
 
+
+
+document.querySelectorAll("[data-quick-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    activeQuickFilter = button.dataset.quickFilter || "";
+    const labels = {latest:"",china:"Trung Quốc",vietnam:"Việt Nam",adult:"người trưởng thành",jav:"JAV HD",buomtv:"BuomTV",hsex:"Hsex",xnhau:"Xnhau",vlxx:"VLXX",vietsub:"Vietsub",europe:"Âu Mỹ"};
+    query = labels[activeQuickFilter] || "";
+    if (search) search.value = query;
+    currentPage = 1;
+    document.querySelectorAll("[data-quick-filter]").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+    const url = new URL(location.href);
+    if (query) url.searchParams.set("q", query); else url.searchParams.delete("q");
+    history.replaceState({}, "", url);
+    render();
+  });
+});
 
 function hasAgeConfirmation() {
   try { return sessionStorage.getItem("clipviet-age-confirmed") === "yes"; } catch { return false; }
@@ -449,10 +493,10 @@ $("#leave-button")?.addEventListener("click", () => { location.href = "https://w
     const payload = await response.json();
     const categories = Array.isArray(payload.data) ? payload.data : [];
     renderCategories(categories.map((item) => ({ id: String(item.id), name: String(item.name || "Khác") })));
+    setMenuApiStatus("API danh mục đã kết nối · " + categories.length + " danh mục.", "success");
     render();
   } catch (error) {
-    const note = document.querySelector(".data-note");
-    if (note) note.textContent = "API DANH MỤC CHƯA KHẢ DỤNG · " + error.message;
+    setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
     render();
   }
 })();

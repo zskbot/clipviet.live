@@ -807,3 +807,205 @@ body.menu-open{overflow:hidden;touch-action:none}
 .featured-player-toolbar button {
   border-radius: 0;
 }
+
+/* 2026-11: full-screen navigation and compact discovery controls. */
+.primary-nav{display:none!important}
+.topbar{display:flex;justify-content:space-between;gap:16px;min-height:68px}
+.menu-toggle{margin-left:auto;width:46px;height:42px;flex:0 0 46px}
+.filter-menu{
+ position:fixed!important;inset:0!important;z-index:1000!important;
+ width:100vw!important;height:100vh!important;height:100dvh!important;
+ max-height:none!important;max-width:none!important;overflow-y:auto!important;
+ overscroll-behavior:contain;padding:clamp(18px,4vw,48px) clamp(16px,7vw,100px) 38px!important;
+ border:0!important;background:#08090d!important;box-shadow:none!important;
+}
+.filter-menu[hidden]{display:none!important}
+body.menu-open{overflow:hidden}
+.filter-menu-head{max-width:1120px;margin:0 auto 22px;padding-bottom:20px;align-items:center}
+.filter-menu-head h2{font-size:clamp(28px,5vw,48px);letter-spacing:-1.8px}
+.menu-close{width:46px;height:46px;font-size:28px}
+.navigation-search{display:flex;align-items:center;gap:12px;max-width:1120px;margin:0 auto 30px;height:58px;border:1px solid #3b3d46;background:#11131a}
+.navigation-search>span{padding-left:17px;color:#e62020;font-size:24px}
+.navigation-search input{flex:1;min-width:0;height:100%;padding:0 10px;background:transparent;border:0;outline:0;color:#fff;font-size:14px}
+.navigation-search button{height:100%;padding:0 24px;background:#e62020;border:0;color:white;font-size:10px;font-weight:900;letter-spacing:1px}
+.nav-section{max-width:1120px;margin:0 auto 28px;padding-bottom:24px;border-bottom:1px solid #292a31}
+.nav-section-title{display:flex;align-items:baseline;gap:12px;margin:0 0 14px;color:#f5f5f5;font-size:11px;letter-spacing:1.6px}
+.nav-section-title small{color:#858792;font-size:9px;font-weight:600}
+.nav-community-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.nav-community-links a{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 14px;border:1px solid #292a31;background:#101219;color:#ddd;font-size:12px}
+.nav-community-links a:hover{border-color:#e62020;color:#fff}
+.nav-category-chips{display:flex;flex-wrap:wrap;gap:8px}
+.nav-category-chips a,.quick-sort-chips button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 14px;border:1px solid #383a44;background:#101219;color:#d5d5d9;font-size:11px;font-weight:750;white-space:nowrap}
+.nav-category-chips a:hover,.quick-sort-chips button:hover{border-color:#e62020;color:#fff}
+.nav-about{padding:22px;border:1px solid #292a31;background:#101219}
+.nav-about .eyebrow{margin:0 0 10px}
+.nav-about h3{margin:0 0 12px;font-size:clamp(25px,4vw,38px);line-height:1.12;letter-spacing:-1.2px}
+.nav-about h3 span{color:#858792}
+.nav-about>p:last-child{max-width:760px;margin:0;color:#a0a0a8;font-size:13px;line-height:1.8}
+.nav-api-status p{margin:0;padding:13px 15px;border:1px solid #383a44;background:#101219;color:#a9abb4;font-size:11px;line-height:1.6}
+.nav-api-status p[data-state="error"]{border-color:#8d343b;color:#ff9da4}
+.nav-api-status p[data-state="success"]{border-color:#315b46;color:#a6d8b9}
+.nav-suggestions .suggestion-panel{max-width:760px;margin:0;padding:18px}
+.filter-menu-foot{max-width:1120px;margin:0 auto;border-top:1px solid #292a31}
+.filter-menu-foot p{font-size:10px;line-height:1.8;color:#777}
+.nav-section[hidden]{display:none!important}
+.filters{display:block;padding:14px 0 18px}
+.filters .category-list,.sort-label{display:none!important}
+.quick-sort-chips{display:flex;flex-wrap:wrap;gap:7px}
+.quick-sort-chips button{min-height:36px;padding:0 12px;cursor:pointer}
+.quick-sort-chips button[aria-pressed="true"]{border-color:#e62020;background:#e6202018;color:#fff}
+.data-note{display:none!important}
+.site-footer{display:block}
+.footer-search{max-width:1300px;margin:0 auto;padding:38px clamp(16px,5vw,70px);border-bottom:1px solid #292a31}
+.footer-section-heading h2{margin:7px 0;font-size:clamp(24px,4vw,34px);letter-spacing:-1px}
+.footer-intro{max-width:650px;color:#9698a2;font-size:12px;line-height:1.7}
+.footer-search-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.footer-search-tags a{padding:9px 12px;border:1px solid #30323b;background:#101219;color:#c9cbd1;font-size:10px}
+.footer-search-tags a:hover{border-color:#e62020;color:#fff}
+.footer-about{padding:25px clamp(16px,5vw,70px);max-width:1300px;margin:auto}
+.footer-about>p{max-width:850px;color:#858792;font-size:10px;line-height:1.8}
+@media(max-width:700px){
+ .topbar{height:64px;min-height:64px;padding:10px 14px}
+ .filter-menu{padding:18px 15px 28px!important}
+ .filter-menu-head{margin-bottom:16px}
+ .filter-menu-head h2{font-size:28px}
+ .navigation-search{height:50px;margin-bottom:22px}
+ .navigation-search input{font-size:12px}
+ .navigation-search button{padding:0 13px;font-size:9px}
+ .nav-section{margin-bottom:20px;padding-bottom:18px}
+ .nav-community-links{grid-template-columns:1fr 1fr}
+ .nav-community-links a{min-height:48px;padding:0 10px;font-size:11px}
+ .nav-category-chips{gap:7px}
+ .nav-category-chips a{min-height:38px;padding:0 10px;font-size:10px}
+ .nav-about{padding:16px}
+ .nav-about>p:last-child{font-size:11px}
+ .quick-sort-chips{flex-wrap:nowrap;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin}
+ .quick-sort-chips button{flex:0 0 auto}
+ .footer-search{padding:30px 15px}
+ .footer-search-tags{gap:7px}
+ .footer-search-tags a{font-size:9px;padding:8px 9px}
+}
+@media(max-width:360px){.nav-community-links{grid-template-columns:1fr}.quick-sort-chips button{font-size:10px;padding:0 10px}}
+
+
+/* 2026-11-27: consolidated discovery navigation and menu information hierarchy. */
+.home-category-grid,.catalog>.filters{display:none!important}
+.catalog>.section-heading{margin-bottom:18px}
+.filter-menu{background:linear-gradient(180deg,#0b0d13 0%,#08090d 48%)!important}
+.filter-menu-head{align-items:flex-start!important;margin-bottom:20px!important}
+.filter-menu-head h2{margin:6px 0 8px!important;font-weight:850;letter-spacing:-1.7px}
+.menu-lead{max-width:620px;margin:0;color:#9b9da7;font-size:12px;line-height:1.7}
+.navigation-search{margin-bottom:26px!important;border-color:#343741!important}
+.navigation-search:focus-within{border-color:#747987}
+.navigation-search button{letter-spacing:.7px}
+.nav-section{margin-bottom:24px!important;padding-bottom:22px!important}
+.nav-section-title{margin-bottom:12px!important;font-size:10px!important;letter-spacing:1.35px!important}
+.nav-section-title small{font-size:8px!important;letter-spacing:1px}
+.nav-section-note{margin:-3px 0 14px;color:#858894;font-size:11px;line-height:1.65}
+.nav-community-links{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+.nav-community-links a{min-height:48px!important;padding:0 13px!important;border-color:#282b34!important;background:#10131b!important;font-size:11px!important;line-height:1.4}
+.nav-community-links a:hover{background:#171b25!important;border-color:#e62020!important}
+.nav-category-group{padding:13px 0 2px;border-top:1px solid #20232c}
+.nav-category-group h4{margin:0 0 10px;color:#858894;font-size:9px;letter-spacing:1.15px}
+.nav-category-chips{display:flex;flex-wrap:wrap;gap:7px!important}
+.nav-category-chips a{min-height:37px!important;padding:0 12px!important;border-color:#30333e!important;background:#11141c!important;font-size:10px!important;font-weight:700}
+.nav-category-chips a:hover{background:#1a1e28!important;border-color:#e62020!important}
+.nav-catalog-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.nav-catalog-list a{min-width:0;padding:10px 11px;border:1px solid #282b34;background:#10131a;color:#c7c9d0;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.nav-catalog-list a:hover{border-color:#e62020;color:white}
+.nav-about{padding:20px!important;border-color:#282b34!important;background:#10131a!important}
+.nav-about>p:last-child{font-size:12px!important;line-height:1.85!important}
+.nav-api-status p{padding:12px 14px!important;font-size:11px!important}
+.filter-menu-foot{padding-top:12px}
+.filter-menu-foot p{max-width:760px;font-size:9px;line-height:1.8}
+@media(max-width:700px){
+ .filter-menu{padding:18px 14px 26px!important}
+ .filter-menu-head{margin-bottom:14px!important}
+ .filter-menu-head h2{font-size:27px!important}
+ .menu-lead{font-size:10px}
+ .navigation-search{height:48px!important;margin-bottom:20px!important}
+ .navigation-search input{font-size:11px!important}
+ .navigation-search button{padding:0 12px!important;font-size:8px!important}
+ .nav-section{margin-bottom:18px!important;padding-bottom:17px!important}
+ .nav-community-links{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .nav-community-links a{min-height:46px!important;padding:0 9px!important;font-size:10px!important}
+ .nav-category-chips{gap:6px!important}
+ .nav-category-chips a{min-height:35px!important;padding:0 9px!important;font-size:9px!important}
+ .nav-catalog-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .nav-about{padding:15px!important}
+ .nav-about>p:last-child{font-size:10px!important}
+}
+@media(max-width:360px){.nav-community-links{grid-template-columns:1fr!important}.nav-catalog-list{grid-template-columns:1fr}}
+
+
+/* 2026-11-27 hotfix: true viewport overlay, iOS scroll lock and standalone suggestion form. */
+html:has(body.menu-open),body.menu-open{overflow:hidden!important;overscroll-behavior:none!important}
+body.menu-open{touch-action:none}
+.filter-menu{
+ position:fixed!important;inset:0!important;z-index:2147483000!important;
+ width:100%!important;height:100vh!important;height:100dvh!important;
+ max-width:none!important;max-height:none!important;margin:0!important;
+ overflow-x:hidden!important;overflow-y:auto!important;
+ overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch;
+ isolation:isolate!important;transform:none!important;
+ background:#08090d!important;opacity:1!important;
+ padding:0 clamp(14px,5vw,72px) 30px!important;
+}
+.filter-menu[hidden]{display:none!important}
+.filter-menu-head{
+ position:sticky!important;top:0!important;z-index:5!important;
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ max-width:none!important;margin:0 calc(clamp(14px,5vw,72px)*-1) 22px!important;
+ padding:18px clamp(14px,5vw,72px)!important;
+ min-height:86px;background:#08090d!important;
+ border-bottom:1px solid #292a31!important;
+}
+.filter-menu-head h2{margin:0!important}
+.filter-menu-head .eyebrow{margin:0 0 6px!important}
+.menu-close{flex:0 0 46px;background:#101219!important}
+.navigation-search{position:relative!important;z-index:1!important;width:100%!important;box-sizing:border-box!important}
+.navigation-search input{width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+.navigation-search button{flex:0 0 auto!important}
+.nav-section-title small{display:none!important}
+.nav-category-chips a{min-height:44px!important;padding-inline:15px!important}
+.nav-community-links a{position:relative;min-height:48px}
+.nav-community-links a span{display:none!important}
+.nav-community-links a::after{content:none!important;display:none!important}
+.nav-empty-state{margin:0;padding:11px 13px;border:1px solid #292a31;background:#101219;color:#9698a2;font-size:11px;line-height:1.7}
+.nav-catalog-list .nav-empty-state{grid-column:1/-1}
+.standalone-suggestion{display:block!important;position:relative!important;max-width:900px!important;width:calc(100% - 32px)!important;margin:30px auto!important;padding:clamp(16px,3vw,28px)!important;box-sizing:border-box!important;border:1px solid #30333d!important;background:#101219!important}
+.standalone-suggestion h3{margin:4px 0 8px;font-size:22px}
+.standalone-suggestion .suggestion-intro{color:#9b9da7;font-size:12px;line-height:1.7}
+.standalone-suggestion form{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;width:100%!important;min-width:0!important}
+.standalone-suggestion label{display:block!important;width:100%!important;margin:8px 0 0!important;font-size:10px!important;letter-spacing:.8px}
+.standalone-suggestion input,.standalone-suggestion textarea{
+ display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ min-height:46px!important;margin:0!important;padding:12px 13px!important;
+ box-sizing:border-box!important;border:1px solid #383a44!important;
+ background:#090b10!important;color:#f4f4f5!important;
+ font:inherit!important;font-size:13px!important;line-height:1.5!important;
+}
+.standalone-suggestion textarea{min-height:88px!important;resize:vertical}
+.standalone-suggestion button,.standalone-suggestion a{width:100%!important;box-sizing:border-box!important}
+.standalone-suggestion .suggestion-status{font-size:11px!important;line-height:1.7!important;color:#9b9da7}
+@media(max-width:700px){
+ .filter-menu{padding:0 14px 24px!important}
+ .filter-menu-head{margin:0 -14px 18px!important;padding:14px!important;min-height:76px}
+ .filter-menu-head h2{font-size:26px!important}
+ .menu-lead{font-size:10px!important}
+ .navigation-search{height:48px!important;margin:0 0 20px!important}
+ .navigation-search input{font-size:12px!important;padding:0 8px!important}
+ .navigation-search button{padding:0 12px!important;font-size:9px!important}
+ .nav-section{margin-bottom:18px!important;padding-bottom:16px!important}
+ .nav-community-links{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .nav-community-links a{min-height:48px!important;padding:0 10px!important;font-size:10px!important}
+ .nav-category-chips{gap:7px!important}
+ .nav-category-chips a{min-height:44px!important;padding:0 11px!important;font-size:10px!important}
+ .nav-catalog-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .nav-about{padding:16px!important}
+ .nav-about>p:last-child{font-size:11px!important}
+ .standalone-suggestion{width:calc(100% - 24px)!important;margin:22px auto!important;padding:16px!important}
+}
+
+/* Preserve vertical touch scrolling inside the fixed drawer on iOS Safari. */
+.filter-menu{touch-action:pan-y!important}

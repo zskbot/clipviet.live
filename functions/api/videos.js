@@ -22,24 +22,26 @@ export async function onRequest({ request, env }) {
     if (categoryId) params.set("categoryId", categoryId);
     if (query) params.set("keyword", query);
     try {
-      const payload = await listAppleCmsVideos(new Request("https://clipviet-preview.invalid/api/providers/applecms/videos?" + params), env);
-      return { id: provider.id, status: "ACTIVE", operationalState: "ACTIVE", items: payload.items || [] };
+      const payload = await listAppleCmsVideos(new Request("https://clipviet-preview.invalid/api/providers/applecms/videos?" + params.toString()), env);
+      return { id: provider.id, status: "ACTIVE", operationalState: "ACTIVE", items: payload.items || [],
+        total: Number(payload.total) || 0, pageCount: Number(payload.pageCount) || 0 };
     } catch (error) {
       return { id: provider.id, status: error instanceof AppleCmsProviderError && error.status === 403 ? "PENDING_RIGHTS" : "ERROR",
         operationalState: error instanceof AppleCmsProviderError && error.status === 403 ? "NOT_CHECKED" : "ERROR",
-        items: [], errorCode: error.code || "PROVIDER_ERROR" };
+        items: [], total: 0, pageCount: 0, errorCode: error.code || "PROVIDER_ERROR" };
     }
   }));
   const byId = new Map();
   for (const source of settled) for (const item of source.items) if (item?.id && !byId.has(item.id)) byId.set(item.id, item);
-  const allItems = [...byId.values()];
-  const items = allItems.slice((page - 1) * limit, page * limit);
+  const items = [...byId.values()];
   const providers = providerStates.map(provider => {
     const live = settled.find(item => item.id === provider.id);
-    return { ...provider, catalogCount: live?.items.length ?? 0,
+    return { ...provider, catalogCount: live?.total ?? 0, catalogPageCount: live?.pageCount ?? 0,
       ...(live?.errorCode ? { errorCode: live.errorCode } : {}),
       catalogState: live ? live.status : provider.configured && provider.rightsApproved ? "NOT_CHECKED" : provider.configured ? "PENDING_RIGHTS" : "NOT_CONFIGURED" };
   });
+  const total = settled.reduce((sum, item) => sum + item.total, 0);
+  const pageCount = Math.max(0, ...settled.map(item => item.pageCount));
   const hasPending = providers.some(item => item.status === "PENDING_RIGHTS");
   const hasErrors = providers.some(item => item.catalogState === "ERROR");
   const catalogState = items.length ? "READY" : hasErrors ? "PROVIDERS_UNAVAILABLE" : hasPending ? "RIGHTS_PENDING" : eligible.length ? "EMPTY" : "NO_APPROVED_PROVIDERS";
@@ -47,7 +49,7 @@ export async function onRequest({ request, env }) {
     ? "Catalog is empty because provider and per-title metadata rights have not been approved. No demo items are inserted."
     : catalogState === "PROVIDERS_UNAVAILABLE" ? "Approved providers could not be reached. Check provider status." : "No rights-approved metadata items were returned for this page.";
   return json({ success: true, endpoint: "/api/videos", source: "applecms-rights-gated-preview", catalogState, message,
-    results: items, items, total: allItems.length, page, limit, pageCount: allItems.length ? Math.ceil(allItems.length / limit) : 0,
+    results: items, items, total, page, limit, pageCount, hasMore: page < pageCount,
     query, category: categoryId, categoryId, filters: { query, categoryId }, providers,
     providerErrors: settled.filter(item => item.errorCode).map(item => ({ id: item.id, code: item.errorCode })),
     rightsGate: { policy: "deny-by-default", providerAndPerVideoApprovalRequired: true, externalWebsiteScrapingEnabled: false, publicPlaybackEnabled: false }

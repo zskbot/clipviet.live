@@ -96,7 +96,13 @@ function renderProviderStatuses(providers) {
     READY: "Đủ điều kiện metadata",
     "pending-rights": "Chờ phê duyệt quyền",
     "not-configured": "Chưa cấu hình API",
-    "api-ok": "API hoạt động",
+    "api-ok": "API upstream hoạt động",
+    "invalid-config": "Cấu hình API không hợp lệ",
+    "upstream-http-error": "Upstream trả lỗi HTTP",
+    timeout: "Upstream quá thời gian",
+    "invalid-api-response": "Phản hồi không đúng AppleCMS",
+    "upstream-unreachable": "Không kết nối được upstream",
+    "unknown-provider": "Provider không hợp lệ",
     degraded: "Thiếu dữ liệu catalog",
     offline: "Nguồn không truy cập được"
   };
@@ -108,11 +114,20 @@ function renderProviderStatuses(providers) {
     const state = document.createElement("span");
     const rawState = provider.status || provider.diagnostic || provider.state || "UNKNOWN";
     state.textContent = labels[rawState] || rawState;
-    state.dataset.state = /PENDING|pending|NOT_CONFIGURED|not-configured/.test(rawState) ? "pending" :
-      /ERROR|offline|degraded/.test(rawState) ? "error" : /READY|ACTIVE|api-ok/.test(rawState) ? "ready" : "info";
+    state.dataset.state = /ERROR|offline|degraded|timeout|unreachable|invalid|http-error/.test(rawState) ? "error" :
+      /PENDING|pending|NOT_CONFIGURED|not-configured/.test(rawState) ? "pending" :
+      /READY|ACTIVE|api-ok/.test(rawState) ? "ready" : "info";
     const meta = document.createElement("small");
-    meta.textContent = provider.operationalState || provider.diagnostic ||
-      (provider.approvedContentCount !== undefined ? provider.approvedContentCount + " video có hồ sơ quyền" : "Chưa kiểm tra upstream");
+    if (Number.isFinite(Number(provider.latencyMs))) {
+      const latency = Math.max(0, Math.round(Number(provider.latencyMs)));
+      const details = provider.status === "api-ok"
+        ? [provider.categoryCount + " nhóm", provider.sampleCount + " mẫu"].join(" · ")
+        : (provider.operationalState || "chưa kết nối");
+      meta.textContent = details + " · " + latency + " ms · playback OFF";
+    } else {
+      meta.textContent = provider.operationalState || provider.diagnostic ||
+        (provider.approvedContentCount !== undefined ? provider.approvedContentCount + " video có hồ sơ quyền" : "Chưa kiểm tra upstream");
+    }
     card.append(name, state, meta);
     providerStatusList.append(card);
   }
@@ -131,8 +146,8 @@ async function loadProviderStatuses(runDiagnostics = false) {
     const providers = Array.isArray(payload.providers) ? payload.providers : Array.isArray(payload.data) ? payload.data : [];
     renderProviderStatuses(providers);
     if (providerStatusNote) providerStatusNote.textContent = runDiagnostics
-      ? "Đã kiểm tra kỹ thuật các nguồn đủ điều kiện. Nguồn đang chờ quyền được giữ nguyên và không bị gọi."
-      : "5 nguồn AppleCMS được cấu hình tham chiếu. Mỗi nguồn vẫn cần quyền provider và quyền metadata từng video.";
+      ? "Đã chạy probe metadata chỉ đọc ac=list cho từng nguồn. Kết quả chỉ xác nhận API metadata, không xác nhận quyền phân phối hoặc luồng media; playback vẫn OFF."
+      : "5 nguồn AppleCMS là cấu hình tham chiếu. Mỗi nguồn vẫn cần quyền provider và quyền metadata từng video.";
   } catch (error) {
     if (providerStatusNote) providerStatusNote.textContent = "Không đọc được trạng thái provider: " + error.message;
     if (providerStatusPanel) providerStatusPanel.hidden = false;
@@ -250,7 +265,7 @@ function render() {
       for (const video of pageItems) {
         const card = document.createElement("article");
         card.className = "video-card";
-        card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p><button class="card-watch" type="button">XEM</button></div>';
+        card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p><button class="card-watch" type="button">CHI TIẾT</button></div>';
         const img = card.querySelector("img");
         img.src = video.poster || "./poster-fallback.svg";
         img.alt = video.title || "Video";
@@ -258,7 +273,27 @@ function render() {
         card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.badgeLabel || video.licenseLabel || "CHỈ XEM");
         card.querySelector("h3").textContent = video.title || "Video";
         card.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
-        card.querySelector(".card-watch").addEventListener("click", () => openDetail(video));
+        const cardAction = card.querySelector(".card-watch");
+        const cardExpiry = Date.parse(video.rightsExpiresAt || video.licenseExpiresAt || "");
+        const cardHasRights = video.rightsVerified === true && video.rightsStatus === "APPROVED" &&
+          Number.isFinite(cardExpiry) && cardExpiry > Date.now() &&
+          video.playbackEnabled === true && video.playbackRightsApproved === true;
+        const cardSources = [...(Array.isArray(video.sources) ? video.sources : []),
+          ...(Array.isArray(video.playbackSources) ? video.playbackSources : []),
+          ...(Array.isArray(video.playback_sources) ? video.playback_sources : [])];
+        const cardHasHttpsSource = [
+          video.videoUrl, video.video_url, video.hlsUrl, video.hls_url,
+          video.playbackUrl, video.playback_url, ...cardSources.map(source =>
+            typeof source === "string" ? source : source?.url || source?.src || source?.file || "")
+        ].some(url => typeof url === "string" && /^https:\/\//i.test(url));
+        const cardCanPlay = cardHasRights && (cardHasHttpsSource || Boolean(video.playbackEndpoint));
+        cardAction.textContent = cardCanPlay ? "PHÁT VIDEO" : "CHI TIẾT";
+        cardAction.addEventListener("click", () => {
+          if (!cardCanPlay) { openDetail(video); return; }
+          dialog?.close();
+          startVideoPlayback(video);
+          $("#featured-player")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
         grid.append(card);
       }
       setMenuApiStatus(
@@ -422,10 +457,76 @@ function renderFeatured() {
   const startPlayback = () => {
     if (featuredTimer) clearInterval(featuredTimer);
     featuredTimer = null;
-    playFeaturedVideo(video);
+    startVideoPlayback(video);
   };
   $("#featured-watch").onclick = startPlayback;
-  playButton.onclick = startPlayback;
+  // The overlay play button is wired once by player-controls.js. Do not overwrite
+  // its trusted-click handler: doing so reloads the source instead of calling play().
+}
+
+async function startVideoPlayback(video) {
+  const status = $("#featured-player-status");
+  const showStatus = (message) => {
+    if (status) { status.textContent = message; status.hidden = false; }
+  };
+  const expiresAt = Date.parse(video?.rightsExpiresAt || video?.licenseExpiresAt || "");
+  const rightsOk = video?.rightsVerified === true &&
+    video?.rightsStatus === "APPROVED" &&
+    Number.isFinite(expiresAt) && expiresAt > Date.now() &&
+    video?.playbackEnabled === true && video?.playbackRightsApproved === true;
+  if (!rightsOk) {
+    showStatus("Video chưa có quyền phát hợp lệ. ClipViet không mở khóa nguồn đang chờ xét duyệt.");
+    return;
+  }
+
+  try {
+    const currentSources = [
+      ...(Array.isArray(video.sources) ? video.sources : []),
+      ...(Array.isArray(video.playbackSources) ? video.playbackSources : []),
+      ...(Array.isArray(video.playback_sources) ? video.playback_sources : [])
+    ];
+    const hasDirectSource = currentSources.some((source) => {
+      const url = typeof source === "string" ? source : source?.url || source?.src || source?.file || "";
+      return typeof url === "string" && /^https:\/\//i.test(url);
+    }) || [video.videoUrl, video.video_url, video.hlsUrl, video.hls_url, video.playbackUrl, video.playback_url]
+      .some((url) => typeof url === "string" && /^https:\/\//i.test(url));
+
+    let playable = video;
+    if (!hasDirectSource) {
+      const endpoint = video.playbackEndpoint;
+      if (typeof endpoint !== "string" || !endpoint) throw new Error("API chưa cung cấp endpoint phân giải playback cho video này.");
+      const target = new URL(endpoint, location.origin);
+      if (target.origin !== location.origin || !target.pathname.startsWith("/api/")) {
+        throw new Error("Playback endpoint không thuộc API ClipViet hợp lệ.");
+      }
+      showStatus("Đang xác minh quyền và lấy thông tin phát video…");
+      const response = await fetch(target.toString(), {
+        headers: { Accept: "application/json" },
+        cache: "no-store"
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = payload.error || payload.message || ("Playback API HTTP " + response.status);
+        throw new Error(response.status === 403 ? "Quyền phát video chưa được phê duyệt: " + message : message);
+      }
+      const data = payload.data || payload.playback || {};
+      const groups = Array.isArray(data.sources) ? data.sources : [];
+      const sources = groups.flatMap((group) => Array.isArray(group?.episodes)
+        ? group.episodes.map((episode) => ({
+            ...episode,
+            name: episode.name || group.name || "Video",
+            type: /\.m3u8(?:$|\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
+          }))
+        : [group]);
+      if (!sources.some((source) => typeof source?.url === "string" && /^https:\/\//i.test(source.url))) {
+        throw new Error("API không trả về URL HTTPS được phép phát.");
+      }
+      playable = { ...video, sources };
+    }
+    playFeaturedVideo(playable);
+  } catch (error) {
+    showStatus("Không thể phát video: " + (error?.message || "Lỗi không xác định"));
+  }
 }
 
 function showCatalogUnavailable(message) {
@@ -458,7 +559,7 @@ function setFeaturedVideos(items) {
       const url = typeof source === "string" ? source : source?.url || source?.src || source?.file || "";
       return typeof url === "string" && isHttpUrl(url);
     });
-    return hasDirectUrl || hasSourceUrl;
+    return hasDirectUrl || hasSourceUrl || Boolean(video.playbackEndpoint);
   });
   featuredVideos = playableItems;
   featuredVideos.sort((a, b) => (b.trendingScore - a.trendingScore) || (b.views - a.views) || (b.playCount - a.playCount) || (Number(b.year || 0) - Number(a.year || 0)));
@@ -472,7 +573,7 @@ function setFeaturedVideos(items) {
 }
 
 function openDetail(video) {
-  detail.innerHTML = '<div class="detail-inner"><img alt=""><div><p class="eyebrow"></p><h2></h2><p class="description"></p><p class="meta"></p><p class="detail-source"></p><a class="primary-link watch-link" hidden>XEM VIDEO <span>↗</span></a></div></div>';
+  detail.innerHTML = '<div class="detail-inner"><img alt=""><div><p class="eyebrow"></p><h2></h2><p class="description"></p><p class="meta"></p><p class="detail-source"></p><button class="primary-button detail-play" type="button" hidden>PHÁT VIDEO</button><a class="primary-link watch-link" hidden>XEM HỒ SƠ NGUỒN <span>↗</span></a></div></div>';
   const img = detail.querySelector("img");
   img.src = video.poster || "./poster-fallback.svg";
   img.alt = video.title;
@@ -484,6 +585,27 @@ function openDetail(video) {
   detail.querySelector(".detail-source").textContent = video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) + " · " + (video.licenseLabel || "Metadata only") + " · " + (video.sourceUrl || "") : "Nguồn video";
   if (video.apiManaged && video.playbackRightsApproved !== true) {
     detail.querySelector(".detail-source").textContent += " · Chỉ hiển thị metadata; phát bị khóa cho đến khi xác minh quyền phân phối.";
+  }
+  const detailExpiry = Date.parse(video.rightsExpiresAt || video.licenseExpiresAt || "");
+  const detailRightsOk = video.rightsVerified === true && video.rightsStatus === "APPROVED" &&
+    Number.isFinite(detailExpiry) && detailExpiry > Date.now() &&
+    video.playbackEnabled === true && video.playbackRightsApproved === true;
+  const detailSources = [...(Array.isArray(video.sources) ? video.sources : []),
+    ...(Array.isArray(video.playbackSources) ? video.playbackSources : []),
+    ...(Array.isArray(video.playback_sources) ? video.playback_sources : [])];
+  const detailHasHttpsSource = [
+    video.videoUrl, video.video_url, video.hlsUrl, video.hls_url,
+    video.playbackUrl, video.playback_url, ...detailSources.map(source =>
+      typeof source === "string" ? source : source?.url || source?.src || source?.file || "")
+  ].some(url => typeof url === "string" && /^https:\/\//i.test(url));
+  const detailPlay = detail.querySelector(".detail-play");
+  if (detailRightsOk && (detailHasHttpsSource || Boolean(video.playbackEndpoint)) && detailPlay) {
+    detailPlay.hidden = false;
+    detailPlay.addEventListener("click", () => {
+      dialog.close();
+      startVideoPlayback(video);
+      $("#featured-player")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
   if (video.apiManaged && video.sourceId && video.id) {
     const link = detail.querySelector(".watch-link");

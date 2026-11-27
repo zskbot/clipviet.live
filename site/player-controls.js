@@ -10,7 +10,7 @@ const qualitySelect = $("#player-quality");
 const qualityLabel = $("#player-quality-label");
 const resolutionLabel = $("#player-resolution-label");
 const settingsNote = $("#player-settings-note");
-const hlsScriptUrl = "https://cdn.jsdelivr.net/npm/hls.js@1";
+const hlsScriptUrls = ["https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js", "https://unpkg.com/hls.js@1/dist/hls.min.js"];
 let hlsEngine = null;
 let scriptPromise = null;
 let activeVideo = null;
@@ -187,20 +187,30 @@ function getSource(video) {
   const hlsUrl = video.hlsUrl || video.hls_url || video.m3u8 || video.m3u8Url || video.m3u8_url || video.hls || (hlsSource && sourceUrl(hlsSource));
   const mp4Url = video.videoUrl || video.video_url || video.playbackUrl || video.playback_url || video.mp4Url || video.mp4_url || video.playUrl || video.play_url || (mp4Source && sourceUrl(mp4Source));
   const url = hlsUrl || mp4Url;
-  if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return null;
+  if (typeof url !== "string" || !/^https:\/\//i.test(url)) return null;
   return { url, hls: Boolean(hlsUrl), fallbackUrl: video.originalUrl || video.original_url || video.sourceUrl || video.source_url || "" };
 }
 function loadHlsLibrary() {
   if (window.Hls) return Promise.resolve(window.Hls);
   if (scriptPromise) return scriptPromise;
-  scriptPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = hlsScriptUrl;
-    script.crossOrigin = "anonymous";
-    script.onload = () => window.Hls ? resolve(window.Hls) : reject(new Error("Không khởi tạo được HLS.js"));
-    script.onerror = () => reject(new Error("Không tải được bộ giải mã HLS"));
-    document.head.append(script);
-  });
+  scriptPromise = (async () => {
+    let lastError;
+    for (const src of hlsScriptUrls) {
+      try {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = src;
+          script.crossOrigin = "anonymous";
+          script.onload = () => window.Hls ? resolve() : reject(new Error("HLS.js tải xong nhưng không khởi tạo được"));
+          script.onerror = () => reject(new Error("Không tải được HLS.js từ " + new URL(src).hostname));
+          document.head.append(script);
+        });
+        if (window.Hls) return window.Hls;
+      } catch (error) { lastError = error; }
+    }
+    scriptPromise = null;
+    throw lastError || new Error("Không tải được bộ giải mã HLS từ các CDN dự phòng");
+  })();
   return scriptPromise;
 }
 function showPlayer() {
@@ -331,10 +341,23 @@ function playFeaturedVideo(video) {
           if (qualityLabel) qualityLabel.textContent = "CHẤT LƯỢNG: " + (data.level < 0 ? "AUTO" : level.height + "p");
         }
       });
+      let networkRecoveryAttempts = 0;
+      let mediaRecoveryAttempts = 0;
       hlsEngine.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal) return;
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hlsEngine.recoverMediaError();
-        else onMediaError();
+        if (!data.fatal || !hlsEngine) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoveryAttempts < 2) {
+          networkRecoveryAttempts += 1;
+          setStatus("Kết nối HLS bị gián đoạn. Đang thử kết nối lại (" + networkRecoveryAttempts + "/2)…");
+          hlsEngine.startLoad();
+          return;
+        }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveryAttempts < 2) {
+          mediaRecoveryAttempts += 1;
+          setStatus("Đang khôi phục bộ giải mã video…");
+          hlsEngine.recoverMediaError();
+          return;
+        }
+        onMediaError();
       });
       hlsEngine.attachMedia(player);
     }).catch((error) => {

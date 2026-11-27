@@ -542,7 +542,8 @@ $("#leave-button")?.addEventListener("click", () => { location.href = "https://w
     const payload = await response.json();
     const categories = Array.isArray(payload.data) ? payload.data : [];
     renderCategories(categories.map((item) => ({ id: String(item.id), name: String(item.name || "Khác") })));
-    setMenuApiStatus("API danh mục đã kết nối · " + categories.length + " danh mục.", "success");
+    if (payload.rightsGate?.providerApproved === false) setMenuApiStatus("Nguồn AppleCMS đang chờ phê duyệt quyền.", "warning");
+    else setMenuApiStatus("API danh mục đã kết nối · " + categories.length + " danh mục.", "success");
     render();
   } catch (error) {
     setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");

@@ -1144,3 +1144,7 @@ body.menu-open{overflow:hidden}
 .card-watch{justify-self:start;min-width:92px;min-height:36px;padding:0 14px;border:1px solid var(--red);background:var(--red);color:#fff;font-size:10px;font-weight:900;letter-spacing:1.2px;cursor:pointer;border-radius:0}
 .card-watch:hover,.card-watch:focus-visible{background:#c9202d;border-color:#c9202d}
 .card-watch:focus-visible{outline:2px solid #f5a1a7;outline-offset:3px}
+
+/* Keep a compact, reachable Play control above the video until playback starts. */
+.live-featured-poster .live-featured-play{inset:auto!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%);width:68px!important;height:68px!important;min-width:68px;display:grid;place-items:center;padding:0;border:1px solid #ffffffb0;background:#08090ddd;color:#fff;font-size:27px;line-height:1;z-index:4;cursor:pointer;touch-action:manipulation}
+.live-featured-poster .live-featured-play:focus-visible{outline:3px solid #fff;outline-offset:4px}

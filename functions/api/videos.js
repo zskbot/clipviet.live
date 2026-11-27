@@ -1,9 +1,9 @@
 const PROVIDERS = [
-  { id: "souavzy", status: "PENDING", enabled: false, rightsApproved: false },
-  { id: "apiyutu", status: "PENDING", enabled: false, rightsApproved: false },
-  { id: "lbapi9", status: "PENDING", enabled: false, rightsApproved: false },
-  { id: "slapibf", status: "PENDING", enabled: false, rightsApproved: false },
-  { id: "jipinvip1", status: "PENDING", enabled: false, rightsApproved: false }
+  { "id": "souavzy", status: "PENDING", enabled: false, rightsApproved: false },
+  { "id": "apiyutu", status: "PENDING", enabled: false, rightsApproved: false },
+  { "id": "lbapi9", status: "PENDING", enabled: false, rightsApproved: false },
+  { "id": "slapibf", status: "PENDING", enabled: false, rightsApproved: false },
+  { "id": "jipinvip1", status: "PENDING", enabled: false, rightsApproved: false }
 ];
 const ALLOW = "GET, HEAD, OPTIONS";
 const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "allow": ALLOW, "x-content-type-options": "nosniff" };

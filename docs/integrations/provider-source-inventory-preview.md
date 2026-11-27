@@ -45,3 +45,18 @@ The Cloudflare Pages project `clipviet-live-independent-preview` now explicitly 
 ## SEO
 
 The Preview includes a sitemap and robots policy. Administrative and API routes are excluded from crawling. No analytics tag or Search Console verification is fabricated; Lion AI reporting requires an authorized workspace and bound GA4/Search Console connections.
+
+## Next.js application integration
+
+The public site uses the Next.js App Router API at `app/api/videos/route.js`; Cloudflare Pages Functions alone do not own this route. The Preview now connects the App Router directly to the same AppleCMS adapter and rights registry.
+
+- The five supplied AppleCMS API endpoints are configured as defaults, but remain `PENDING_RIGHTS`; configuration does not authorize metadata or playback.
+- The homepage no longer falls back to bundled demo records when no approved source returns content.
+- `GET /api/videos` returns explicit `catalogState`, provider status, provider errors and pagination. Metadata responses omit upstream stream/embed URLs.
+- `GET /api/videos?id=maccms:<provider>:<vod_id>` returns metadata only.
+- `GET /api/videos/<encoded-id>/playback` performs a separate per-video rights check after the user presses Play.
+- `GET /api/providers` lists AppleCMS and documented legal provider states.
+- `GET /api/providers/applecms/diagnostics` only probes configured sources after provider-level rights approval.
+- The watch page uses the native HTML video element with HLS MIME handling for Safari/iPhone and reports media errors. Browser-level device playback still requires a real permitted stream and iPhone verification.
+
+The separate Cloudflare Pages Functions routes remain available for the Pages Preview environment. The Next.js routes are the active path used by the current React homepage.

@@ -1,0 +1,13 @@
+name = "clipviet-metadata-intake-preview"
+main = "src/index.mjs"
+compatibility_date = "2026-11-27"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ENVIRONMENT = "preview"
+
+[[d1_databases]]
+binding = "PROVIDER_DB"
+database_name = "clipviet-provider-registry-preview"
+database_id = "9d26b841-680c-4fa2-bb3e-0f1fa537ad22"

@@ -4,6 +4,7 @@ import { validateConnectorContract, validateContentRights, canApproveContentRigh
 import { runProviderDiagnostic, listProviderDiagnostics } from "./diagnostics.mjs";
 import { adminPage } from "./admin-ui.mjs";
 import { handleAuth, sessionRole } from "./auth.mjs";
+import { handlePublicMetadataIntake } from "./public-intake.mjs";
 
 const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), {
   status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...headers }
@@ -40,7 +41,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const parts = url.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
-    const rightsRoute = (parts[0] === "providers" && (parts[2] === "content-rights" || parts[2] === "connector" || parts[2] === "diagnostics")) ||
+    const rightsRoute = parts[0] === "metadata-intake" || (parts[0] === "providers" && (parts[2] === "content-rights" || parts[2] === "connector" || parts[2] === "diagnostics")) ||
       (parts.length === 1 && (parts[0] === "admin" || parts[0] === "health" || parts[0] === "login")) ||
       (parts[0] === "auth") ||
       (parts[0] === "playback" && parts[1] === "authorize");
@@ -57,6 +58,7 @@ export default {
     cors["Access-Control-Allow-Headers"] = "Authorization,Content-Type";
     cors["Access-Control-Max-Age"] = "600";
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    if (parts[0] === "metadata-intake") return handlePublicMetadataIntake(request, env, cors);
     if (parts[0] === "login" || parts[0] === "auth") return handleAuth(request, env);
 
     const role = parts.length === 1 && parts[0] === "admin"

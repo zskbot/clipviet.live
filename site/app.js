@@ -134,6 +134,10 @@ function render() {
         genre: item.categoryName || "",
         country: item.area || "",
         apiManaged: true,
+        sources: (Array.isArray(item.lines) ? item.lines : []).flatMap((line) => (Array.isArray(line.episodes) ? line.episodes : []).map((episode) => ({
+          url: episode.url,
+          type: /\\.m3u8(?:$|\\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
+        }))),
         rating: "18+"
       }));
       grid.replaceChildren();

@@ -19,7 +19,8 @@ See [Cloudflare Pages Preview deployment notes](docs/deployment/cloudflare-pages
 
 ## Features
 
-- Dynamic video catalog through Cloudflare Worker APIs
+- Dynamic video catalog through five server-configured AppleCMS Worker APIs
+- Multi-source pagination and per-video live playback detail resolution
 - Provider response normalization (array, `results`, `data`, or `videos`)
 - Search, category filtering, featured title and dynamic detail routes
 - HTML5 playback for direct HTTPS media URLs
@@ -42,7 +43,15 @@ Open http://localhost:3000.
 
 ## Configure a provider
 
-Set secrets in the relevant external runtime's secret manager, never in Git or browser-visible source:
+Set secrets in the relevant Cloudflare Pages Preview environment, never in Git or browser-visible source. The homepage AppleCMS adapter reads these server-side variables only:
+
+- `APPLECMS_SOUAVZY_URL`
+- `APPLECMS_APIYUTU_URL`
+- `APPLECMS_LBAPI9_URL`
+- `APPLECMS_SLAPIBF_URL`
+- `APPLECMS_JIPINVIP1_URL`
+
+Each value must be the HTTPS base URL of an AppleCMS-compatible API endpoint authorized for use by ClipViet. All five are currently required to reproduce the full multi-source catalog; unset sources are skipped and reported. The API requests `ac=list` for catalog pages and `ac=detail&ids=<vod_id>` for playback details. Playback URLs are parsed from `vod_play_from` / `vod_play_url` and only HTTPS URLs are accepted.
 - `VIDEO_PROVIDER_API_URL`: HTTPS JSON endpoint owned by, or contractually provided to, the project.
 - `VIDEO_PROVIDER_API_KEY`: optional bearer token.
 - `VIDEO_EMBED_ALLOWED_HOSTS`: comma-separated hostnames authorized to serve iframe players.
@@ -76,3 +85,6 @@ The community video-suggestion form is hosted in Clipform:
 - Public form: https://clipform.io/3d76a8c57
 - Responses dashboard: https://app.clipform.io/ce617e6d-4c43-475b-9c9d-d7ee953e3181/forms/3c0b50ba-72f3-426e-a489-36325e012907/responses
 - Suggestions are reviewed manually. Submission does not grant distribution rights and does not publish or ingest media automatically.
+
+
+<!-- Cloudflare Preview branch trigger: AppleCMS multi-source playback adapter. -->

@@ -124,7 +124,7 @@ function render() {
       pageSize = Math.max(1, Number(payload.limit) || 30);
       totalPages = Math.max(0, Number(payload.pageCount) || Math.ceil(totalResults / pageSize));
       if (!rows.length) {
-        renderSampleVideo("Catalog API hiện chưa có video đủ điều kiện.");
+        showCatalogUnavailable("Nguồn chưa trả về video nào.");
         return;
       }
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
@@ -169,7 +169,7 @@ function render() {
     .catch((error) => {
       if (sequence !== requestSequence) return;
       setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
-      renderSampleVideo("Catalog API tạm thời không khả dụng: " + error.message);
+      showCatalogUnavailable("API video chưa kết nối: " + error.message);
     });
 }
 
@@ -315,6 +315,19 @@ function renderFeatured() {
   };
   $("#featured-watch").onclick = startPlayback;
   playButton.onclick = startPlayback;
+}
+
+function showCatalogUnavailable(message) {
+  grid.replaceChildren();
+  count.textContent = "CHƯA CÓ DỮ LIỆU NGUỒN";
+  empty.hidden = false;
+  empty.textContent = message;
+  setFeaturedVideos([]);
+  renderPagination(0);
+  activeFiltersRoot.replaceChildren();
+  activeFiltersRoot.hidden = true;
+  const note = document.querySelector(".data-note");
+  if (note) note.textContent = message + " · KHÔNG HIỂN THỊ VIDEO DEMO THAY THẾ";
 }
 
 function renderSampleVideo(reason) {

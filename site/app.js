@@ -335,7 +335,7 @@ function renderFeatured() {
   image.onerror = () => { image.src = "./poster-fallback.svg"; };
   $("#featured-title").textContent = video.title || "Video nổi bật";
   $("#featured-meta").textContent = video.isSample
-    ? "VIDEO MẪU · CC BY 3.0 · BLENDER FOUNDATION"
+    ? "PHIM MỞ · " + (video.license || "CREATIVE COMMONS") + " · " + (video.sourceName || "BLENDER FOUNDATION")
     : [video.year, video.duration, video.country, video.category].filter(Boolean).join(" · ");
   $("#featured-description").textContent = video.description || "Khám phá video đang được quan tâm trên ClipViet.";
   $("#featured-index").textContent = String(featuredIndex + 1).padStart(2, "0");

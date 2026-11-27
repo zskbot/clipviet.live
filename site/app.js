@@ -180,10 +180,9 @@ function render() {
       }
       activeFiltersRoot.hidden = !activeCategoryName;
       for (const video of pageItems) {
-        const card = document.createElement("button");
-        card.type = "button";
+        const card = document.createElement("article");
         card.className = "video-card";
-        card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
+        card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p><button class="card-watch" type="button">XEM</button></div>';
         const img = card.querySelector("img");
         img.src = video.poster || "./poster-fallback.svg";
         img.alt = video.title || "Video";
@@ -191,7 +190,7 @@ function render() {
         card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.badgeLabel || video.licenseLabel || "CHỈ XEM");
         card.querySelector("h3").textContent = video.title || "Video";
         card.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
-        card.addEventListener("click", () => openDetail(video));
+        card.querySelector(".card-watch").addEventListener("click", () => openDetail(video));
         grid.append(card);
       }
       setMenuApiStatus(
@@ -404,7 +403,7 @@ function setFeaturedVideos(items) {
 }
 
 function openDetail(video) {
-  detail.innerHTML = '<div class="detail-inner"><img alt=""><div><p class="eyebrow"></p><h2></h2><p class="description"></p><p class="meta"></p><p class="detail-source"></p><a class="primary-link watch-link" hidden>PHÁT VIDEO <span>↗</span></a></div></div>';
+  detail.innerHTML = '<div class="detail-inner"><img alt=""><div><p class="eyebrow"></p><h2></h2><p class="description"></p><p class="meta"></p><p class="detail-source"></p><a class="primary-link watch-link" hidden>XEM VIDEO <span>↗</span></a></div></div>';
   const img = detail.querySelector("img");
   img.src = video.poster || "./poster-fallback.svg";
   img.alt = video.title;

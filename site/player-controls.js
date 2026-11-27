@@ -105,7 +105,8 @@ function setStatus(message, show = true) {
 }
 function setFallback(url) {
   if (!fallback) return;
-  const target = url || activeVideo?.originalUrl || activeVideo?.original_url || activeVideo?.sourceUrl || activeVideo?.source_url || "";
+  const candidate = url || activeVideo?.originalUrl || activeVideo?.original_url || activeVideo?.sourceUrl || activeVideo?.source_url || "";
+  const target = isPlaybackAuthorized(activeVideo) ? candidate : "";
   fallback.href = target || "#";
   fallback.hidden = !target;
 }

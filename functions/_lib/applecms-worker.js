@@ -228,6 +228,15 @@ function playbackPayload(provider, row, videoId, env) {
   if (!lines.length) throw new AppleCmsProviderError("No owner-hosted media URL matches the approved host list.", 403, "MEDIA_HOST_NOT_APPROVED");
   return { providerId: provider.id, videoId: String(videoId), playbackMode: mode, delivery: "direct-browser", sources: lines };
 }
+function activeProviderState(provider) {
+  return {
+    id: provider.id, name: provider.name, role: provider.role,
+    configured: true, rightsApproved: true,
+    playbackMode: provider.rights.playbackMode,
+    status: provider.rights.playbackMode === "metadata_only" ? "METADATA_ONLY" : "PLAYBACK_APPROVED",
+    operationalState: "ACTIVE"
+  };
+}
 export function appleCmsProviderStatuses(env = {}) {
   const rightsRegistry = parseRegistry(env.VIDEO_PROVIDER_RIGHTS_JSON);
   return PROVIDERS.map(provider => {
@@ -284,7 +293,7 @@ export async function getAppleCmsVideoDetail(request, env, params = {}) {
   const row = payload.list.find(item => String(item.vod_id) === videoId);
   if (!row) throw new AppleCmsProviderError("Video was not found.", 404, "VIDEO_NOT_FOUND");
   const data = requireVideoMetadata(provider, videoId, row, env);
-  return { success: true, provider: { id, name: provider.name, status: "ACTIVE", operationalState: "ACTIVE" }, data, playback: { enabled: false, endpoint: data.playbackEndpoint, reason: "PLAYBACK_ENDPOINT_REQUIRES_PER_VIDEO_APPROVAL" } };
+  return { success: true, provider: activeProviderState(provider), data, playback: { enabled: false, endpoint: data.playbackEndpoint, reason: "PLAYBACK_ENDPOINT_REQUIRES_PER_VIDEO_APPROVAL" } };
 }
 export async function getAppleCmsPlaybackInfo(request, env, params = {}) {
   const url = new URL(request.url);
@@ -296,5 +305,5 @@ export async function getAppleCmsPlaybackInfo(request, env, params = {}) {
   const row = payload.list.find(item => String(item.vod_id) === videoId);
   if (!row) throw new AppleCmsProviderError("Video was not found.", 404, "VIDEO_NOT_FOUND");
   requireVideoMetadata(provider, videoId, row, env);
-  return { success: true, provider: { id, name: provider.name, status: "ACTIVE", operationalState: "ACTIVE" }, data: playbackPayload(provider, row, videoId, env), rightsGate: { policy: "deny-by-default", providerApproved: true, perVideoApproved: true } };
+  return { success: true, provider: activeProviderState(provider), data: playbackPayload(provider, row, videoId, env), rightsGate: { policy: "deny-by-default", providerApproved: true, perVideoApproved: true } };
 }

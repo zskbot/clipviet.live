@@ -9,6 +9,27 @@ test("MacCMS play URL parser handles routes and episodes with last dollar separa
   assert.equal(items[2].routeIndex, 1);
 });
 
+
+test("MacCMS parser preserves dollar signs inside the media URL and fills an empty episode label", () => {
+  const [item] = parseMacCmsPlayUrl("$https://cdn.example.com/video$token.m3u8");
+  assert.equal(item.label, "Tập 1");
+  assert.equal(item.url, "https://cdn.example.com/video$token.m3u8");
+});
+
+test("MacCMS providers are opt-in; no unreviewed source is contacted by default", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("unexpected upstream request"); };
+  try {
+    const result = await getMacCmsFeed({});
+    assert.deepEqual(result.results, []);
+    assert.deepEqual(result.providers, []);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("MacCMS parser ignores malformed and non-HTTPS playback URLs", () => {
   assert.deepEqual(parseMacCmsPlayUrl("bad-entry#NoUrl$http://cdn.example.com/a.mp4"), []);
 });

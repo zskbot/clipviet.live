@@ -5,10 +5,16 @@ const MAX_PAGES = 1000;
 let catalog = { videos: [], categories: [], providers: [] };
 let page = 1, pageCount = 1, activeProvider = "", categoryId = "", keyword = "", country = "", duration = "";
 let items = [], trendingTimer = null, trendingIndex = 0, trendingItems = [], quickCategory = "";
-const browseParams = new URLSearchParams(location.search);\nconst initialQuickCategory = browseParams.get("quick") || "";\nkeyword = browseParams.get("q") || "";\nactiveProvider = browseParams.get("source") || "";\ncategoryId = browseParams.get("category") || "";
+const browseParams = new URLSearchParams(location.search);
+const initialQuickCategory = browseParams.get("quick") || "";
+keyword = browseParams.get("q") || "";
+activeProvider = browseParams.get("source") || "";
+categoryId = browseParams.get("category") || "";
 if (["latest","adult","jav","china","europe","vietnam","vietsub","south-asia","actors","genres","uncensored","beauty","amateur","xvideos","xnxx","buomtv","hsex","xnhau","vlxx"].includes(initialQuickCategory)) quickCategory = initialQuickCategory;
 
-const gate = $("age-gate");\nif ($("keyword")) $("keyword").value = keyword;\nif ($("source")) $("source").value = activeProvider;
+const gate = $("age-gate");
+if ($("keyword")) $("keyword").value = keyword;
+if ($("source")) $("source").value = activeProvider;
 try { if (sessionStorage.getItem("clipviet-age-confirmed") === "yes") gate.hidden = true; } catch {}
 $("confirm").addEventListener("click", () => { try { sessionStorage.setItem("clipviet-age-confirmed", "yes"); } catch {} gate.hidden = true; });
 $("leave").addEventListener("click", () => location.replace("https://www.google.com/"));

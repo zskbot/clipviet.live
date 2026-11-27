@@ -256,18 +256,16 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
       const head = await fetch(parsed.href, { method: "HEAD", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
       const contentType = String(head.headers.get("content-type") || "").toLowerCase();
       const mimeOk = contentType.startsWith("video/mp4");
-      const corsOk = mediaCorsOk(head, requestOrigin);
       const ranged = await fetch(parsed.href, { method: "GET",
         headers: { ...headers, range: "bytes=0-1" }, redirect: "error", signal: AbortSignal.timeout(9000) });
       const contentRange = String(ranged.headers.get("content-range") || "");
-      const rangeSupported = ranged.status === 206 && /^bytes\s+0-1\//i.test(contentRange);
-      const rangeCorsOk = mediaCorsOk(ranged, requestOrigin);
+      const rangeSupported = ranged.status === 206 && /^bytes\\s+0-1\\//i.test(contentRange);
+      const corsOk = mediaCorsOk(ranged, requestOrigin);
       await ranged.body?.cancel();
-      const corsPassed = corsOk !== false && rangeCorsOk !== false;
-      return { ...base, httpStatus: head.status, mimeOk, corsOk: corsPassed, rangeSupported,
-        passed: head.ok && mimeOk && corsPassed && rangeSupported,
+      return { ...base, httpStatus: head.status, mimeOk, corsOk, rangeSupported,
+        passed: head.ok && mimeOk && corsOk !== false && rangeSupported,
         reason: !head.ok ? "media_head_failed" : !mimeOk ? "mp4_mime_invalid" :
-          !corsPassed ? "media_cors_missing" : !rangeSupported ? "mp4_byte_range_not_supported" : "ok" };
+          corsOk === false ? "media_cors_missing" : !rangeSupported ? "mp4_byte_range_not_supported" : "ok" };
     }
     const manifest = await fetch(parsed.href, { method: "GET", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
     const contentType = String(manifest.headers.get("content-type") || "").toLowerCase();
@@ -280,8 +278,11 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
     if (firstResource) {
       const resourceUrl = new URL(firstResource, parsed);
       if (isAllowedMediaUrl(resourceUrl.href, mediaHosts)) {
-        const resource = await fetch(resourceUrl.href, { method: "HEAD", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
-        firstResourceReachable = resource.ok;
+        const resource = await fetch(resourceUrl.href, { method: "GET",
+          headers: { ...headers, range: "bytes=0-1" }, redirect: "error", signal: AbortSignal.timeout(9000) });
+        const resourceType = String(resource.headers.get("content-type") || "").toLowerCase();
+        const resourceMimeOk = /^(video\\/(?:mp2t|mp4|iso\\.segment)|audio\\/(?:aac|mp4)|application\\/(?:octet-stream|mp2t|vnd\\.apple\\.mpegurl|x-mpegurl))(?:\\s*;|$)/i.test(resourceType);
+        firstResourceReachable = resource.ok && [200, 206].includes(resource.status) && resourceMimeOk;
         firstResourceCorsOk = mediaCorsOk(resource, requestOrigin);
         await resource.body?.cancel();
       }

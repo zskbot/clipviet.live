@@ -168,3 +168,19 @@ test("legacy unguarded endpoint is permanently disabled", async () => {
   assert.equal(response.status, 410);
   assert.equal((await response.json()).code, "LEGACY_PLAYBACK_ENDPOINT_DISABLED");
 });
+
+import { onRequest as rootStatus } from "../functions/api/providers/applecms.js";
+
+test("legacy AppleCMS root route returns provider states without a missing metadata export", async () => {
+  const response = await rootStatus({
+    request: request("/api/providers/applecms"),
+    env: { APPLECMS_SOUAVZY_URL: apiUrl }
+  });
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+  assert.equal(body.providers.length, 5);
+  assert.equal(body.providers.find(item => item.id === sourceId).status, "PENDING_RIGHTS");
+  assert.equal(body.rightsGate.playbackEnabled, false);
+  assert.equal(JSON.stringify(body).includes("fixture.m3u8"), false);
+});

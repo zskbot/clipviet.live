@@ -36,7 +36,7 @@ export function mapAppleCmsCategories(rows) {
   if (!Array.isArray(rows)) return [];
   const seen = new Set();
   return rows
-    .filter((row) => Number(row?.type_pid) !== 0)
+    .filter((row) => Number(row?.type_pid) > 0)
     .map((row) => ({
       id: String(row?.type_id ?? "").trim(),
       parentId: String(row?.type_pid ?? "").trim(),

@@ -29,3 +29,7 @@ These HTML pages are not documented APIs. This Preview does not crawl, scrape, r
 - Confirm the catalog API distinguishes rights-pending, provider errors and a genuinely empty result.
 - Confirm no upstream media URL or credential is exposed in metadata.
 - Keep Preview isolated from Production, custom domains and DNS.
+
+## Isolated Pages Preview
+
+The Cloudflare Pages project `clipviet-live-independent-preview` now explicitly includes branch `preview/clipviet-catalog-integration-20261128` in its Preview branch allowlist. The project production branch remains `main` and automatic Production deployments remain disabled.

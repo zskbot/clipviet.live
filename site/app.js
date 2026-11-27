@@ -388,12 +388,14 @@ function showCatalogUnavailable(message) {
   count.textContent = "0 VIDEO ĐƯỢC DUYỆT QUYỀN";
   empty.hidden = false;
   empty.textContent = message;
-  setFeaturedVideos([]);
+  // Keep the AppleCMS catalog blocked, but provide a separate, clearly labeled
+  // licensed open-movie demo so the featured player always has a real Play path.
+  setFeaturedVideos(openLicensedVideos);
   renderPagination(0);
   activeFiltersRoot.replaceChildren();
   activeFiltersRoot.hidden = true;
   const note = document.querySelector(".data-note");
-  if (note) note.textContent = message + " · KHÔNG HIỂN THỊ VIDEO DEMO THAY THẾ";
+  if (note) note.textContent = message + " · TRÌNH PHÁT MẪU DÙNG PHIM MỞ CÓ GIẤY PHÉP; KHÔNG MỞ KHÓA APPLECMS.";
 }
 
 const openLicensedVideos = [
@@ -463,7 +465,15 @@ function renderOpenLicenseCatalog(reason) {
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;
   const blocked = /underage|minor|loli|shota|school\s?(girl|boy|student)|teen\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
-  featuredVideos = items.filter((video) => !blocked.test([video.title, video.category, video.description, video.genre].filter(Boolean).join(" ")));
+  const safeItems = items.filter((video) => !blocked.test([video.title, video.category, video.description, video.genre].filter(Boolean).join(" ")));
+  const playableItems = safeItems.filter((video) =>
+    (video.isSample === true && video.rightsVerified === true && Boolean(video.videoUrl)) ||
+    (video.playbackEnabled === true && video.playbackRightsApproved === true)
+  );
+  // Metadata-only AppleCMS rows must never masquerade as playable. Keep the
+  // catalog visible, and use a separately licensed Blender open movie in the
+  // featured player until an item has a verified playback grant.
+  featuredVideos = playableItems.length ? playableItems : openLicensedVideos;
   featuredVideos.sort((a, b) => (b.trendingScore - a.trendingScore) || (b.views - a.views) || (b.playCount - a.playCount) || (Number(b.year || 0) - Number(a.year || 0)));
   featuredIndex = 0;
   renderFeatured();

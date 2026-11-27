@@ -1,8 +1,6 @@
 PRAGMA foreign_keys = ON;
 
--- Defense in depth: registry status changes must not bypass the application rights gate.
--- This migration is additive and safe to re-run.
-
+-- Defense in depth: a provider cannot be enabled without current rights evidence.
 CREATE TRIGGER IF NOT EXISTS trg_provider_registry_enable_guard_insert
 BEFORE INSERT ON provider_registry
 WHEN NEW.status = 'ENABLED' AND (
@@ -30,43 +28,26 @@ BEGIN
   SELECT RAISE(ABORT, 'provider cannot be enabled without valid rights evidence and a future license expiry');
 END;
 
-CREATE TRIGGER IF NOT EXISTS trg_provider_connector_approval_guard_insert
-BEFORE INSERT ON provider_connectors
-WHEN NEW.status = 'APPROVED' AND (
-  length(trim(COALESCE(NEW.documentation_url, ''))) = 0 OR
-  length(trim(COALESCE(NEW.evidence_reference, ''))) = 0 OR
-  NOT EXISTS (
-    SELECT 1 FROM provider_registry p
-    WHERE p.id = NEW.provider_id
-      AND p.status IN ('VERIFIED', 'APPROVED', 'ENABLED')
-      AND length(trim(COALESCE(p.rights_holder, ''))) > 0
-      AND length(trim(COALESCE(p.license_reference, ''))) > 0
-      AND length(trim(COALESCE(p.rights_evidence_url, ''))) > 0
-      AND julianday(p.license_expires_at) > julianday('now')
-  )
+-- External sources may only expose playback after verification and explicit rights approval.
+CREATE TRIGGER IF NOT EXISTS trg_external_source_playback_guard_insert
+BEFORE INSERT ON external_source_registry
+WHEN NEW.playback_enabled = 1 AND (
+  NEW.status <> 'VERIFIED' OR NEW.rights_status <> 'APPROVED'
 )
 BEGIN
-  SELECT RAISE(ABORT, 'connector cannot be approved without verified provider rights and evidence');
+  SELECT RAISE(ABORT, 'external source playback requires VERIFIED status and APPROVED rights');
 END;
 
-CREATE TRIGGER IF NOT EXISTS trg_provider_connector_approval_guard_update
-BEFORE UPDATE OF status, documentation_url, evidence_reference, provider_id
-ON provider_connectors
-WHEN NEW.status = 'APPROVED' AND (
-  length(trim(COALESCE(NEW.documentation_url, ''))) = 0 OR
-  length(trim(COALESCE(NEW.evidence_reference, ''))) = 0 OR
-  NOT EXISTS (
-    SELECT 1 FROM provider_registry p
-    WHERE p.id = NEW.provider_id
-      AND p.status IN ('VERIFIED', 'APPROVED', 'ENABLED')
-      AND length(trim(COALESCE(p.rights_holder, ''))) > 0
-      AND length(trim(COALESCE(p.license_reference, ''))) > 0
-      AND length(trim(COALESCE(p.rights_evidence_url, ''))) > 0
-      AND julianday(p.license_expires_at) > julianday('now')
-  )
+CREATE TRIGGER IF NOT EXISTS trg_external_source_playback_guard_update
+BEFORE UPDATE OF playback_enabled, status, rights_status
+ON external_source_registry
+WHEN NEW.playback_enabled = 1 AND (
+  NEW.status <> 'VERIFIED' OR NEW.rights_status <> 'APPROVED'
 )
 BEGIN
-  SELECT RAISE(ABORT, 'connector cannot be approved without verified provider rights and evidence');
+  SELECT RAISE(ABORT, 'external source playback requires VERIFIED status and APPROVED rights');
 END;
--- Record this migration in the registry's own migration ledger.
-INSERT OR IGNORE INTO schema_migrations (name) VALUES ('0007_provider_registry_rights_guards.sql');
+
+-- Keep the D1 schema ledger in sync with the migration file.
+INSERT OR IGNORE INTO schema_migrations (name)
+VALUES ('0007_provider_registry_rights_guards.sql');

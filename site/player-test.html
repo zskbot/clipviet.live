@@ -87,7 +87,7 @@
   });
   video.addEventListener("timeupdate", update);
   async function load(kind) {
-    video.pause(); video.removeAttribute("src"); video.load();
+    video.pause(); if(video._qaHls){video._qaHls.destroy();video._qaHls=null;} video.removeAttribute("src"); video.load();
     const url = kind === "hls" ? HLS_URL : MP4_URL;
     const type = kind === "hls" ? "application/vnd.apple.mpegurl" : "video/mp4";
     status("Đang nạp " + kind.toUpperCase(), "Đang tải metadata từ nguồn video mẫu. Chưa tự động phát.");

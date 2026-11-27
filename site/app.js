@@ -58,6 +58,7 @@ let activeCategoryId = "";
 let activeCategoryName = "";
 let activeQuickFilter = "latest";
 function renderCategories(values) {
+  if (!categoryRoot) return;
   categoryRoot.replaceChildren();
   const all = { id: "", name: "Tất cả" };
   [all, ...values].forEach((category) => {
@@ -107,13 +108,15 @@ function renderProviderStatuses(providers) {
     const name = document.createElement("strong");
     name.textContent = provider.name || provider.id || "Provider";
     const state = document.createElement("span");
-    const rawState = provider.status || provider.diagnostic || provider.state || "UNKNOWN";
+    const rawState = provider.status || provider.diagnostic || provider.state ||
+      (provider.configured ? "PENDING_RIGHTS" : "NOT_CONFIGURED");
     state.textContent = labels[rawState] || rawState;
     state.dataset.state = /PENDING|pending|NOT_CONFIGURED|not-configured/.test(rawState) ? "pending" :
       /ERROR|offline|degraded/.test(rawState) ? "error" : /READY|ACTIVE|api-ok/.test(rawState) ? "ready" : "info";
     const meta = document.createElement("small");
     meta.textContent = provider.operationalState || provider.diagnostic ||
-      (provider.approvedContentCount !== undefined ? provider.approvedContentCount + " video có hồ sơ quyền" : "Chưa kiểm tra upstream");
+      (provider.approvedContentCount !== undefined ? provider.approvedContentCount + " video có hồ sơ quyền" :
+        provider.configured ? "Endpoint đã cấu hình · quyền provider/video chưa được xác minh" : "Thiếu URL API trong Worker Preview");
     card.append(name, state, meta);
     providerStatusList.append(card);
   }
@@ -566,7 +569,7 @@ $("#reset-filters")?.addEventListener("click", () => {
   const url = new URL(location.href); url.searchParams.delete("q"); history.replaceState({}, "", url);
   document.querySelectorAll("[data-quick-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.quickFilter === "latest")));
   currentPage = 1;
-  categoryRoot.querySelectorAll("button").forEach((button, index) => button.setAttribute("aria-pressed", String(index === 0)));
+  categoryRoot?.querySelectorAll("button").forEach((button, index) => button.setAttribute("aria-pressed", String(index === 0)));
   countryRoot?.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", "false"));
   genreRoot?.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", "false"));
   render();

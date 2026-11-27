@@ -223,12 +223,12 @@ setImageFilter();
 (async () => {
   if (!sourceId || !vodId) { say("Thiếu sourceId hoặc vodId."); return; }
   try {
-    const response = await fetch("../data/catalog.json", { cache: "no-store", headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error("Không tải được catalog GitHub Pages.");
-    const catalog = await response.json();
-    data = catalog.videos.find((item) => item.sourceId === sourceId && item.id === vodId);
-    if (!data) throw new Error("Video không còn trong catalog hiện tại. Hãy quay lại thư viện.");
-    if (!Array.isArray(data.lines) || !data.lines.length) throw new Error("Nguồn không cung cấp đường phát trực tiếp.");
+    const response = await fetch("../api/video-detail?sourceId=" + encodeURIComponent(sourceId) + "&vodId=" + encodeURIComponent(vodId), { cache: "no-store", headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("Không tải được chi tiết video · HTTP " + response.status);
+    const payload = await response.json();
+    data = payload.data || null;
+    if (!data) throw new Error(payload.error || "Video không còn tại nguồn.");
+    if (!Array.isArray(data.lines) || !data.lines.length) throw new Error("Nguồn chưa cung cấp đường phát trực tiếp hợp lệ.");
     title.textContent = data.title;
     $("meta").textContent = [data.sourceName, data.year, data.area, data.categoryName, data.duration].filter(Boolean).join(" · ");
     $("description").textContent = data.description || "";

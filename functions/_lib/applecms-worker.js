@@ -77,12 +77,12 @@ function videoRightsRecord(env, providerId, videoId) {
 function getProvider(id, env) {
   const provider = PROVIDERS.find(item => item.id === id);
   if (!provider) throw new AppleCmsProviderError("Unknown provider.", 404, "UNKNOWN_PROVIDER");
+  const raw = env[provider.envKey];
+  if (!raw) throw new AppleCmsProviderError("Provider API is not configured.", 503, "PROVIDER_NOT_CONFIGURED");
   const rights = parseRegistry(env.VIDEO_PROVIDER_RIGHTS_JSON)[id];
   if (!providerApproval(rights)) {
     throw new AppleCmsProviderError("Provider rights are pending review.", 403, "PROVIDER_RIGHTS_PENDING");
   }
-  const raw = env[provider.envKey];
-  if (!raw) throw new AppleCmsProviderError("Provider API is not configured.", 503, "PROVIDER_NOT_CONFIGURED");
   let url;
   try { url = new URL(raw); } catch {
     throw new AppleCmsProviderError("Provider API URL is invalid.", 503, "PROVIDER_CONFIG_INVALID");
@@ -284,7 +284,7 @@ export async function getAppleCmsVideoDetail(request, env, params = {}) {
   const row = payload.list.find(item => String(item.vod_id) === videoId);
   if (!row) throw new AppleCmsProviderError("Video was not found.", 404, "VIDEO_NOT_FOUND");
   const data = requireVideoMetadata(provider, videoId, row, env);
-  return { success: true, data, playback: { enabled: false, endpoint: data.playbackEndpoint, reason: "PLAYBACK_ENDPOINT_REQUIRES_PER_VIDEO_APPROVAL" } };
+  return { success: true, provider: { id, name: provider.name, status: "ACTIVE", operationalState: "ACTIVE" }, data, playback: { enabled: false, endpoint: data.playbackEndpoint, reason: "PLAYBACK_ENDPOINT_REQUIRES_PER_VIDEO_APPROVAL" } };
 }
 export async function getAppleCmsPlaybackInfo(request, env, params = {}) {
   const url = new URL(request.url);
@@ -296,5 +296,5 @@ export async function getAppleCmsPlaybackInfo(request, env, params = {}) {
   const row = payload.list.find(item => String(item.vod_id) === videoId);
   if (!row) throw new AppleCmsProviderError("Video was not found.", 404, "VIDEO_NOT_FOUND");
   requireVideoMetadata(provider, videoId, row, env);
-  return { success: true, data: playbackPayload(provider, row, videoId, env), rightsGate: { policy: "deny-by-default", providerApproved: true, perVideoApproved: true } };
+  return { success: true, provider: { id, name: provider.name, status: "ACTIVE", operationalState: "ACTIVE" }, data: playbackPayload(provider, row, videoId, env), rightsGate: { policy: "deny-by-default", providerApproved: true, perVideoApproved: true } };
 }

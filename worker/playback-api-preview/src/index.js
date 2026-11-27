@@ -360,11 +360,17 @@ async function handle(request, env) {
 
   if (path === "/api/providers/diagnostics") {
     try {
-      const [statuses, diagnostics] = await Promise.all([
-        readProviderStatuses(env),
-        Promise.all(PROVIDERS.map(diagnoseProvider))
-      ]);
+      const statuses = await readProviderStatuses(env);
       const statusMap = new Map(statuses.map(item => [item.id, item]));
+      const diagnostics = await Promise.all(PROVIDERS.map(provider => {
+        const state = statusMap.get(provider.id);
+        if (state?.rightsApproved !== true) return Promise.resolve({
+          providerId: provider.id, reachable: false, httpStatus: null, latencyMs: null,
+          apiProtocol: "AppleCMS V10", operationalState: "NOT_CHECKED",
+          playbackEnabled: false, reason: "provider_rights_pending"
+        });
+        return diagnoseProvider(provider);
+      }));
       const data = diagnostics.map(item => ({
         ...statusMap.get(item.providerId), ...item,
         status: statusMap.get(item.providerId)?.status || "UNKNOWN"
@@ -382,10 +388,13 @@ async function handle(request, env) {
     const provider = PROVIDERS.find(item => item.id === providerDiagnosticMatch[1]);
     if (!provider) return json({ error: "Unknown provider", code: "UNKNOWN_PROVIDER" }, 404, headers);
     try {
-      const [statuses, diagnostic] = await Promise.all([
-        readProviderStatuses(env), diagnoseProvider(provider)
-      ]);
+      const statuses = await readProviderStatuses(env);
       const state = statuses.find(item => item.id === provider.id);
+      const diagnostic = state?.rightsApproved === true
+        ? await diagnoseProvider(provider)
+        : { providerId: provider.id, reachable: false, httpStatus: null, latencyMs: null,
+            apiProtocol: "AppleCMS V10", operationalState: "NOT_CHECKED",
+            playbackEnabled: false, reason: "provider_rights_pending" };
       return json({ data: { ...state, ...diagnostic, status: state?.status || "UNKNOWN" } }, 200, headers);
     } catch {
       return json({ error: "Provider registry unavailable", code: "PROVIDER_REGISTRY_UNAVAILABLE" }, 503, headers);

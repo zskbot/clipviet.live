@@ -2,6 +2,9 @@ name = "clipviet-live-independent-preview"
 pages_build_output_dir = "./site"
 compatibility_date = "2026-11-25"
 
+# Required for isolated Wrangler Preview builds; no Production deployment is enabled.
+[previews]
+
 # Preview-only binding: Pages Functions read the isolated ClipViet Preview D1.
 # No D1 binding is configured for production.
 [[env.preview.d1_databases]]

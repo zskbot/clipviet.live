@@ -39,7 +39,15 @@ export class ProviderError extends Error {
 export function listProviders(env) {
   return PROVIDERS.filter(p => p.enabled).map(({ id, name, role, envKey }) => ({ id, name, role, protocol: "AppleCMS V10", configured: Boolean(env?.[envKey]) }));
 }
-function getProvider(id, env) {
+function safeEvidenceUrl(value) {
+  try { const url = new URL(String(value || "")); return url.protocol === "https:" && !url.username && !url.password && !url.port && url.hostname.includes("."); }
+  catch { return false; }
+}
+function parseJsonArray(value) {
+  try { const parsed = JSON.parse(value || "[]"); return Array.isArray(parsed) ? parsed : []; }
+  catch { return []; }
+}
+async function getProvider(id, env) {
   const configured = PROVIDERS.find(p => p.id === id && p.enabled);
   if (!configured) throw new ProviderError(String(id || ""), "Unknown or disabled provider", 404);
   const raw = env?.[configured.envKey];
@@ -47,7 +55,37 @@ function getProvider(id, env) {
   let url;
   try { url = new URL(raw); } catch { throw new ProviderError(configured.id, "Provider URL is invalid", 503); }
   if (url.protocol !== "https:" || url.hostname.toLowerCase() !== configured.host || url.pathname !== "/api.php/provide/vod/" || url.username || url.password || url.search || url.hash) throw new ProviderError(configured.id, "Provider URL does not match the approved AppleCMS endpoint", 503);
-  return { ...configured, baseUrl: url.toString() };
+  if (!env?.PROVIDER_DB) throw new ProviderError(configured.id, "Rights registry is unavailable; catalog access is blocked.", 503);
+  const approval = await env.PROVIDER_DB.prepare("SELECT p.status AS provider_status,p.rights_holder,p.license_reference,p.rights_evidence_url,p.license_expires_at,c.status AS connector_status,c.playback_mode,c.regions_json FROM provider_registry p JOIN provider_connectors c ON c.provider_id=p.id WHERE p.id=? LIMIT 1").bind(configured.id).first();
+  const regions = parseJsonArray(approval?.regions_json).map(value => String(value).toUpperCase());
+  const expiry = Date.parse(approval?.license_expires_at || "");
+  const providerApproved = approval && ["APPROVED", "ENABLED"].includes(approval.provider_status) &&
+    approval.connector_status === "APPROVED" && Boolean(String(approval.rights_holder || "").trim()) &&
+    Boolean(String(approval.license_reference || "").trim()) && safeEvidenceUrl(approval.rights_evidence_url) &&
+    Number.isFinite(expiry) && expiry > Date.now() && (regions.includes("GLOBAL") || regions.includes("VN"));
+  if (!providerApproved) throw new ProviderError(configured.id, "Provider rights are pending legal approval.", 403);
+  return { ...configured, baseUrl: url.toString(), playbackMode: approval.playback_mode, approvedRegions: regions };
+}
+async function getApprovedContentRights(provider, env) {
+  const now = new Date().toISOString();
+  const result = await env.PROVIDER_DB.prepare("SELECT source_content_id,source_url,rights_holder,license_reference,evidence_url,license_expires_at,permitted_uses_json,regions_json,source_verified,ownership_verified,performer_age_verified,performer_consent_verified FROM provider_content_rights WHERE provider_id=? AND status='APPROVED' AND license_expires_at>? AND source_verified=1 AND ownership_verified=1 AND performer_age_verified=1 AND performer_consent_verified=1 ORDER BY updated_at DESC LIMIT 10000").bind(provider.id, now).all();
+  const approved = new Map();
+  for (const row of result.results || []) {
+    const id = String(row.source_content_id || "");
+    const uses = parseJsonArray(row.permitted_uses_json).map(value => String(value));
+    const regions = parseJsonArray(row.regions_json).map(value => String(value).toUpperCase());
+    if (!id || !safeEvidenceUrl(row.source_url) || !safeEvidenceUrl(row.evidence_url) ||
+        !String(row.rights_holder || "").trim() || !String(row.license_reference || "").trim() ||
+        !uses.some(value => ["metadata_only", "official_embed", "owner_hosted_stream", "redistribute"].includes(value)) ||
+        !(regions.includes("GLOBAL") || regions.includes("VN"))) continue;
+    approved.set(id, { uses, regions, expiresAt: row.license_expires_at });
+  }
+  return approved;
+}
+function withApprovedRights(video, rights) {
+  return { ...video, rightsStatus: "APPROVED", rightsVerified: true,
+    rightsPermittedUses: rights.uses, rightsExpiresAt: rights.expiresAt,
+    lines: [], playbackEnabled: false };
 }
 export function parsePlayUrls(raw, playFrom) {
   if (!raw) return [];
@@ -141,7 +179,7 @@ async function fetchProviderJson(provider, params) {
   throw new ProviderError(provider.id, "Provider request failed", 502);
 }
 export async function getProviderCategories(providerId, env) {
-  const provider = getProvider(providerId, env);
+  const provider = await getProvider(providerId, env);
   const payload = await fetchProviderJson(provider, { ac: "list" });
   const all = (payload.class || []).map(item => ({
     id: Number(item.type_id) || 0,
@@ -152,34 +190,44 @@ export async function getProviderCategories(providerId, env) {
   return all.filter(item => !parentIds.has(item.id));
 }
 export async function listProviderVideos(providerId, options = {}, env) {
-  const provider = getProvider(providerId, env);
+  const provider = await getProvider(providerId, env);
+  const approvedRights = await getApprovedContentRights(provider, env);
   const page = Math.max(1, Math.min(1000000, Number.parseInt(options.page, 10) || 1));
-  const params = { ac: "detail", pg: page };
-  if (options.categoryId) params.t = String(options.categoryId).slice(0, 20);
+  const pageSize = 30, eligible = [...approvedRights.entries()], total = eligible.length;
+  const pageCount = Math.ceil(total / pageSize);
+  const selected = eligible.slice((page - 1) * pageSize, page * pageSize);
+  if (!selected.length) return {
+    provider: { id: provider.id, name: provider.name }, items: [], page, pageCount, total, limit: pageSize,
+    rightsGate: { policy: "deny-by-default", providerApproved: true, approvedCount: total, playbackEnabled: false }
+  };
+  const ids = selected.map(([id]) => id);
+  const params = { ac: "detail", ids: ids.join(",") };
   if (options.keyword) params.wd = String(options.keyword).trim().slice(0, 100);
   const payload = await fetchProviderJson(provider, params);
-  const items = (payload.list || []).map(row => mapVideo(provider, row)).filter(Boolean);
+  const items = (payload.list || []).map(row => mapVideo(provider, row)).filter(Boolean)
+    .filter(video => approvedRights.has(String(video.id)))
+    .map(video => withApprovedRights(video, approvedRights.get(String(video.id))));
   return {
-    provider: { id: provider.id, name: provider.name },
-    items,
-    page: Number(payload.page) || page,
-    pageCount: Number(payload.pagecount) || 0,
-    total: Number(payload.total) || 0,
-    limit: Number(payload.limit) || items.length
+    provider: { id: provider.id, name: provider.name }, items, page, pageCount, total, limit: pageSize,
+    rightsGate: { policy: "deny-by-default", providerApproved: true, approvedCount: total, returnedCount: items.length, playbackEnabled: false }
   };
 }
 export async function getProviderVideo(providerId, vodId, env) {
-  const provider = getProvider(providerId, env);
+  const provider = await getProvider(providerId, env);
   const id = String(vodId || "").trim().slice(0, 40);
-  if (!/^[0-9,]+$/.test(id)) throw new ProviderError(provider.id, "Invalid video ID", 400);
+  if (!/^[0-9]+$/.test(id)) throw new ProviderError(provider.id, "Invalid video ID", 400);
+  const approvedRights = await getApprovedContentRights(provider, env);
+  const rights = approvedRights.get(id);
+  if (!rights) return null;
   const payload = await fetchProviderJson(provider, { ac: "detail", ids: id });
   const row = (payload.list || []).find(item => String(item.vod_id) === id);
-  return row ? mapVideo(provider, row) : null;
+  const video = row ? mapVideo(provider, row) : null;
+  return video ? withApprovedRights(video, rights) : null;
 }
 export async function checkProviderHealth(providerId, env) {
   const started = Date.now();
   try {
-    const provider = getProvider(providerId, env);
+    const provider = await getProvider(providerId, env);
     const categories = await getProviderCategories(providerId, env);
     const page = await listProviderVideos(providerId, { page: 1 }, env);
     const playbackUrlsPresent = page.items.some(item => item.lines.some(line => line.episodes.length > 0));

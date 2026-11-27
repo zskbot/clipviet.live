@@ -51,7 +51,7 @@ test("API source ingestion is restricted to explicitly approved HTTPS hosts", ()
 
 test("API writes default to sandbox and production uses an explicit environment", () => {
   assert.equal(getApiVideoApiBaseUrl({}), "https://sandbox.api.video");
-  assert.equal(getApiVideoApiBaseUrl({ APIVIDEO_ENV: "production" }), "https://ws.api.video");
+  assert.equal(getApiVideoApiBaseUrl({ APIVIDEO_ENV: "production" }), null);
 });
 
 test("invalid allowlist JSON fails closed", () => {

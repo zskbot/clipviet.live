@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "site/**"
+      - "scripts/audit-static-site.mjs"
       - "worker/telegram-api/**"
       - ".github/workflows/clipviet-platform-check.yml"
   workflow_dispatch:
@@ -20,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Audit static-site local links and escaped markup
+        run: node scripts/audit-static-site.mjs
       - name: Check JavaScript syntax
         shell: bash
         run: |

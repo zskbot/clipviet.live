@@ -1,4 +1,4 @@
-import { appleCmsProviderStatuses, listAppleCmsVideos, AppleCmsProviderError } from "../../_lib/applecms-worker.js";
+import { appleCmsProviderStatuses, listAppleCmsVideos, AppleCmsProviderError } from "../_lib/applecms-worker.js";
 const PROVIDER_IDS = ["souavzy", "apiyutu", "lbapi9", "slapibf", "jipinvip1"];
 const ALLOW = "GET, HEAD, OPTIONS";
 const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "allow": ALLOW, "x-content-type-options": "nosniff" };

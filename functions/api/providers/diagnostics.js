@@ -1,12 +1,11 @@
 const UPSTREAM = "https://clipviet-catalog-metadata-preview.huynhthuongg2505-f9b.workers.dev";
-const TRUSTED_WORKER_ORIGIN = "https://024bcb8c.clipviet-live-independent-preview.pages.dev";
 export async function onRequest({ request }) {
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
   try {
     const target = new URL(UPSTREAM + "/api/providers/diagnostics");
     target.search = new URL(request.url).search;
     const upstream = await fetch(target.toString(), { method: request.method,
-      headers: { Accept: request.headers.get("Accept") || "application/json", Origin: TRUSTED_WORKER_ORIGIN }, redirect: "manual" });
+      headers: { Accept: request.headers.get("Accept") || "application/json", Origin: new URL(request.url).origin }, redirect: "manual" });
     const headers = new Headers(upstream.headers);
     headers.set("cache-control", "no-store");
     headers.set("x-clipviet-provider-diagnostics-source", "catalog-metadata-preview-worker");

@@ -17,6 +17,10 @@ const genreRoot = $("#genre-filters");
 const activeFiltersRoot = $("#active-filters");
 const menu = $("#filter-menu");
 const menuToggle = $("#menu-toggle");
+const providerStatusPanel = $("#provider-status-panel");
+const providerStatusList = $("#provider-status-list");
+const providerStatusNote = $("#provider-status-note");
+const providerDiagnosticsButton = $("#provider-diagnostics-run");
 let videos = [];
 let activeCategory = "Tất cả";
 let activeCountry = "";
@@ -80,6 +84,66 @@ let totalResults = 0;
 let pageSize = 30;
 const API_BASE = "";
 // Preview-only recovery: keep the original AppleCMS Worker as the sole catalog source.
+
+function renderProviderStatuses(providers) {
+  if (!providerStatusPanel || !providerStatusList) return;
+  providerStatusList.replaceChildren();
+  const labels = {
+    NOT_CONFIGURED: "Chưa cấu hình API",
+    PENDING_RIGHTS: "Chờ phê duyệt quyền",
+    PENDING_CONNECTOR: "Chờ cấu hình connector",
+    APPROVED_NO_CONTENT: "Nguồn được duyệt · chưa có metadata",
+    READY: "Đủ điều kiện metadata",
+    "pending-rights": "Chờ phê duyệt quyền",
+    "not-configured": "Chưa cấu hình API",
+    "api-ok": "API hoạt động",
+    degraded: "Thiếu dữ liệu catalog",
+    offline: "Nguồn không truy cập được"
+  };
+  for (const provider of providers) {
+    const card = document.createElement("article");
+    card.className = "provider-status-card";
+    const name = document.createElement("strong");
+    name.textContent = provider.name || provider.id || "Provider";
+    const state = document.createElement("span");
+    const rawState = provider.status || provider.diagnostic || provider.state || "UNKNOWN";
+    state.textContent = labels[rawState] || rawState;
+    state.dataset.state = /PENDING|pending|NOT_CONFIGURED|not-configured/.test(rawState) ? "pending" :
+      /ERROR|offline|degraded/.test(rawState) ? "error" : /READY|ACTIVE|api-ok/.test(rawState) ? "ready" : "info";
+    const meta = document.createElement("small");
+    meta.textContent = provider.operationalState || provider.diagnostic ||
+      (provider.approvedContentCount !== undefined ? provider.approvedContentCount + " video có hồ sơ quyền" : "Chưa kiểm tra upstream");
+    card.append(name, state, meta);
+    providerStatusList.append(card);
+  }
+  providerStatusPanel.hidden = providers.length === 0;
+}
+async function loadProviderStatuses(runDiagnostics = false) {
+  if (providerDiagnosticsButton) {
+    providerDiagnosticsButton.disabled = true;
+    providerDiagnosticsButton.textContent = runDiagnostics ? "ĐANG KIỂM TRA…" : "KIỂM TRA NGUỒN";
+  }
+  try {
+    const endpoint = runDiagnostics ? "/api/providers/diagnostics" : "/api/providers";
+    const response = await fetch(endpoint, { headers: { Accept: "application/json" }, cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || ("Provider API HTTP " + response.status));
+    const providers = Array.isArray(payload.providers) ? payload.providers : Array.isArray(payload.data) ? payload.data : [];
+    renderProviderStatuses(providers);
+    if (providerStatusNote) providerStatusNote.textContent = runDiagnostics
+      ? "Đã kiểm tra kỹ thuật các nguồn đủ điều kiện. Nguồn đang chờ quyền được giữ nguyên và không bị gọi."
+      : "5 nguồn AppleCMS được cấu hình tham chiếu. Mỗi nguồn vẫn cần quyền provider và quyền metadata từng video.";
+  } catch (error) {
+    if (providerStatusNote) providerStatusNote.textContent = "Không đọc được trạng thái provider: " + error.message;
+    if (providerStatusPanel) providerStatusPanel.hidden = false;
+  } finally {
+    if (providerDiagnosticsButton) {
+      providerDiagnosticsButton.disabled = false;
+      providerDiagnosticsButton.textContent = "KIỂM TRA NGUỒN";
+    }
+  }
+}
+providerDiagnosticsButton?.addEventListener("click", () => loadProviderStatuses(true));
 
 function setMenuApiStatus(message, state = "info") {
   const status = $("#menu-api-status");
@@ -542,9 +606,11 @@ $("#leave-button")?.addEventListener("click", () => { location.href = "https://w
     if (payload.rightsGate?.providerApproved === false) setMenuApiStatus("Nguồn AppleCMS đang chờ phê duyệt quyền.", "warning");
     else setMenuApiStatus("API danh mục đã kết nối · " + categories.length + " danh mục.", "success");
     render();
+    loadProviderStatuses();
   } catch (error) {
     setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
     render();
+    loadProviderStatuses();
   }
 })();
 

@@ -178,24 +178,27 @@ async function handle(request, env) {
       success: true, data: [], count: 0,
       rightsGate: { policy: "deny-by-default", providerApproved: false, reason: "provider_pending_approval", playbackEnabled: false }
     }, 200, headers);
-    if (lastError?.status === 403) return json({
-      success: true, items: [], data: [], results: [], total: 0,
-      page: Number(page) || 1, pageCount: 0, limit: 30,
-      rightsGate: { policy: "deny-by-default", providerApproved: false, approvedCount: 0, playbackEnabled: false, reason: "provider_pending_approval" }
-    }, 200, headers);
     return json({error:"All eligible providers failed",providerId:lastError?.providerId||explicit||"souavzy"},lastError?.status||502,headers);
   }
   if(path==="/api/catalog/videos") {
     const explicit=url.searchParams.get("sourceId"), categoryId=url.searchParams.get("categoryId")||undefined;
     const keyword=url.searchParams.get("keyword")||undefined, page=url.searchParams.get("page")||"1";
     const candidates=explicit?[explicit]:["souavzy","apiyutu","lbapi9","slapibf","jipinvip1"];
-    let lastError=null;
+    let lastError=null, lastEmpty=null;
     for(const providerId of candidates) {
       try {
         const data=await listProviderVideos(providerId,{page,categoryId,keyword},env);
+        if (Array.isArray(data.items) && data.items.length) return json({...data,failover:!explicit&&providerId!=="souavzy"},200,headers);
+        if (data.rightsGate?.providerApproved === true) { lastEmpty=data; continue; }
         return json({...data,failover:!explicit&&providerId!=="souavzy"},200,headers);
       } catch(error) { lastError=error; if(explicit||categoryId) break; }
     }
+    if (lastEmpty) return json({...lastEmpty,rightsGate:{...lastEmpty.rightsGate,reason:"no_approved_video_rights"}},200,headers);
+    if (lastError?.status === 403) return json({
+      success: true, items: [], data: [], results: [], total: 0,
+      page: Number(page) || 1, pageCount: 0, limit: 30,
+      rightsGate: { policy: "deny-by-default", providerApproved: false, approvedCount: 0, playbackEnabled: false, reason: "provider_pending_approval" }
+    }, 200, headers);
     return json({error:"All eligible providers failed",providerId:lastError?.providerId||explicit||"souavzy"},lastError?.status||502,headers);
   }
   const match=path.match(/^\/api\/providers\/([a-z0-9-]+)\/(categories|videos)(?:\/([0-9]+))?$/);

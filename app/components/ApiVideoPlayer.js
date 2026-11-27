@@ -46,13 +46,17 @@ export default function ApiVideoPlayer({ videoId }) {
         }
         const PlayerSdk = await loadApiVideoSdk();
         if (!active || !targetRef.current) return;
-        player = new PlayerSdk(targetRef.current, {
+        const options = {
           id: permission.videoId,
           live: permission.live === true,
           autoplay: false,
           muted: false,
-          hotKeys: true
-        });
+          hotkeys: true
+        };
+        if (typeof permission.token === "string" && /^[A-Za-z0-9-]{16,128}$/.test(permission.token)) {
+          options.token = permission.token;
+        }
+        player = new PlayerSdk(targetRef.current, options);
         player.addEventListener("ready", () => active && setStatus("API.video Player đã sẵn sàng."));
         player.addEventListener("error", () => active && setStatus("API.video không thể phát video này."));
         if (active) setStatus("Đang khởi tạo API.video Player…");

@@ -24,7 +24,7 @@ Reviewed 2026-11-27.
 Set these as server-side environment variables in the Preview environment only:
 
 - `APIVIDEO_API_KEY`: optional api.video API key. Keep it in the hosting provider's secret manager; never commit it.
-- `APIVIDEO_APPROVED_VIDEO_IDS_JSON`: JSON array of IDs that have passed ClipViet's independent rights review, e.g. `[{"id":"YOUR_VIDEO_ID","live":false}]`.
+- `APIVIDEO_APPROVED_VIDEO_IDS_JSON`: JSON array of IDs that have passed ClipViet's independent rights review, e.g. `[{"id":"YOUR_VIDEO_ID","live":false,"private":true}]`. Set `private:true` only for private api.video objects.
 - `APIVIDEO_APPROVED_SOURCE_HOSTS_JSON`: JSON array of exact HTTPS hostnames approved for ingestion after rights review, e.g. `["media.example.com"]`.
 - `APIVIDEO_INGEST_ENABLED`: must be exactly `true` before the admin create endpoint can send any request to api.video. It remains disabled by default.
 
@@ -33,7 +33,7 @@ The current allowlist is empty unless explicitly configured. Do not add a video 
 ## Endpoints
 
 - `GET /api/integrations/apivideo/status`: returns only configuration booleans, approved ID count, and validation state.
-- `GET /api/integrations/apivideo/playback?id=...`: returns a player ID only when it is in the server-side allowlist; otherwise returns 404.
+- `GET /api/integrations/apivideo/playback?id=...`: returns a player ID only when it is in the server-side allowlist; otherwise returns 404. For entries marked `private:true`, it requires an authorized Preview admin session, retrieves a fresh one-time private token from api.video Sandbox server-side, and returns that token with `Cache-Control: no-store`. The API key is never sent to the browser.
 - `POST /api/admin/integrations/apivideo/videos`: admin-authenticated, sandbox-first creation of a private api.video object from an approved HTTPS source URL. Requires the explicit ingestion feature flag, explicit rights confirmation, and an exact source-host allowlist match. Production writes are rejected by this Preview integration.
 
 ## Important compatibility boundary
@@ -48,3 +48,10 @@ The api.video Player SDK controls api.video's hosted HTML5 player by video ID. I
 - `APIVIDEO_INGEST_ENABLED` is not set by this change, so the API create route remains disabled.
 - The create route was not called. No video was uploaded, ingested, transcoded, published, or played through the external service.
 - No Production, DNS, custom domain, D1, R2, or existing media data was changed.
+
+
+## Private video playback
+
+api.video private playback uses a short-lived, one-time viewing token. The Preview playback route requests the video object from the Sandbox API with the server-only `APIVIDEO_API_KEY`, extracts the token from `assets.player`, and returns it only to an authorized ClipViet admin session. The Player SDK receives that token in its `token` option. Each request may issue a new token; do not cache, log, commit, or reuse it. The private playback route is deliberately admin-only in Preview until a separate authenticated viewer session is implemented. Public static pages must not expose this token broker without an authenticated viewer session.
+
+The main static `zskbot/clipviet` site uses the SDK for public, explicitly approved api.video playback only. The `zskbot/clipviet.live` Preview backend owns private-video creation and the admin-only one-time-token flow. Both sites retain their existing HLS/MP4 playback paths for other providers.

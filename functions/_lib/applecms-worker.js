@@ -259,7 +259,7 @@ export async function listAppleCmsCategories(request, env) {
   if (!id) throw new AppleCmsProviderError("sourceId is required.", 400, "SOURCE_ID_REQUIRED");
   const provider = getProvider(id, env);
   const payload = await requestAppleCms(provider, { ac: "list" });
-  return { success: true, provider: { id, name: provider.name, status: "ACTIVE" }, categories: categoriesFromPayload(payload), rightsGate: { policy: "deny-by-default", metadataOnly: provider.rights.playbackMode === "metadata_only" } };
+  return { success: true, provider: activeProviderState(provider), categories: categoriesFromPayload(payload), rightsGate: { policy: "deny-by-default", metadataOnly: provider.rights.playbackMode === "metadata_only" } };
 }
 export async function listAppleCmsVideos(request, env) {
   const url = new URL(request.url);

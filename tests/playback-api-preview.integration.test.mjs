@@ -4,13 +4,12 @@ import playbackWorker from "../worker/playback-api-preview/src/index.js";
 
 const PREVIEW_ORIGIN = "https://a1b2c3d4.clipviet-live-preview.pages.dev";
 
-function makeDb(row) {
+function makeDb(row, registryRows = []) {
   return {
     prepare() {
       return {
-        bind() {
-          return { first: async () => row };
-        }
+        bind() { return { first: async () => row }; },
+        all: async () => ({ results: registryRows })
       };
     }
   };
@@ -96,6 +95,91 @@ test("diagnostics report reachability metadata but never expose playback URLs", 
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+
+test("provider listing keeps legal rights status separate from operational health", async () => {
+  const db = makeDb(null, [{
+    id: "souavzy",
+    provider_status: "PENDING",
+    provider_rights_holder: "",
+    provider_license_reference: "",
+    provider_rights_evidence_url: "",
+    provider_license_expires_at: "",
+    media_hosts_json: "[]",
+    connector_status: null,
+    playback_mode: null
+  }]);
+  const response = await playbackWorker.fetch(
+    new Request("https://worker.example/api/providers"),
+    { PROVIDER_DB: db }
+  );
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.count, 5);
+  const souavzy = body.data.find(item => item.id === "souavzy");
+  assert.equal(souavzy.status, "PENDING_RIGHTS");
+  assert.equal(souavzy.operationalState, "NOT_CHECKED");
+  assert.equal(souavzy.playbackEnabled, undefined);
+});
+
+test("diagnostics distinguish active metadata API from pending playback rights", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => jsonResponse({ code: 1, list: [] });
+  try {
+    const db = makeDb(null, [{
+      id: "souavzy", provider_status: "PENDING",
+      provider_rights_holder: "", provider_license_reference: "",
+      provider_rights_evidence_url: "", provider_license_expires_at: "",
+      media_hosts_json: "[]", connector_status: null, playback_mode: null
+    }]);
+    const response = await playbackWorker.fetch(
+      new Request("https://worker.example/api/providers/souavzy/diagnostics", {
+        headers: { Origin: PREVIEW_ORIGIN }
+      }), { PROVIDER_DB: db }
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.data.status, "PENDING_RIGHTS");
+    assert.equal(body.data.operationalState, "ACTIVE");
+    assert.equal(body.data.playbackEnabled, false);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("provider diagnostics reject HTML responses instead of treating them as active APIs", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("<html>blocked</html>", {
+    status: 200, headers: { "content-type": "text/html; charset=utf-8" }
+  });
+  try {
+    const response = await playbackWorker.fetch(
+      new Request("https://worker.example/api/providers/souavzy/diagnostics", {
+        headers: { Origin: PREVIEW_ORIGIN }
+      }), { PROVIDER_DB: makeDb(null) }
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.data.operationalState, "ERROR");
+    assert.equal(body.data.reason, "provider_diagnostics_invalid_content_type");
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("provider diagnostics cap upstream JSON bodies at one MiB", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(new Uint8Array(1024 * 1024 + 1), {
+    status: 200, headers: { "content-type": "application/json" }
+  });
+  try {
+    const response = await playbackWorker.fetch(
+      new Request("https://worker.example/api/providers/souavzy/diagnostics", {
+        headers: { Origin: PREVIEW_ORIGIN }
+      }), { PROVIDER_DB: makeDb(null) }
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.data.operationalState, "ERROR");
+    assert.equal(body.data.reason, "provider_diagnostics_response_too_large");
+  } finally { globalThis.fetch = originalFetch; }
 });
 
 test("pending provider rights deny playback before any upstream detail request", async () => {

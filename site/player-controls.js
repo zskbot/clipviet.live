@@ -179,7 +179,7 @@ function getSource(video) {
   const hlsUrl = video.hlsUrl || video.hls_url || video.m3u8 || video.m3u8Url || video.m3u8_url || video.hls || (hlsSource && sourceUrl(hlsSource)) || sourceList.map(sourceUrl).find((url) => /\.m3u8(?:$|\?)/i.test(url));
   const mp4Url = video.videoUrl || video.video_url || video.playbackUrl || video.playback_url || video.mp4Url || video.mp4_url || video.playUrl || video.play_url || (mp4Source && sourceUrl(mp4Source)) || sourceList.map(sourceUrl).find((url) => /\.mp4(?:$|\?)/i.test(url));
   const url = hlsUrl || mp4Url;
-  if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return null;
+  if (typeof url !== "string" || !/^https:\/\//i.test(url)) return null;
   return { url, hls: Boolean(hlsUrl), fallbackUrl: video.originalUrl || video.original_url || video.sourceUrl || video.source_url || "" };
 }
 function loadHlsLibrary() {

@@ -92,6 +92,11 @@
       return;
     }
 
+    if (video.webkitDisplayingFullscreen && typeof video.webkitExitFullscreen === "function") {
+      video.webkitExitFullscreen();
+      return;
+    }
+
     const container = video.closest(".featured-player-shell, .player-shell, .video-player");
     if (container && typeof container.requestFullscreen === "function") {
       const result = container.requestFullscreen();

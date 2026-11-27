@@ -14,6 +14,7 @@ const PAGE = String.raw`<!doctype html>
 <div class="grid" id="health"><div class="tile"><small>SERVICE</small><strong>CHECKING</strong></div><div class="tile"><small>DATABASE</small><strong>CHECKING</strong></div><div class="tile"><small>PROVIDERS</small><strong>—</strong></div></div>
 <div class="notice">All seeded providers remain PENDING. Diagnostic PASS is technical evidence only; it does not authorize playback, embedding or redistribution. CDN allowlists remain empty until exact hosts and rights evidence are independently reviewed.</div>
 <section><div class="top"><h2>Provider registry</h2><span class="muted" id="updated">Not checked yet</span></div><div id="providers"><p class="muted">Loading provider records…</p></div></section>
+<section><div class="top"><h2>Metadata intake review queue</h2><span class="muted" id="intake-count">Loading submissions…</span></div><p class="muted">Read-only evidence queue. Submissions remain PENDING_REVIEW; this screen cannot approve providers, connectors, content rights or playback.</p><div id="intakes"><p class="muted">Loading metadata submissions…</p></div></section>
 <div class="footer">No Production routing · No DNS changes · No provider status mutation · Diagnostic runs may contact the configured API endpoint and are recorded in Preview D1.</div>
 </main>
 <script>
@@ -29,7 +30,17 @@ $("providers").innerHTML=rows.map(p=>{const runs=p.diagnostics||[],latest=runs[0
 document.querySelectorAll("[data-run]").forEach(b=>b.addEventListener("click",()=>runDiagnostic(b.dataset.run,b)));
 document.querySelectorAll("[data-history]").forEach(b=>b.addEventListener("click",()=>refreshAll()));
 }
-async function refreshAll(){clearError();$("updated").textContent="Refreshing…";try{const [health,registry]=await Promise.all([api("/health"),api("/providers")]);renderHealth(health);const rows=await Promise.all((registry.providers||[]).map(async p=>{try{const d=await api("/providers/"+encodeURIComponent(p.id)+"/diagnostics");return {...p,diagnostics:d.runs||[]}}catch(e){return {...p,diagnostics:[],diagnosticError:e.message}}}));renderProviders(rows);$("updated").textContent="Updated "+new Date().toLocaleString()}catch(e){showError(e.message);$("updated").textContent="Refresh failed"}}
+function renderIntakes(payload){
+  const rows=Array.isArray(payload.intakes)?payload.intakes:[];
+  $("intake-count").textContent=String(payload.pendingReview||0)+" PENDING_REVIEW · "+rows.length+" RECORDS";
+  if(!rows.length){$("intakes").innerHTML='<p class="muted">No metadata submissions received yet.</p>';return}
+  $("intakes").innerHTML=rows.map(item=>{
+    const expiry=item.licenseExpiresAt?new Date(item.licenseExpiresAt).toLocaleDateString():"—";
+    const regions=Array.isArray(item.regions)?item.regions.join(", "):"—";
+    return '<article class="provider"><div class="provider-head"><div><h2>'+esc(item.providerName||item.providerId)+'</h2><div class="muted">'+esc(item.apiHost)+' · '+esc(item.status)+'</div></div><span class="status">'+esc(item.status)+'</span></div><div class="facts"><div class="fact"><small>RIGHTS HOLDER</small><strong>'+esc(item.rightsHolder)+'</strong></div><div class="fact"><small>LICENSE REFERENCE</small><strong>'+esc(item.licenseReference)+'</strong></div><div class="fact"><small>EXPIRY / REGIONS</small><strong>'+esc(expiry)+' · '+esc(regions)+'</strong></div></div><p class="muted">Evidence: '+esc(item.evidenceUrl)+'<br>API docs: '+esc(item.documentationUrl)+'<br>Contact: '+esc(item.contactEmail||"Not supplied")+'<br>Submitted: '+esc(item.createdAt)+'<br>Note: '+esc(item.note||"—")+'</p></article>';
+  }).join("");
+}
+async function refreshAll(){clearError();$("updated").textContent="Refreshing…";try{const [health,registry,intakes]=await Promise.all([api("/health"),api("/providers"),api("/metadata-intakes")]);renderHealth(health);renderIntakes(intakes);const rows=await Promise.all((registry.providers||[]).map(async p=>{try{const d=await api("/providers/"+encodeURIComponent(p.id)+"/diagnostics");return {...p,diagnostics:d.runs||[]}}catch(e){return {...p,diagnostics:[],diagnosticError:e.message}}}));renderProviders(rows);$("updated").textContent="Updated "+new Date().toLocaleString()}catch(e){showError(e.message);$("updated").textContent="Refresh failed"}}
 async function runDiagnostic(id,button){clearError();button.disabled=true;button.textContent="RUNNING…";try{const result=await api("/providers/"+encodeURIComponent(id)+"/diagnostics/run",{method:"POST",body:"{}"});if(result.run?.status==="PASS"){}await refreshAll()}catch(e){showError(e.message)}finally{button.disabled=false;button.textContent="RUN DIAGNOSTIC"}}
 $("refresh").addEventListener("click",refreshAll);refreshAll();
 </script></body></html>`;

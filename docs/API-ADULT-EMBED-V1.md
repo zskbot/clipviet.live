@@ -23,3 +23,6 @@ Requests must be server-side, read-only, bounded to at most 20 records per page,
 Expected response shape: `{ page, per_page, total, pages, results: [...] }`.
 
 The normalizer is covered by local unit tests. It is not a claim that the remote API is reachable or that the provider has granted ClipViet rights.
+
+
+Preview deployment trigger: branch `feat/adultembed-preview-adapter` is allowlisted only on the isolated Pages Preview project.

@@ -1137,3 +1137,10 @@ body.menu-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* Explicit card-level View action; square controls on desktop and iPhone. */
+.video-card{display:block;text-align:left;padding:0;color:inherit;cursor:default}
+.card-info{display:grid;gap:8px}
+.card-watch{justify-self:start;min-width:92px;min-height:36px;padding:0 14px;border:1px solid var(--red);background:var(--red);color:#fff;font-size:10px;font-weight:900;letter-spacing:1.2px;cursor:pointer;border-radius:0}
+.card-watch:hover,.card-watch:focus-visible{background:#c9202d;border-color:#c9202d}
+.card-watch:focus-visible{outline:2px solid #f5a1a7;outline-offset:3px}

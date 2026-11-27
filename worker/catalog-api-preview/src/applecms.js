@@ -39,6 +39,30 @@ export class ProviderError extends Error {
 export function listProviders(env) {
   return PROVIDERS.filter(p => p.enabled).map(({ id, name, role, envKey }) => ({ id, name, role, protocol: "AppleCMS V10", configured: Boolean(env?.[envKey]) }));
 }
+export async function listProviderStatuses(env) {
+  const base = listProviders(env);
+  if (!env?.PROVIDER_DB) return base.map(provider => ({ ...provider, status: "RIGHTS_REGISTRY_UNAVAILABLE", operationalState: "NOT_CHECKED", approvedContentCount: 0 }));
+  const now = new Date().toISOString();
+  const result = await env.PROVIDER_DB.prepare(
+    "SELECT p.id,p.status AS provider_status,p.rights_holder,p.license_reference,p.rights_evidence_url,p.license_expires_at,c.status AS connector_status,c.playback_mode,c.regions_json,(SELECT COUNT(*) FROM provider_content_rights v WHERE v.provider_id=p.id AND v.status='APPROVED' AND v.license_expires_at>? AND v.source_verified=1 AND v.ownership_verified=1 AND v.performer_age_verified=1 AND v.performer_consent_verified=1) AS approved_content_count FROM provider_registry p LEFT JOIN provider_connectors c ON c.provider_id=p.id"
+  ).bind(now).all();
+  const rows = new Map((result.results || []).map(row => [row.id, row]));
+  return base.map(provider => {
+    const row = rows.get(provider.id);
+    const regions = parseJsonArray(row?.regions_json).map(value => String(value).toUpperCase());
+    const expiry = Date.parse(row?.license_expires_at || "");
+    const providerApproved = row && ["APPROVED", "ENABLED"].includes(row.provider_status) &&
+      row.connector_status === "APPROVED" && Boolean(String(row.rights_holder || "").trim()) &&
+      Boolean(String(row.license_reference || "").trim()) && safeEvidenceUrl(row.rights_evidence_url) &&
+      Number.isFinite(expiry) && expiry > Date.now() && (regions.includes("GLOBAL") || regions.includes("VN"));
+    const approvedContentCount = Number(row?.approved_content_count) || 0;
+    const status = !provider.configured ? "NOT_CONFIGURED" : !row || !providerApproved
+      ? "PENDING_RIGHTS" : approvedContentCount ? "READY" : "APPROVED_NO_CONTENT";
+    return { ...provider, providerStatus: row?.provider_status || "MISSING",
+      connectorStatus: row?.connector_status || "MISSING", rightsApproved: Boolean(providerApproved),
+      approvedContentCount, status, operationalState: "NOT_CHECKED" };
+  });
+}
 function safeEvidenceUrl(value) {
   try { const url = new URL(String(value || "")); return url.protocol === "https:" && !url.username && !url.password && !url.port && url.hostname.includes("."); }
   catch { return false; }
@@ -230,16 +254,17 @@ export async function checkProviderHealth(providerId, env) {
     const provider = await getProvider(providerId, env);
     const categories = await getProviderCategories(providerId, env);
     const page = await listProviderVideos(providerId, { page: 1 }, env);
-    const playbackUrlsPresent = page.items.some(item => item.lines.some(line => line.episodes.length > 0));
+    const metadataAvailable = page.items.length > 0;
     return {
-      id: provider.id, name: provider.name, status: page.items.length > 0 && categories.length > 0 && playbackUrlsPresent ? "api-ok" : "degraded",
+      id: provider.id, name: provider.name, status: metadataAvailable && categories.length > 0 ? "api-ok" : "degraded",
+      operationalState: metadataAvailable && categories.length > 0 ? "ACTIVE" : "DEGRADED",
       latencyMs: Date.now() - started, categoryCount: categories.length,
       pageCount: page.pageCount, total: page.total, sampleCount: page.items.length,
-      playbackUrlsPresent
+      playbackEnabled: false, note: "Health checks validate API and approved metadata only; playback requires a separate per-video grant."
     };
   } catch (error) {
     const provider = PROVIDERS.find(item => item.id === providerId);
-    return { id: providerId, name: provider?.name || providerId, status: error?.status === 503 ? "not-configured" : "offline", latencyMs: Date.now() - started };
+    return { id: providerId, name: provider?.name || providerId, status: error?.status === 403 ? "pending-rights" : error?.status === 503 ? "not-configured" : "offline", latencyMs: Date.now() - started };
   }
 }
 export async function checkAllProviderHealth(env) {

@@ -1,4 +1,4 @@
-name = "clipviet-catalog-api-preview"
+name = "clipviet-catalog-metadata-preview"
 main = "src/index.js"
 compatibility_date = "2026-11-25"
 workers_dev = true

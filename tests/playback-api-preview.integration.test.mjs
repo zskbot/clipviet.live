@@ -71,31 +71,25 @@ test("Worker health and provider routes identify the Preview service", async () 
   assert.equal(providersBody.count, 5);
 });
 
-test("diagnostics report reachability metadata but never expose playback URLs", async () => {
+test("provider diagnostics do not contact any source while all provider rights are pending", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => jsonResponse({
-    code: 1,
-    list: [{ vod_id: 123, vod_play_url: "Episode$https://cdn.example.com/private.m3u8" }]
-  });
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("pending providers must not be contacted"); };
   try {
     const response = await playbackWorker.fetch(
-      new Request("https://worker.example/api/providers/diagnostics", {
-        headers: { Origin: PREVIEW_ORIGIN }
-      }),
-      { PROVIDER_DB: makeDb(null) }
+      new Request("https://worker.example/api/providers/diagnostics", { headers: { Origin: PREVIEW_ORIGIN } }),
+      { PROVIDER_DB: makeDb(null, [{ id: "souavzy", provider_status: "PENDING",
+        provider_rights_holder: "", provider_license_reference: "", provider_rights_evidence_url: "",
+        provider_license_expires_at: "", media_hosts_json: "[]", connector_status: null, playback_mode: null }]) }
     );
     const body = await response.json();
-    const serialized = JSON.stringify(body);
     assert.equal(response.status, 200);
     assert.equal(body.count, 5);
-    assert.equal(body.data.every(item => item.reachable === true), true);
-    assert.equal(body.data.every(item => item.playbackEnabled === false), true);
-    assert.equal(serialized.includes("private.m3u8"), false);
-    assert.equal(serialized.includes("vod_play_url"), false);
-    assert.equal(response.headers.get("access-control-allow-origin"), PREVIEW_ORIGIN);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+    assert.equal(body.data.every(item => item.reachable === false), true);
+    assert.equal(body.data.every(item => item.operationalState === "NOT_CHECKED"), true);
+    assert.equal(body.data.every(item => item.reason === "provider_rights_pending"), true);
+    assert.equal(calls, 0);
+  } finally { globalThis.fetch = originalFetch; }
 });
 
 
@@ -124,9 +118,10 @@ test("provider listing keeps legal rights status separate from operational healt
   assert.equal(souavzy.playbackEnabled, undefined);
 });
 
-test("diagnostics distinguish active metadata API from pending playback rights", async () => {
+test("single-provider diagnostics preserve pending rights and do not make an upstream request", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => jsonResponse({ code: 1, list: [] });
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("pending provider must not be contacted"); };
   try {
     const db = makeDb(null, [{
       id: "souavzy", provider_status: "PENDING",
@@ -135,15 +130,15 @@ test("diagnostics distinguish active metadata API from pending playback rights",
       media_hosts_json: "[]", connector_status: null, playback_mode: null
     }]);
     const response = await playbackWorker.fetch(
-      new Request("https://worker.example/api/providers/souavzy/diagnostics", {
-        headers: { Origin: PREVIEW_ORIGIN }
-      }), { PROVIDER_DB: db }
+      new Request("https://worker.example/api/providers/souavzy/diagnostics", { headers: { Origin: PREVIEW_ORIGIN } }),
+      { PROVIDER_DB: db }
     );
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.equal(body.data.status, "PENDING_RIGHTS");
-    assert.equal(body.data.operationalState, "ACTIVE");
-    assert.equal(body.data.playbackEnabled, false);
+    assert.equal(body.data.operationalState, "NOT_CHECKED");
+    assert.equal(body.data.reason, "provider_rights_pending");
+    assert.equal(calls, 0);
   } finally { globalThis.fetch = originalFetch; }
 });
 

@@ -271,12 +271,12 @@ function render() {
           video.playbackUrl, video.playback_url, ...cardSources.map(source =>
             typeof source === "string" ? source : source?.url || source?.src || source?.file || "")
         ].some(url => typeof url === "string" && /^https:\/\//i.test(url));
-        const cardCanPlay = cardHasRights && cardHasHttpsSource;
+        const cardCanPlay = cardHasRights && (cardHasHttpsSource || Boolean(video.playbackEndpoint));
         cardAction.textContent = cardCanPlay ? "PHÁT VIDEO" : "CHI TIẾT";
         cardAction.addEventListener("click", () => {
           if (!cardCanPlay) { openDetail(video); return; }
           dialog?.close();
-          playFeaturedVideo(video);
+          startVideoPlayback(video);
           $("#featured-player")?.scrollIntoView({ behavior: "smooth", block: "center" });
         });
         grid.append(card);
@@ -442,10 +442,76 @@ function renderFeatured() {
   const startPlayback = () => {
     if (featuredTimer) clearInterval(featuredTimer);
     featuredTimer = null;
-    playFeaturedVideo(video);
+    startVideoPlayback(video);
   };
   $("#featured-watch").onclick = startPlayback;
-  playButton.onclick = startPlayback;
+  // The overlay play button is wired once by player-controls.js. Do not overwrite
+  // its trusted-click handler: doing so reloads the source instead of calling play().
+}
+
+async function startVideoPlayback(video) {
+  const status = $("#featured-player-status");
+  const showStatus = (message) => {
+    if (status) { status.textContent = message; status.hidden = false; }
+  };
+  const expiresAt = Date.parse(video?.rightsExpiresAt || video?.licenseExpiresAt || "");
+  const rightsOk = video?.rightsVerified === true &&
+    video?.rightsStatus === "APPROVED" &&
+    Number.isFinite(expiresAt) && expiresAt > Date.now() &&
+    video?.playbackEnabled === true && video?.playbackRightsApproved === true;
+  if (!rightsOk) {
+    showStatus("Video chưa có quyền phát hợp lệ. ClipViet không mở khóa nguồn đang chờ xét duyệt.");
+    return;
+  }
+
+  try {
+    const currentSources = [
+      ...(Array.isArray(video.sources) ? video.sources : []),
+      ...(Array.isArray(video.playbackSources) ? video.playbackSources : []),
+      ...(Array.isArray(video.playback_sources) ? video.playback_sources : [])
+    ];
+    const hasDirectSource = currentSources.some((source) => {
+      const url = typeof source === "string" ? source : source?.url || source?.src || source?.file || "";
+      return typeof url === "string" && /^https:\/\//i.test(url);
+    }) || [video.videoUrl, video.video_url, video.hlsUrl, video.hls_url, video.playbackUrl, video.playback_url]
+      .some((url) => typeof url === "string" && /^https:\/\//i.test(url));
+
+    let playable = video;
+    if (!hasDirectSource) {
+      const endpoint = video.playbackEndpoint;
+      if (typeof endpoint !== "string" || !endpoint) throw new Error("API chưa cung cấp endpoint phân giải playback cho video này.");
+      const target = new URL(endpoint, location.origin);
+      if (target.origin !== location.origin || !target.pathname.startsWith("/api/")) {
+        throw new Error("Playback endpoint không thuộc API ClipViet hợp lệ.");
+      }
+      showStatus("Đang xác minh quyền và lấy thông tin phát video…");
+      const response = await fetch(target.toString(), {
+        headers: { Accept: "application/json" },
+        cache: "no-store"
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = payload.error || payload.message || ("Playback API HTTP " + response.status);
+        throw new Error(response.status === 403 ? "Quyền phát video chưa được phê duyệt: " + message : message);
+      }
+      const data = payload.data || payload.playback || {};
+      const groups = Array.isArray(data.sources) ? data.sources : [];
+      const sources = groups.flatMap((group) => Array.isArray(group?.episodes)
+        ? group.episodes.map((episode) => ({
+            ...episode,
+            name: episode.name || group.name || "Video",
+            type: /\.m3u8(?:$|\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
+          }))
+        : [group]);
+      if (!sources.some((source) => typeof source?.url === "string" && /^https:\/\//i.test(source.url))) {
+        throw new Error("API không trả về URL HTTPS được phép phát.");
+      }
+      playable = { ...video, sources };
+    }
+    playFeaturedVideo(playable);
+  } catch (error) {
+    showStatus("Không thể phát video: " + (error?.message || "Lỗi không xác định"));
+  }
 }
 
 function showCatalogUnavailable(message) {
@@ -478,7 +544,7 @@ function setFeaturedVideos(items) {
       const url = typeof source === "string" ? source : source?.url || source?.src || source?.file || "";
       return typeof url === "string" && isHttpUrl(url);
     });
-    return hasDirectUrl || hasSourceUrl;
+    return hasDirectUrl || hasSourceUrl || Boolean(video.playbackEndpoint);
   });
   featuredVideos = playableItems;
   featuredVideos.sort((a, b) => (b.trendingScore - a.trendingScore) || (b.views - a.views) || (b.playCount - a.playCount) || (Number(b.year || 0) - Number(a.year || 0)));
@@ -518,11 +584,11 @@ function openDetail(video) {
       typeof source === "string" ? source : source?.url || source?.src || source?.file || "")
   ].some(url => typeof url === "string" && /^https:\/\//i.test(url));
   const detailPlay = detail.querySelector(".detail-play");
-  if (detailRightsOk && detailHasHttpsSource && detailPlay) {
+  if (detailRightsOk && (detailHasHttpsSource || Boolean(video.playbackEndpoint)) && detailPlay) {
     detailPlay.hidden = false;
     detailPlay.addEventListener("click", () => {
       dialog.close();
-      playFeaturedVideo(video);
+      startVideoPlayback(video);
       $("#featured-player")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   }

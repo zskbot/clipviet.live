@@ -130,6 +130,8 @@ function render() {
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
       const pageItems = rows.map((item) => ({
         ...item,
+        // Prefer the provider's thumbnail-sized image in grid cards; retain poster/slide fallbacks.
+        poster: item.posterThumb || item.poster || item.posterSlide || "",
         category: item.categoryName || "Khác",
         genre: item.categoryName || "",
         country: item.area || "",
@@ -159,9 +161,15 @@ function render() {
         card.className = "video-card";
         card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
         const img = card.querySelector("img");
-        img.src = video.poster || "./poster-fallback.svg";
         img.alt = video.title || "Video";
-        img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
+        const posterCandidates = [video.posterThumb, video.poster, video.posterSlide]
+          .filter((value, index, values) => typeof value === "string" && /^https:\/\//i.test(value) && values.indexOf(value) === index);
+        let posterIndex = 0;
+        img.addEventListener("error", () => {
+          posterIndex += 1;
+          img.src = posterCandidates[posterIndex] || "./poster-fallback.svg";
+        });
+        img.src = posterCandidates[posterIndex] || "./poster-fallback.svg";
         card.querySelector(".poster-label").textContent = "18+";
         card.querySelector("h3").textContent = video.title || "Video";
         card.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
@@ -299,7 +307,7 @@ function renderFeatured() {
   const video = featuredVideos[featuredIndex % featuredVideos.length];
   $("#featured-watch").disabled = false;
   $("#featured-open").disabled = false;
-  image.src = video.poster || "./poster-fallback.svg";
+  image.src = video.posterSlide || video.poster || video.posterThumb || "./poster-fallback.svg";
   image.alt = video.title || "Video nổi bật";
   image.onerror = () => { image.src = "./poster-fallback.svg"; };
   $("#featured-title").textContent = video.title || "Video nổi bật";
@@ -375,9 +383,15 @@ function setFeaturedVideos(items) {
 function openDetail(video) {
   detail.innerHTML = '<div class="detail-inner"><img alt=""><div><p class="eyebrow"></p><h2></h2><p class="description"></p><p class="meta"></p><p class="detail-source"></p><a class="primary-link watch-link" hidden>PHÁT VIDEO <span>↗</span></a></div></div>';
   const img = detail.querySelector("img");
-  img.src = video.poster || "./poster-fallback.svg";
   img.alt = video.title;
-  img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
+  const detailPosters = [video.poster, video.posterThumb, video.posterSlide]
+    .filter((value, index, values) => typeof value === "string" && /^https:\/\//i.test(value) && values.indexOf(value) === index);
+  let detailPosterIndex = 0;
+  img.addEventListener("error", () => {
+    detailPosterIndex += 1;
+    img.src = detailPosters[detailPosterIndex] || "./poster-fallback.svg";
+  });
+  img.src = detailPosters[detailPosterIndex] || "./poster-fallback.svg";
   detail.querySelector(".eyebrow").textContent = video.category || "VIDEO";
   detail.querySelector("h2").textContent = video.title;
   detail.querySelector(".description").textContent = video.description || "";

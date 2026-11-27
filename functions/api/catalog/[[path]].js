@@ -47,6 +47,7 @@ function mapItem(doc) {
     sourceName: "Internet Archive · Prelinger Archives",
     sourceUrl: "https://archive.org/details/" + encodeURIComponent(identifier),
     licenseLabel: "Public Domain (uploader-declared)",
+    badgeLabel: "PUBLIC DOMAIN",
     licenseUrl: licenses[0],
     apiManaged: true,
     playbackEnabled: false,

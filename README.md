@@ -85,3 +85,6 @@ The community video-suggestion form is hosted in Clipform:
 - Public form: https://clipform.io/3d76a8c57
 - Responses dashboard: https://app.clipform.io/ce617e6d-4c43-475b-9c9d-d7ee953e3181/forms/3c0b50ba-72f3-426e-a489-36325e012907/responses
 - Suggestions are reviewed manually. Submission does not grant distribution rights and does not publish or ingest media automatically.
+
+
+<!-- Cloudflare Preview branch trigger: AppleCMS multi-source playback adapter. -->

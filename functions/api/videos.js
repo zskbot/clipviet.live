@@ -16,7 +16,7 @@ export async function onRequest({ request }) {
   }
   const rawPage = url.searchParams.get("page") ?? url.searchParams.get("currentPage") ?? "1";
   const rawLimit = url.searchParams.get("limit") ?? url.searchParams.get("pageSize") ?? url.searchParams.get("per_page") ?? "20";
-  if (!/^[0-9]+$/.test(rawPage) || !/^\\d+$/.test(rawLimit)) return json({ success: false, error: "Invalid pagination", code: "INVALID_PAGINATION" }, 400, request.method);
+  if (!/^[0-9]+$/.test(rawPage) || !/^[0-9]+$/.test(rawLimit)) return json({ success: false, error: "Invalid pagination", code: "INVALID_PAGINATION" }, 400, request.method);
   const page = Number(rawPage), limit = Number(rawLimit);
   if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
     return json({ success: false, error: "Pagination must use a positive page and a limit between 1 and 100", code: "INVALID_PAGINATION" }, 400, request.method);

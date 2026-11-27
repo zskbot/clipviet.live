@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const script = await readFile(new URL("../site/userscripts/clipviet-player-tools.user.js", import.meta.url), "utf8");
-const page = await readFile(new URL("../site/userscripts/index.html", import.meta.url), "utf8");
+const script = await readFile("site/userscripts/clipviet-player-tools.user.js", "utf8");
+const page = await readFile("site/userscripts/index.html", "utf8");
 
 test("ClipViet Player Tools is valid JavaScript", () => {
   assert.doesNotThrow(() => new Function(script));

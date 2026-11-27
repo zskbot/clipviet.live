@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseMacCmsPlayUrl, normalizeMacCmsItem, getMacCmsFeed } from "../lib/maccms-provider.mjs";
 
-test("MacCMS play URL parser handles routes and episodes with last dollar separator", () => {
+test("MacCMS play URL parser handles route and episode delimiters", () => {
   const items = parseMacCmsPlayUrl("HD$https://cdn.example.com/a.m3u8#Tập 2$https://cdn.example.com/b.mp4$$$Backup$https://cdn.example.com/c.mp4");
   assert.deepEqual(items.map(item => item.label), ["HD", "Tập 2", "Backup"]);
   assert.equal(items[1].url, "https://cdn.example.com/b.mp4");
@@ -52,8 +52,10 @@ test("MacCMS list item maps provider metadata and only allows configured media h
 test("MacCMS video feed uses ac=list and preserves provider pagination metadata", async () => {
   const originalFetch = globalThis.fetch;
   let requestedUrl;
-  globalThis.fetch = async (input) => {
+  let requestedHeaders;
+  globalThis.fetch = async (input, options) => {
     requestedUrl = new URL(String(input));
+    requestedHeaders = options?.headers || {};
     return new Response(JSON.stringify({
       code: 1, page: 1, pagecount: 3, total: 240, limit: 100,
       list: [{
@@ -106,9 +108,11 @@ test("MacCMS video feed uses ac=list and preserves provider pagination metadata"
       })
     };
     const result = await getMacCmsFeed(env);
-    assert.equal(requestedUrl.searchParams.get("ac"), "list");
+    assert.equal(requestedUrl.searchParams.get("ac"), "detail");
     assert.equal(requestedUrl.searchParams.get("pg"), "1");
-    assert.equal(requestedUrl.searchParams.get("pagesize"), "100");
+    assert.equal(requestedUrl.searchParams.has("pagesize"), false);
+    assert.equal(requestedHeaders.Accept, "application/json");
+    assert.equal(requestedHeaders["User-Agent"], "ClipViet-MacCMS-Adapter/1.0");
     assert.equal(result.results.length, 1);
     assert.equal(result.results[0].title, "Fixture video");
     assert.equal(result.results[0].videoUrl, "https://media.example.test/fixture.m3u8");

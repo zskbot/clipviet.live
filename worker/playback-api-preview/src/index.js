@@ -80,6 +80,56 @@ async function loadApprovedRights(providerId, videoId, env, region) {
   return { ...decision, status: decision.allowed ? 200 : (decision.reason === "provider_registry_unavailable" ? 503 : 403) };
 }
 
+async function diagnoseProvider(provider) {
+  const started = Date.now();
+  const url = new URL("https://" + provider.host + "/api.php/provide/vod/");
+  url.searchParams.set("ac", "list");
+  url.searchParams.set("pg", "1");
+  try {
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: { accept: "application/json", "user-agent": USER_AGENT },
+      redirect: "error",
+      signal: AbortSignal.timeout(9000)
+    });
+    const latencyMs = Date.now() - started;
+    if (!response.ok) {
+      return {
+        providerId: provider.id,
+        reachable: false,
+        httpStatus: response.status,
+        latencyMs,
+        apiProtocol: "AppleCMS V10",
+        playbackEnabled: false,
+        reason: "upstream_http_error"
+      };
+    }
+    const payload = await response.json();
+    const valid = payload && Number(payload.code) === 1 && Array.isArray(payload.list);
+    return {
+      providerId: provider.id,
+      reachable: valid,
+      httpStatus: response.status,
+      latencyMs,
+      apiProtocol: "AppleCMS V10",
+      appleCmsCode: Number.isFinite(Number(payload?.code)) ? Number(payload.code) : null,
+      catalogCount: Array.isArray(payload?.list) ? payload.list.length : 0,
+      playbackEnabled: false,
+      reason: valid ? "metadata_api_reachable_rights_not_approved" : "invalid_applecms_response"
+    };
+  } catch {
+    return {
+      providerId: provider.id,
+      reachable: false,
+      httpStatus: null,
+      latencyMs: Date.now() - started,
+      apiProtocol: "AppleCMS V10",
+      playbackEnabled: false,
+      reason: "upstream_unreachable_or_timeout"
+    };
+  }
+}
+
 async function fetchProviderVideo(provider, videoId) {
   const url = new URL("https://" + provider.host + "/api.php/provide/vod/");
   url.searchParams.set("ac", "detail");
@@ -129,6 +179,22 @@ async function handle(request, env) {
       data: PROVIDERS.map(({ id, name }) => ({ id, name, protocol: "AppleCMS V10" })),
       count: PROVIDERS.length
     }, 200, headers);
+  }
+
+  if (path === "/api/providers/diagnostics") {
+    const results = await Promise.all(PROVIDERS.map(diagnoseProvider));
+    return json({
+      data: results,
+      count: results.length,
+      note: "Connectivity diagnostics do not grant playback rights or expose stream URLs."
+    }, 200, headers);
+  }
+
+  const providerDiagnosticMatch = path.match(/^\/api\/providers\/([a-z0-9-]+)\/diagnostics$/);
+  if (providerDiagnosticMatch) {
+    const provider = PROVIDERS.find(item => item.id === providerDiagnosticMatch[1]);
+    if (!provider) return json({ error: "Unknown provider", code: "UNKNOWN_PROVIDER" }, 404, headers);
+    return json({ data: await diagnoseProvider(provider) }, 200, headers);
   }
 
   const match = path.match(/^\/api\/playback\/providers\/([a-z0-9-]+)\/videos\/([0-9]+)$/);

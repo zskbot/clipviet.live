@@ -82,7 +82,8 @@ test("category endpoint returns normalized leaf categories after provider approv
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.deepEqual(body.categories, [{ id: "2", parentId: "1", name: "Category" }]);
-    assert.equal(body.provider.status, "ACTIVE");
+    assert.equal(body.provider.status, "METADATA_ONLY");
+    assert.equal(body.provider.operationalState, "ACTIVE");
   } finally { mock.restore(); }
 });
 

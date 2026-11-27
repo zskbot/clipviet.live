@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import playbackWorker from "../worker/playback-api-preview/src/index.js";
 
 const PREVIEW_ORIGIN = "https://a1b2c3d4.clipviet-live-preview.pages.dev";
+const QA_ORIGIN = "https://b9b6e033.clipviet-live-qa.pages.dev";
 
 function makeDb(row, registryRows = []) {
   return {
@@ -236,6 +237,14 @@ test("approved playback returns only HTTPS media URLs on the licensed host allow
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("Worker accepts only the configured Preview Pages project origins", async () => {
+  const qa = await playbackWorker.fetch(
+    new Request("https://worker.example/health", { headers: { Origin: QA_ORIGIN } }), {}
+  );
+  assert.equal(qa.status, 200);
+  assert.equal(qa.headers.get("access-control-allow-origin"), QA_ORIGIN);
 });
 
 test("Worker rejects unapproved origins and unsupported methods", async () => {

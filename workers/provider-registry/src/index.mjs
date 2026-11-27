@@ -140,6 +140,34 @@ async function listAudit(db) {
     metadata: JSON.parse(row.metadata_json || "{}"), createdAt: row.created_at
   }));
 }
+async function listMetadataIntakes(db) {
+  const result = await db.prepare(`
+    SELECT id,provider_id,provider_name,api_host,api_base_url,rights_holder,
+      license_reference,evidence_url,documentation_url,license_expires_at,
+      regions_json,contact_email,note,status,created_at,updated_at
+    FROM provider_metadata_intake
+    ORDER BY created_at DESC
+    LIMIT 100
+  `).all();
+  return (result.results || []).map(row => ({
+    id: row.id,
+    providerId: row.provider_id,
+    providerName: row.provider_name,
+    apiHost: row.api_host,
+    apiBaseUrl: row.api_base_url,
+    rightsHolder: row.rights_holder,
+    licenseReference: row.license_reference,
+    evidenceUrl: row.evidence_url,
+    documentationUrl: row.documentation_url,
+    licenseExpiresAt: row.license_expires_at,
+    regions: (() => { try { const v = JSON.parse(row.regions_json || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } })(),
+    contactEmail: row.contact_email,
+    note: row.note,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }));
+}
 async function createProvider(db, data, role, env) {
   const id = crypto.randomUUID();
   const encryptedCredential = await encryptCredential(data.apiCredential, env, id);
@@ -271,6 +299,16 @@ export default {
       if (request.method === "GET" && parts.length === 1 && parts[0] === "audit") {
         if (role !== "admin") return respond({error:"Forbidden"},403);
         return respond({events:await listAudit(env.PROVIDER_DB)});
+      }
+      if (request.method === "GET" && parts.length === 1 && parts[0] === "metadata-intakes") {
+        if (!["admin","legal"].includes(role)) return respond({error:"Legal reviewer or admin role required."},403);
+        const records = await listMetadataIntakes(env.PROVIDER_DB);
+        return respond({
+          intakes: records,
+          count: records.length,
+          pendingReview: records.filter(item => item.status === "PENDING_REVIEW").length,
+          mode: "read-only-preview"
+        });
       }
       if (request.method === "POST" && parts.length === 1 && parts[0] === "providers") {
         if (role !== "admin") return respond({error:"Admin role required."},403);

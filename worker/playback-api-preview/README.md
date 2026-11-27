@@ -56,3 +56,16 @@ The upstream media host must permit browser playback from the Preview Pages orig
 - The diagnostic reports reachability, HTTP status, response latency, AppleCMS response code and catalog item count only.
 - It never returns episode URLs, playback lines, tokens or other stream data.
 - A reachable metadata API is not proof of content ownership or a playback license. The response always keeps `playbackEnabled: false`; the playback endpoint continues to require the separate provider, connector, per-video rights and media-host approvals.
+
+## Media diagnostics (rights-gated)
+
+`GET /api/playback/providers/{providerId}/videos/{videoId}/diagnostics`
+
+This endpoint returns a bounded, URL-redacted technical report only after provider-level and per-video rights checks pass. It checks up to four approved media entries:
+
+- HLS: manifest HTTP status, Apple HLS MIME, CORS and first allowlisted playlist resource reachability/CORS.
+- MP4: HEAD status, `video/mp4` MIME, CORS, `Range: bytes=0-1`, HTTP 206 and `Content-Range`.
+- It never returns media URLs, credentials, manifest contents or stream segments.
+- When rights are pending, it returns 403 and does not make any provider or media request.
+
+A passing automated probe is not a substitute for playback on a physical iPhone in Safari.

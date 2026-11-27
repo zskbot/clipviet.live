@@ -175,7 +175,7 @@ function render() {
             url: episode.url,
             type: /\\.m3u8(?:$|\\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
           }))) : [],
-          rating: "18+"
+          rating: playbackApproved ? "18+" : "Chỉ xem metadata"
         });
       });
       grid.replaceChildren();
@@ -200,7 +200,7 @@ function render() {
         img.src = video.poster || "./poster-fallback.svg";
         img.alt = video.title || "Video";
         img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
-        card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.licenseLabel || "CHỈ XEM");
+        card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.badgeLabel || video.licenseLabel || "CHỈ XEM");
         card.querySelector("h3").textContent = video.title || "Video";
         card.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
         card.addEventListener("click", () => openDetail(video));

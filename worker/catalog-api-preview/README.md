@@ -56,3 +56,13 @@ Configure these as Cloudflare Worker Secrets on `clipviet-catalog-api-preview`:
 - `ADMIN_SESSION_SECRET`: unique random secret of at least 32 bytes.
 
 The Worker issues a signed 4-hour bearer session. The six-digit PIN is never embedded in the static site or repository. The browser stores it in `sessionStorage`. The login endpoint applies a best-effort per-isolate limit of five failed attempts followed by a 15-minute cooldown; configure Cloudflare edge rate limiting for durable distributed enforcement before Production use. Never commit the PIN or signing secret.
+
+## Preview binding verification
+
+The deployed Preview Worker is `clipviet-catalog-metadata-preview`. It is bound to two Preview-only D1 databases:
+- `DB` → `clipviet-cms-preview`
+- `PROVIDER_DB` → `clipviet-provider-registry-preview`
+
+The `/api/providers` endpoint returns provider, connector and approved-content counts without contacting upstream sources. `/api/providers/diagnostics` performs bounded checks only after provider-level rights approval. PENDING providers are not contacted.
+
+The Preview registry currently contains five provider records with status PENDING, no approved connector rows and zero approved content-rights records. This is the expected deny-by-default state until evidence is reviewed. Do not change those records to APPROVED to populate the catalog.

@@ -17,17 +17,18 @@ test("API.video playback is deny-by-default", () => {
 test("only explicitly approved, well-formed video IDs are exposed", () => {
   const env = {
     APIVIDEO_APPROVED_VIDEO_IDS_JSON: JSON.stringify([
-      { id: "vi54sj9dAakOHJXKrUycCQZp", live: false },
+      { id: "vi54sj9dAakOHJXKrUycCQZp", live: false, private: true },
       { id: "live_ABC123", live: true },
       { id: "javascript:alert(1)", live: true },
       { id: "vi54sj9dAakOHJXKrUycCQZp", live: true }
     ])
   };
   assert.deepEqual(getApprovedApiVideoEntries(env), [
-    { id: "vi54sj9dAakOHJXKrUycCQZp", live: true },
-    { id: "live_ABC123", live: true }
+    { id: "vi54sj9dAakOHJXKrUycCQZp", live: false, private: true },
+    { id: "live_ABC123", live: true, private: false }
   ]);
-  assert.deepEqual(getApprovedApiVideoPlayback("live_ABC123", env), { id: "live_ABC123", live: true });
+  assert.deepEqual(getApprovedApiVideoPlayback("live_ABC123", env), { id: "live_ABC123", live: true, private: false });
+  assert.equal(getApprovedApiVideoPlayback("vi54sj9dAakOHJXKrUycCQZp", env).private, true);
 });
 
 test("status exposes booleans and counts, never API key contents", () => {

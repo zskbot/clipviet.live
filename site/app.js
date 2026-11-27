@@ -124,7 +124,13 @@ function render() {
       pageSize = Math.max(1, Number(payload.limit) || 30);
       totalPages = Math.max(0, Number(payload.pageCount) || Math.ceil(totalResults / pageSize));
       if (!rows.length) {
-        showCatalogUnavailable("Nguồn chưa trả về video nào.");
+        const gate = payload.rightsGate || {};
+        const pendingRights = gate.reason === "provider_pending_approval" || gate.providerApproved === false;
+        const message = pendingRights
+          ? "Catalog đang trống vì nguồn video chưa được phê duyệt quyền phân phối. ClipViet chỉ hiển thị ảnh poster và thông tin video sau khi hoàn tất xác minh quyền."
+          : "Nguồn đã phản hồi nhưng chưa có video đủ điều kiện hiển thị.";
+        showCatalogUnavailable(message);
+        count.textContent = pendingRights ? "0 VIDEO · CHỜ DUYỆT QUYỀN" : "0 VIDEO";
         return;
       }
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));

@@ -74,6 +74,7 @@ function renderCategories(values) {
 }
 
 let requestSequence = 0;
+let catalogRequestController = null;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
@@ -89,6 +90,9 @@ function setMenuApiStatus(message, state = "info") {
 }
 
 function render() {
+  if (catalogRequestController) catalogRequestController.abort();
+  const controller = new AbortController();
+  catalogRequestController = controller;
   const sequence = ++requestSequence;
   const params = new URLSearchParams({ page: String(currentPage) });
   if (query.trim()) params.set("keyword", query.trim().slice(0, 100));
@@ -100,7 +104,7 @@ function render() {
   empty.hidden = true;
   if (loadingState) { loadingState.hidden = false; loadingState.textContent = "Đang tải danh mục và xác minh quyền hiển thị…"; }
   if (apiErrorState) apiErrorState.hidden = true;
-  fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
+  fetch(url, { headers: { Accept: "application/json" }, cache: "no-store", signal: controller.signal })
     .then(async (response) => {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -200,12 +204,13 @@ function render() {
       );
     })
     .catch((error) => {
-      if (sequence !== requestSequence) return;
+      if (sequence !== requestSequence || error?.name === "AbortError") return;
       if (loadingState) loadingState.hidden = true;
       if (apiErrorState) { apiErrorState.hidden = false; apiErrorState.textContent = "Không thể tải danh mục video: " + error.message + ". Hãy thử tải lại sau."; }
       setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
       showCatalogUnavailable("API AppleCMS chưa khả dụng: " + error.message + ". Không thay thế bằng catalog khác.");
-    });
+    })
+    .finally(() => { if (sequence === requestSequence && catalogRequestController === controller) catalogRequestController = null; });
 }
 
 function renderPagination(totalPages) {
@@ -374,7 +379,7 @@ function showCatalogUnavailable(message) {
   if (note) note.textContent = message + " · TRÌNH PHÁT MẪU DÙNG PHIM MỞ CÓ GIẤY PHÉP; KHÔNG MỞ KHÓA APPLECMS.";
 }
 
-const isHttpUrl = (value) => typeof value === "string" && (value.startsWith("https://") || value.startsWith("http://"));
+const isHttpUrl = (value) => typeof value === "string" && value.startsWith("https://");
 
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;

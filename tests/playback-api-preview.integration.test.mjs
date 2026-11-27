@@ -288,10 +288,6 @@ test("MP4 diagnostics verify video MIME, CORS and HTTP byte ranges", async () =>
       code: 1, list: [{ vod_id: 123, vod_name: "Licensed MP4",
         vod_play_from: "CDN", vod_play_url: "Episode$https://cdn.example.com/video.mp4" }]
     });
-    if (url === "https://cdn.example.com/video.mp4" && init.method === "HEAD") return new Response(null, {
-      status: 200, headers: { "content-type": "video/mp4", "accept-ranges": "bytes",
-        "access-control-allow-origin": PREVIEW_ORIGIN }
-    });
     if (url === "https://cdn.example.com/video.mp4" && init.method === "GET") return new Response(new Uint8Array([0, 1]), {
       status: 206, headers: { "content-type": "video/mp4", "content-range": "bytes 0-1/100",
         "access-control-allow-origin": PREVIEW_ORIGIN }
@@ -313,6 +309,8 @@ test("MP4 diagnostics verify video MIME, CORS and HTTP byte ranges", async () =>
     assert.equal(body.data.results[0].rangeSupported, true);
     assert.equal(calls.some(call => call.method === "GET" &&
       new Headers(call.headers).get("range") === "bytes=0-1"), true);
+    assert.equal(calls.some(call => call.method === "HEAD"), false,
+      "MP4 probe must not depend on CDN HEAD support");
   } finally { globalThis.fetch = originalFetch; }
 });
 

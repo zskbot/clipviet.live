@@ -82,8 +82,9 @@ let catalogRequestController = null;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
-const API_BASE = "";
-// Preview-only recovery: keep the original AppleCMS Worker as the sole catalog source.
+const PREVIEW_CATALOG_API = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
+// Isolated Pages Preview uses the dedicated read-only Catalog API Worker. Production remains same-origin.
+const API_BASE = location.hostname.endsWith(".pages.dev") ? PREVIEW_CATALOG_API : "";
 
 function renderProviderStatuses(providers) {
   if (!providerStatusPanel || !providerStatusList) return;
@@ -121,25 +122,27 @@ function renderProviderStatuses(providers) {
 async function loadProviderStatuses(runDiagnostics = false) {
   if (providerDiagnosticsButton) {
     providerDiagnosticsButton.disabled = true;
-    providerDiagnosticsButton.textContent = runDiagnostics ? "ĐANG KIỂM TRA…" : "KIỂM TRA NGUỒN";
+    providerDiagnosticsButton.textContent = "ĐANG TẢI…";
   }
   try {
-    const endpoint = runDiagnostics ? "/api/providers/diagnostics" : "/api/providers";
-    const response = await fetch(endpoint, { headers: { Accept: "application/json" }, cache: "no-store" });
+    const response = await fetch(API_BASE + "/api/providers", {
+      headers: { Accept: "application/json" },
+      cache: "no-store"
+    });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || ("Provider API HTTP " + response.status));
-    const providers = Array.isArray(payload.providers) ? payload.providers : Array.isArray(payload.data) ? payload.data : [];
+    const providers = [payload.providers, payload.items, payload.data, payload.results].find(Array.isArray) || [];
     renderProviderStatuses(providers);
     if (providerStatusNote) providerStatusNote.textContent = runDiagnostics
-      ? "Đã kiểm tra kỹ thuật các nguồn đủ điều kiện. Nguồn đang chờ quyền được giữ nguyên và không bị gọi."
-      : "5 nguồn AppleCMS được cấu hình tham chiếu. Mỗi nguồn vẫn cần quyền provider và quyền metadata từng video.";
+      ? "Đã tải lại trạng thái từ Catalog API Preview. Nguồn PENDING không bị gọi upstream."
+      : "Trạng thái 5 nguồn AppleCMS được đọc từ Catalog API Preview; nguồn PENDING vẫn bị khóa theo quyền.";
   } catch (error) {
     if (providerStatusNote) providerStatusNote.textContent = "Không đọc được trạng thái provider: " + error.message;
     if (providerStatusPanel) providerStatusPanel.hidden = false;
   } finally {
     if (providerDiagnosticsButton) {
       providerDiagnosticsButton.disabled = false;
-      providerDiagnosticsButton.textContent = "KIỂM TRA NGUỒN";
+      providerDiagnosticsButton.textContent = "TẢI LẠI TRẠNG THÁI";
     }
   }
 }
@@ -162,6 +165,7 @@ function render() {
   if (query.trim()) params.set("keyword", query.trim().slice(0, 100));
   if (activeCategoryId) params.set("categoryId", activeCategoryId);
   if (activeQuickFilter === "latest") params.set("sort", "latest");
+  params.set("limit", String(itemsPerPage));
   const url = API_BASE + "/api/catalog/videos?" + params.toString();
   count.textContent = "ĐANG KIỂM TRA QUYỀN & TẢI VIDEO…";
   grid.replaceChildren();
@@ -181,11 +185,23 @@ function render() {
     })
     .then((payload) => {
       if (sequence !== requestSequence) return;
-      const rawRows = Array.isArray(payload.items) ? payload.items : [];
+      const rawRows = [payload.items, payload.videos, payload.results, payload.data].find(Array.isArray) || [];
+      const normalizedRows = rawRows.map((item) => ({
+        ...item,
+        id: item.id ?? item.videoId ?? item.video_id ?? item.vod_id,
+        title: item.title ?? item.name ?? item.vod_name ?? "",
+        poster: item.poster ?? item.posterUrl ?? item.thumbnail ?? item.thumbnailUrl ?? item.vod_pic ?? "",
+        description: item.description ?? item.content ?? item.vod_content ?? "",
+        categoryName: item.categoryName ?? item.category_name ?? item.category ?? item.typeName ?? item.type_name ?? "",
+        year: item.year ?? item.vod_year ?? "",
+        duration: item.duration ?? item.vod_duration ?? "",
+        area: item.area ?? item.country ?? item.vod_area ?? "",
+        sourceId: item.sourceId ?? item.source_id ?? ""
+      }));
       const excludedAgeLabel = /under[\s_-]*age|minor|loli|shota|school[\s_-]*(?:girl|boy|student)|teen[\s_-]*(?:girl|boy)|học[\s_-]*sinh|nữ[\s_-]*sinh|nam[\s_-]*sinh|thiếu[\s_-]*niên|vị[\s_-]*thành[\s_-]*niên/i;
       // Catalog metadata can remain visible; AppleCMS presence does not prove distribution rights.
       // Playback requires an explicit, verified, unexpired approval and an explicit playback grant.
-      const rows = rawRows.filter((item) =>
+      const rows = normalizedRows.filter((item) =>
         !excludedAgeLabel.test([item.title, item.categoryName, item.description, item.actors, item.director].filter(Boolean).join(" ")));
       const hasApprovedPlaybackRights = (item) =>
         item.rightsVerified === true &&
@@ -196,9 +212,9 @@ function render() {
         item.playbackRightsApproved === true;
       const approvedCount = rows.filter(hasApprovedPlaybackRights).length;
       if (loadingState) loadingState.hidden = true;
-      totalResults = Math.max(0, Number(payload.total ?? payload.totalCount) || rows.length);
-      pageSize = Math.max(1, Number(payload.limit ?? payload.pageSize) || 30);
-      const reportedPageCount = Number(payload.pageCount ?? payload.pagecount ?? payload.totalPages) || 0;
+      totalResults = Math.max(0, Number(payload.total ?? payload.totalCount ?? payload.pagination?.total) || rows.length);
+      pageSize = Math.max(1, Number(payload.limit ?? payload.pageSize ?? payload.perPage ?? payload.per_page) || 30);
+      const reportedPageCount = Number(payload.pageCount ?? payload.pagecount ?? payload.totalPages ?? payload.pages ?? payload.pagination?.pages) || 0;
       totalPages = Math.max(reportedPageCount, Math.ceil(totalResults / pageSize));
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
       // Keep the provider's page count visible even when this page has no displayable metadata.
@@ -598,10 +614,10 @@ $("#leave-button")?.addEventListener("click", () => { location.href = "https://w
 
 (async () => {
   try {
-    const response = await fetch(API_BASE + "/api/catalog/categories", { headers: { Accept: "application/json" } });
+    const response = await fetch(API_BASE + "/api/catalog/categories", { headers: { Accept: "application/json" }, cache: "no-store" });
     if (!response.ok) throw new Error("Categories API HTTP " + response.status);
     const payload = await response.json();
-    const categories = Array.isArray(payload.data) ? payload.data : [];
+    const categories = [payload.categories, payload.items, payload.data, payload.results].find(Array.isArray) || [];
     renderCategories(categories.map((item) => ({ id: String(item.id), name: String(item.name || "Khác") })));
     if (payload.rightsGate?.providerApproved === false) setMenuApiStatus("Nguồn AppleCMS đang chờ phê duyệt quyền.", "warning");
     else setMenuApiStatus("API danh mục đã kết nối · " + categories.length + " danh mục.", "success");

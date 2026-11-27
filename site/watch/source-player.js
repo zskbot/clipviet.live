@@ -188,7 +188,8 @@ function play() {
     hls.on(Hls.Events.MANIFEST_PARSED, (_event, manifest) => {
       renderQualityLevels(manifest.levels || hls.levels);
       applyQuality();
-      say("HLS Adaptive đã tải manifest · " + hls.levels.length + " mức. Nhấn PHÁT VIDEO.");\n      showPlayButton();
+      say("HLS Adaptive đã tải manifest · " + hls.levels.length + " mức. Nhấn PHÁT VIDEO.");
+      showPlayButton();
     });
     hls.on(Hls.Events.LEVEL_SWITCHED, (_event, detail) => {
       const level = hls?.levels?.[detail.level];

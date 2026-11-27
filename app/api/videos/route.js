@@ -3,7 +3,9 @@ import { getVideoFeed } from "@/lib/video-provider";
 import { getMacCmsVideoById } from "@/lib/maccms-provider.mjs";
 import { searchVideos } from "@/lib/video-search.mjs";
 
-export const revalidate = 60;
+// This route reads request.url and must be evaluated per request, not statically prerendered.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export async function GET(request) {
   try {
     const params = new URL(request.url).searchParams;

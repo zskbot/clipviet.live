@@ -14,6 +14,79 @@ const hlsScriptUrl = "https://cdn.jsdelivr.net/npm/hls.js@1";
 let hlsEngine = null;
 let scriptPromise = null;
 let activeVideo = null;
+let apiVideoPlayer = null;
+let apiVideoHost = null;
+let apiVideoScriptPromise = null;
+
+function destroyApiVideoPlayer() {
+  if (apiVideoPlayer) {
+    try { apiVideoPlayer.destroy(); } catch {}
+    apiVideoPlayer = null;
+  }
+  if (apiVideoHost) {
+    apiVideoHost.remove();
+    apiVideoHost = null;
+  }
+}
+function getApiVideoId(video) {
+  const provider = String(video.provider || video.sourceProvider || video.source_provider || video.providerName || "").toLowerCase();
+  const value = video.apiVideoId || video.api_video_id ||
+    ((provider === "api.video" || provider === "apivideo") ? (video.videoId || video.video_id || video.id) : "");
+  return typeof value === "string" && /^[A-Za-z0-9_-]{6,128}$/.test(value) ? value : "";
+}
+function loadApiVideoSdk() {
+  if (window.PlayerSdk) return Promise.resolve(window.PlayerSdk);
+  if (apiVideoScriptPromise) return apiVideoScriptPromise;
+  apiVideoScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/@api.video/player-sdk";
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    script.onload = () => window.PlayerSdk ? resolve(window.PlayerSdk) : reject(new Error("SDK đã tải nhưng không tìm thấy PlayerSdk"));
+    script.onerror = () => reject(new Error("Không tải được api.video Player SDK"));
+    document.head.append(script);
+  });
+  return apiVideoScriptPromise;
+}
+function playApiVideo(video, videoId) {
+  destroyHls();
+  destroyApiVideoPlayer();
+  activeVideo = video;
+  if (player) {
+    player.pause();
+    player.removeAttribute("src");
+    player.load();
+    player.hidden = true;
+  }
+  if (image) image.hidden = true;
+  if (playButton) playButton.hidden = true;
+  if (settingsToggle) settingsToggle.disabled = true;
+  resetQualityOptions("API.video player");
+  setResolution(0, 0);
+  setStatus("Đang tải api.video Player SDK…");
+  setFallback(video.originalUrl || video.sourceUrl || "");
+  const stage = $("#featured-poster");
+  if (!stage) {
+    setStatus("Không tìm thấy vùng hiển thị trình phát.");
+    return;
+  }
+  apiVideoHost = document.createElement("div");
+  apiVideoHost.id = "api-video-player-host";
+  apiVideoHost.style.cssText = "position:absolute;inset:0;width:100%;height:100%;min-height:220px;background:#000;z-index:2";
+  stage.append(apiVideoHost);
+  loadApiVideoSdk().then((PlayerSdk) => {
+    if (!apiVideoHost || activeVideo !== video) return;
+    apiVideoPlayer = new PlayerSdk(apiVideoHost, { id: videoId, autoplay: false, muted: false, hotkeys: true });
+    apiVideoPlayer.addEventListener("ready", () => setStatus("api.video player đã sẵn sàng. Nhấn Play trong trình phát."));
+    apiVideoPlayer.addEventListener("error", () => {
+      setStatus("api.video không thể phát video này. Kiểm tra videoId, trạng thái video và quyền truy cập.");
+      setFallback(video.originalUrl || video.sourceUrl || "");
+    });
+  }).catch((error) => {
+    setStatus(error.message || "Không thể khởi tạo api.video Player SDK.");
+    setFallback(video.originalUrl || video.sourceUrl || "");
+  });
+}
 
 const imageDefaults = { brightness: 100, contrast: 100, saturation: 100 };
 const imageSettings = { ...imageDefaults };
@@ -143,6 +216,18 @@ function onMediaError() {
 }
 function playFeaturedVideo(video) {
   if (!player || !video) return;
+  const apiVideoId = getApiVideoId(video);
+  if (apiVideoId) {
+    if (video.playbackEnabled !== true || video.playbackRightsApproved !== true) {
+      activeVideo = video;
+      setStatus("Video api.video đang bị khóa: chưa có xác nhận quyền phát hợp lệ.");
+      setFallback(video.originalUrl || video.sourceUrl || "");
+      return;
+    }
+    playApiVideo(video, apiVideoId);
+    return;
+  }
+  destroyApiVideoPlayer();
   const source = getSource(video);
   if (!source) {
     activeVideo = video;
@@ -230,6 +315,7 @@ function playFeaturedVideo(video) {
 }
 function resetFeaturedPlayer() {
   destroyHls();
+  destroyApiVideoPlayer();
   activeVideo = null;
   if (player) {
     player.pause();

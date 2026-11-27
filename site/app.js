@@ -147,7 +147,7 @@ function render() {
             : payload.rightsGate?.providerApproved === true
               ? "Nguồn đã được duyệt nhưng hiện chưa có video nào có hồ sơ quyền hợp lệ."
               : "Chưa có video được duyệt quyền hiển thị. Danh mục sẽ tự cập nhật khi hồ sơ nguồn và từng video được phê duyệt.";
-        showCatalogUnavailable(reason);
+        renderOpenLicenseCatalog(reason);
         setMenuApiStatus("CHƯA CÓ VIDEO ĐỦ ĐIỀU KIỆN QUYỀN HIỂN THỊ", "warning");
         return;
       }
@@ -199,7 +199,7 @@ function render() {
       if (loadingState) loadingState.hidden = true;
       if (apiErrorState) { apiErrorState.hidden = false; apiErrorState.textContent = "Không thể tải danh mục video: " + error.message + ". Hãy thử tải lại sau."; }
       setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
-      showCatalogUnavailable("API video chưa khả dụng. Chi tiết lỗi được hiển thị bên dưới.");
+      renderOpenLicenseCatalog("API AppleCMS chưa khả dụng; đang chuyển sang danh mục phim mở có giấy phép Creative Commons đã xác minh.");
     });
 }
 
@@ -366,28 +366,68 @@ function showCatalogUnavailable(message) {
   if (note) note.textContent = message + " · KHÔNG HIỂN THỊ VIDEO DEMO THAY THẾ";
 }
 
-function renderSampleVideo(reason) {
+const openLicensedVideos = [
+  {
+    id: "tears-of-steel-open-movie", title: "Tears of Steel", category: "Phim ngắn · Khoa học viễn tưởng",
+    year: 2012, duration: "12 phút", rating: "Mọi lứa tuổi",
+    description: "Phim ngắn khoa học viễn tưởng do Blender Foundation sản xuất. Giấy phép CC BY 3.0; giữ nguyên credit cuối phim.",
+    poster: "https://i.ytimg.com/vi/OHOpb2fS-cM/hqdefault.jpg",
+    videoUrl: "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4",
+    originalUrl: "https://mango.blender.org/about/",
+    sourceName: "Blender Foundation", license: "CC BY 3.0",
+    attribution: "(CC) Blender Foundation · mango.blender.org",
+    licenseUrl: "https://creativecommons.org/licenses/by/3.0/", isSample: true, rightsVerified: true
+  },
+  {
+    id: "big-buck-bunny-open-movie", title: "Big Buck Bunny", category: "Hoạt hình · Hài",
+    year: 2008, duration: "10 phút", rating: "Mọi lứa tuổi",
+    description: "Phim hoạt hình mở của Blender Foundation. Giấy phép CC BY 3.0; phải ghi công Blender Foundation.",
+    poster: "https://peach.blender.org/wp-content/uploads/title_anouncement.jpg",
+    videoUrl: "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4",
+    originalUrl: "https://peach.blender.org/about/",
+    sourceName: "Blender Foundation", license: "CC BY 3.0",
+    attribution: "© copyright 2008, Blender Foundation / www.bigbuckbunny.org",
+    licenseUrl: "https://creativecommons.org/licenses/by/3.0/", isSample: true, rightsVerified: true
+  },
+  {
+    id: "elephants-dream-open-movie", title: "Elephants Dream", category: "Hoạt hình · Giả tưởng",
+    year: 2006, duration: "11 phút", rating: "Mọi lứa tuổi",
+    description: "Phim open movie đầu tiên của Blender Foundation. Giấy phép CC BY 2.5; cần ghi công chủ sở hữu.",
+    poster: "./poster-fallback.svg",
+    videoUrl: "https://download.blender.org/ED/elephantsdream-720-h264-st-aac.mov",
+    originalUrl: "https://orange.blender.org/",
+    sourceName: "Blender Foundation", license: "CC BY 2.5",
+    attribution: "(c) copyright 2006, Blender Foundation / Netherlands Media Art Institute / www.elephantsdream.org",
+    licenseUrl: "https://creativecommons.org/licenses/by/2.5/", isSample: true, rightsVerified: true
+  }
+];
+
+function renderOpenLicenseCatalog(reason) {
   grid.replaceChildren();
-  setFeaturedVideos([sampleVideo]);
-  const card = document.createElement("button");
-  card.type = "button";
-  card.className = "video-card";
-  card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
-  const img = card.querySelector("img");
-  img.src = sampleVideo.poster;
-  img.alt = sampleVideo.title;
-  card.querySelector(".poster-label").textContent = "MẪU CC BY";
-  card.querySelector("h3").textContent = sampleVideo.title;
-  card.querySelector(".card-info p").textContent = "2012 · Blender Foundation · CC BY 3.0";
-  card.addEventListener("click", () => openDetail(sampleVideo));
-  grid.append(card);
-  count.textContent = "1 VIDEO MẪU";
+  setFeaturedVideos(openLicensedVideos);
+  for (const video of openLicensedVideos) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "video-card";
+    card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
+    const img = card.querySelector("img");
+    img.src = video.poster || "./poster-fallback.svg";
+    img.alt = video.title;
+    img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
+    card.querySelector(".poster-label").textContent = video.license;
+    card.querySelector("h3").textContent = video.title;
+    card.querySelector(".card-info p").textContent = video.year + " · " + video.sourceName + " · " + video.license;
+    card.addEventListener("click", () => openDetail(video));
+    grid.append(card);
+  }
+  count.textContent = openLicensedVideos.length + " PHIM MỞ · ĐÃ KIỂM TRA GIẤY PHÉP";
   empty.hidden = true;
   renderPagination(0);
   activeFiltersRoot.replaceChildren();
   activeFiltersRoot.hidden = true;
   const note = document.querySelector(".data-note");
-  if (note) note.textContent = reason + " · ĐANG HIỂN THỊ VIDEO MẪU CÓ GIẤY PHÉP";
+  if (note) note.textContent = reason + " · DANH MỤC PHIM MỞ ĐỘC LẬP · APPLECMS VẪN BỊ CHẶN CHO ĐẾN KHI ĐƯỢC DUYỆT.";
+  setMenuApiStatus("ĐANG HIỂN THỊ " + openLicensedVideos.length + " PHIM MỞ CÓ GIẤY PHÉP · APPLECMS CHỜ DUYỆT", "success");
 }
 
 function setFeaturedVideos(items) {
@@ -415,12 +455,12 @@ function openDetail(video) {
   detail.querySelector(".description").textContent = video.description || "";
   detail.querySelector(".meta").textContent = [video.year, video.duration, video.rating, video.country].filter(Boolean).join(" · ");
   detail.querySelector(".detail-source").textContent = video.isSample
-    ? "Nguồn: Blender Foundation · CC BY 3.0 · " + "https://creativecommons.org/licenses/by/3.0/"
+    ? "Nguồn: " + (video.sourceName || "Open Movie") + " · " + (video.license || "Creative Commons") + " · " + (video.attribution || "") + " · " + (video.licenseUrl || "")
     : video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) : "Bản ghi demo.";
   if (video.isSample && video.videoUrl) {
     const link = detail.querySelector(".watch-link");
     link.hidden = false;
-    link.href = video.originalUrl || "https://www.youtube.com/watch?v=OHOpb2fS-cM";
+    link.href = video.videoUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = "PHÁT VIDEO GỐC ↗";

@@ -162,7 +162,7 @@ function render() {
           playbackRightsApproved: playbackApproved,
           sources: playbackApproved ? (Array.isArray(item.lines) ? item.lines : []).flatMap((line) => (Array.isArray(line.episodes) ? line.episodes : []).map((episode) => ({
             url: episode.url,
-            type: /\\.m3u8(?:$|\\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
+            type: /\.m3u8(?:$|\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
           }))) : [],
           rating: playbackApproved ? "18+" : "Chỉ xem metadata"
         });

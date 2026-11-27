@@ -8,7 +8,7 @@ import {
   parseAppleCmsPlayManifest,
   ProviderRightsPendingError,
   runApprovedProviderFailover
-} from "../site/applecms-adapter.js";
+} from "../site/applecms-adapter.mjs";
 
 test("provider access stays denied until its ID is explicitly approved", () => {
   assert.throws(() => assertProviderApproved("souavzy"), ProviderRightsPendingError);

@@ -3,6 +3,7 @@ const sourceId = params.get("sourceId");
 const vodId = params.get("vodId");
 const $ = (id) => document.getElementById(id);
 const video = $("video");
+const tapPlay = $("tap-play");
 const status = $("status");
 const title = $("title");
 const qualitySelect = $("quality");
@@ -18,6 +19,21 @@ const imageDefaults = { brightness: 100, contrast: 100, saturation: 100 };
 const imageSettings = { ...imageDefaults };
 
 function say(message) { status.textContent = message; }
+function showPlayButton(label = "▶ PHÁT VIDEO") { tapPlay.hidden = false; tapPlay.disabled = false; tapPlay.textContent = label; }
+function hidePlayButton() { tapPlay.hidden = true; tapPlay.disabled = true; }
+async function startPlaybackFromGesture() {
+  // Keep play() directly inside the trusted click handler for iOS Safari user-activation policy.
+  try {
+    if (!video.currentSrc && !video.src) { say("Video chưa có đường dẫn phát."); return; }
+    const result = video.play();
+    if (result && typeof result.then === "function") await result;
+    say("Đang yêu cầu Safari phát video…");
+  } catch (error) {
+    showPlayButton("▶ THỬ PHÁT LẠI");
+    say("Safari chưa phát được video: " + (error?.message || error?.name || "Playback failed") + ". Kiểm tra đường phát hoặc thử đường khác.");
+  }
+}
+tapPlay.addEventListener("click", startPlaybackFromGesture);
 function setResolution(width, height) {
   resolutionLabel.textContent = width && height ? "ĐỘ PHÂN GIẢI: " + width + "×" + height : "ĐỘ PHÂN GIẢI: ĐANG NHẬN…";
 }
@@ -124,13 +140,17 @@ function play() {
   $("external").hidden = false;
   $("external").href = mediaUrl.href;
   say("Đang tải video trực tiếp từ CDN nguồn…");
+  tapPlay.disabled = true;
+  tapPlay.hidden = false;
+  tapPlay.textContent = "ĐANG TẢI VIDEO…";
   const isHls = String(episode.type || mediaUrl.pathname).toLowerCase().includes("hls") || /\.m3u8(?:$|\?)/i.test(mediaUrl.href);
   let ready = false;
   const markReady = () => {
     if (ready) return;
     ready = true;
     if (watchdog) { clearTimeout(watchdog); watchdog = null; }
-    say("Video đã sẵn sàng. Nhấn Play trên trình phát.");
+    say("Video đã sẵn sàng. Nhấn nút PHÁT VIDEO.");
+    showPlayButton();
   };
   watchdog = setTimeout(() => {
     if (video.readyState < 2 || video.videoWidth === 0) failed("Quá 25 giây chưa nhận được khung hình.");
@@ -140,7 +160,7 @@ function play() {
     markReady();
     say("Đang phát · " + (video.videoWidth ? video.videoWidth + "×" + video.videoHeight : "đang nhận hình ảnh"));
   };
-  video.onerror = () => failed("Trình duyệt không tải được video hoặc segment.");
+  video.onerror = () => { showPlayButton("▶ THỬ PHÁT LẠI"); failed("Trình duyệt không tải được video hoặc segment (MediaError " + (video.error?.code || "unknown") + ")."); };
   if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
     video.src = mediaUrl.href;
     video.load();
@@ -168,7 +188,7 @@ function play() {
     hls.on(Hls.Events.MANIFEST_PARSED, (_event, manifest) => {
       renderQualityLevels(manifest.levels || hls.levels);
       applyQuality();
-      say("HLS Adaptive đã sẵn sàng · " + hls.levels.length + " mức chất lượng.");
+      say("HLS Adaptive đã tải manifest · " + hls.levels.length + " mức. Nhấn PHÁT VIDEO.");\n      showPlayButton();
     });
     hls.on(Hls.Events.LEVEL_SWITCHED, (_event, detail) => {
       const level = hls?.levels?.[detail.level];
@@ -189,6 +209,10 @@ function play() {
     $("quality-note").textContent = "MP4 đơn luồng không có lựa chọn chất lượng thủ công. Player sẽ báo đúng độ phân giải nguồn, không giả lập 4K.";
   }
   video.addEventListener("loadedmetadata", () => setResolution(video.videoWidth, video.videoHeight), { once: true });
+  video.addEventListener("waiting", () => say("Đang tải dữ liệu video…"), { passive: true });
+  video.addEventListener("stalled", () => say("Nguồn video đang ngừng truyền dữ liệu. Đang chờ…"), { passive: true });
+  video.addEventListener("playing", hidePlayButton, { passive: true });
+  video.addEventListener("pause", () => { if (!video.ended && video.currentSrc) showPlayButton(); }, { passive: true });
 }
 $("quality").addEventListener("change", () => {
   selectedQuality = $("quality").value;

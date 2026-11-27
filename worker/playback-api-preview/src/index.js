@@ -110,6 +110,7 @@ function allowedOrigin(request, env) {
     const exact = new Set(String(env.ALLOWED_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean));
     if (exact.has(origin)) return origin;
     const previewHost = host.endsWith(".clipviet-live-preview.pages.dev") ||
+      host.endsWith(".clipviet-live-qa.pages.dev") ||
       host.endsWith(".clipviet-live-independent-preview.pages.dev");
     return previewHost && host.split(".").length === 4 ? origin : null;
   } catch {

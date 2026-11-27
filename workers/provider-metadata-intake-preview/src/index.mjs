@@ -7,7 +7,7 @@ export default {
     }
     const url = new URL(request.url);
     if (url.pathname === "/" || url.pathname === "/metadata-intake") {
-      return handlePublicMetadataIntake(new Request(new URL("/metadata-intake", url), request), env);
+      return handlePublicMetadataIntake(request, env);
     }
     return new Response("Not found.", { status: 404, headers: { "Cache-Control": "no-store" } });
   }

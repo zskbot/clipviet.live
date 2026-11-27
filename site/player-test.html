@@ -16,7 +16,7 @@
     .notice{border:1px solid #55412a;background:#241d13;padding:12px 14px;color:#e8d5b3;font-size:12px;margin:22px 0}
     .stage{background:#000;border:1px solid var(--line);aspect-ratio:16/9;display:grid;place-items:center;overflow:hidden}
     video{width:100%;height:100%;max-height:62vh;background:#000;object-fit:contain}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
-    button{border:1px solid var(--line);background:#14151b;color:#fff;padding:12px 15px;font:700 11px/1.2 inherit;letter-spacing:.5px;border-radius:0;cursor:pointer}
+    button{border:1px solid var(--line);background:#14151b;color:#fff;padding:12px 15px;font:inherit;font-size:11px;font-weight:700;line-height:1.2;letter-spacing:.5px;border-radius:0;cursor:pointer}
     button.primary{background:var(--red);border-color:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}
     .status{border:1px solid var(--line);background:var(--panel);padding:14px;margin-top:14px}.status strong{display:block;font-size:12px;margin-bottom:5px}.status p{margin:0;font-size:12px;overflow-wrap:anywhere}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}.metric{border:1px solid var(--line);padding:12px;background:#0d0e13;min-width:0}.metric small{display:block;color:#858690;font-size:9px;letter-spacing:1px}.metric b{display:block;font-size:12px;margin-top:5px;overflow-wrap:anywhere}
@@ -92,7 +92,6 @@
     const type = kind === "hls" ? "application/vnd.apple.mpegurl" : "video/mp4";
     status("Đang nạp " + kind.toUpperCase(), "Đang tải metadata từ nguồn video mẫu. Chưa tự động phát.");
     video.src = url;
-    video.type = type;
     video.load();
     log("source=" + kind + " · host=" + new URL(url).hostname);
     if (kind === "hls" && !video.canPlayType(type) && "MediaSource" in window) {

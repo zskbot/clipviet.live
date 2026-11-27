@@ -261,11 +261,13 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
         headers: { ...headers, range: "bytes=0-1" }, redirect: "error", signal: AbortSignal.timeout(9000) });
       const contentRange = String(ranged.headers.get("content-range") || "");
       const rangeSupported = ranged.status === 206 && /^bytes\s+0-1\//i.test(contentRange);
+      const rangeCorsOk = mediaCorsOk(ranged, requestOrigin);
       await ranged.body?.cancel();
-      return { ...base, httpStatus: head.status, mimeOk, corsOk, rangeSupported,
-        passed: head.ok && mimeOk && corsOk !== false && rangeSupported,
+      const corsPassed = corsOk !== false && rangeCorsOk !== false;
+      return { ...base, httpStatus: head.status, mimeOk, corsOk: corsPassed, rangeSupported,
+        passed: head.ok && mimeOk && corsPassed && rangeSupported,
         reason: !head.ok ? "media_head_failed" : !mimeOk ? "mp4_mime_invalid" :
-          corsOk === false ? "media_cors_missing" : !rangeSupported ? "mp4_byte_range_not_supported" : "ok" };
+          !corsPassed ? "media_cors_missing" : !rangeSupported ? "mp4_byte_range_not_supported" : "ok" };
     }
     const manifest = await fetch(parsed.href, { method: "GET", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
     const contentType = String(manifest.headers.get("content-type") || "").toLowerCase();

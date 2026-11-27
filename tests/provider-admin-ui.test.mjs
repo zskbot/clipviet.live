@@ -19,17 +19,14 @@ test("Preview admin console is mobile-first, same-origin and does not depend on 
   assert.doesNotMatch(html, /https?:\/\/[^"' ]+\.(?:js|css)/);
 });
 
-test("static admin preview has no PIN gate and keeps privileged controls inert", async () => {
-  const [script, page] = await Promise.all([
-    readFile(new URL("../site/admin/admin.js", import.meta.url), "utf8"),
-    readFile(new URL("../site/admin/index.html", import.meta.url), "utf8")
-  ]);
-  assert.match(page, /PREVIEW MODE · Không yêu cầu PIN/);
-  assert.doesNotMatch(page, /id="admin-login-gate"/);
-  assert.match(page, /data-admin-protected inert aria-disabled="true"/);
-  assert.match(script, /function lockAdminControls\(\)/);
-  assert.match(script, /node\.inert = true/);
-  assert.match(script, /allowed: false/);
-  assert.doesNotMatch(script, /\/api\/admin\/login/);
-  assert.doesNotMatch(script, /sessionStorage\.setItem\(ADMIN_SESSION_KEY/);
+test("static admin preview is public read-only and exposes no write controls", async () => {
+  const page = await readFile(new URL("../site/admin/index.html", import.meta.url), "utf8");
+  assert.match(page, /Admin Preview công khai, không yêu cầu đăng nhập/);
+  assert.match(page, /Chỉ đọc dữ liệu D1 Preview/);
+  assert.match(page, /Mọi thao tác tạo, sửa, duyệt, xuất bản, upload và xóa đều bị khóa tại API/);
+  assert.match(page, /PREVIEW ONLY · READ-ONLY/);
+  assert.doesNotMatch(page, /id="admin-login-gate"|name="pin"|\/api\/admin\/login/);
+  assert.match(page, /fetch\(url,\{cache:"no-store",credentials:"same-origin"\}\)/);
+  assert.doesNotMatch(page, /method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)["']/i);
+  assert.doesNotMatch(page, /<form\b|<button\b/i);
 });

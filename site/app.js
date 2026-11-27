@@ -6,6 +6,8 @@ const grid = $("#video-grid");
 const featuredRoot = $("#featured-video");
 const count = $("#result-count");
 const empty = $("#empty-state");
+const loadingState = $("#loading-state");
+const apiErrorState = $("#api-error");
 const search = $("#navigation-search");
 const dialog = $("#detail-dialog");
 const detail = $("#detail-content");
@@ -76,7 +78,7 @@ let requestSequence = 0;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
-const API_BASE = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
+const API_BASE = "https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev";
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.
 // Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.
@@ -110,21 +112,43 @@ function render() {
   if (activeCategoryId) params.set("categoryId", activeCategoryId);
   if (activeQuickFilter === "latest") params.set("sort", "latest");
   const url = API_BASE + "/api/catalog/videos?" + params.toString();
-  count.textContent = "ĐANG TẢI…";
+  count.textContent = "ĐANG KIỂM TRA QUYỀN & TẢI VIDEO…";
+  grid.replaceChildren();
   empty.hidden = true;
+  if (loadingState) { loadingState.hidden = false; loadingState.textContent = "Đang tải danh mục và xác minh quyền hiển thị…"; }
+  if (apiErrorState) apiErrorState.hidden = true;
   fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
-    .then((response) => {
-      if (!response.ok) throw new Error("Catalog API HTTP " + response.status);
-      return response.json();
+    .then(async (response) => {
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.error || payload.message || ("Catalog API HTTP " + response.status));
+        error.status = response.status;
+        error.payload = payload;
+        throw error;
+      }
+      return payload;
     })
     .then((payload) => {
       if (sequence !== requestSequence) return;
-      const rows = Array.isArray(payload.items) ? payload.items : [];
-      totalResults = Math.max(0, Number(payload.total) || 0);
+      const rawRows = Array.isArray(payload.items) ? payload.items : [];
+      const excludedAgeLabel = /under[\s_-]*age|minor|loli|shota|school[\s_-]*(?:girl|boy|student)|teen[\s_-]*(?:girl|boy)|học[\s_-]*sinh|nữ[\s_-]*sinh|nam[\s_-]*sinh|thiếu[\s_-]*niên|vị[\s_-]*thành[\s_-]*niên/i;
+      const rows = rawRows.filter((item) => item.rightsVerified === true && item.rightsStatus === "APPROVED" &&
+        Number.isFinite(Date.parse(item.rightsExpiresAt)) && Date.parse(item.rightsExpiresAt) > Date.now() &&
+        !excludedAgeLabel.test([item.title, item.categoryName, item.description, item.actors, item.director].filter(Boolean).join(" ")));
+      if (loadingState) loadingState.hidden = true;
+      totalResults = Math.max(0, Number(payload.total) || rows.length);
       pageSize = Math.max(1, Number(payload.limit) || 30);
       totalPages = Math.max(0, Number(payload.pageCount) || Math.ceil(totalResults / pageSize));
       if (!rows.length) {
-        showCatalogUnavailable("Nguồn chưa trả về video nào.");
+        const reason = payload.rightsGate?.reason === "provider_pending_approval"
+          ? "Các nguồn AppleCMS đang chờ phê duyệt quyền. ClipViet chỉ hiển thị video sau khi nguồn và quyền của từng video được xác minh."
+          : rawRows.length
+            ? "API có dữ liệu nhưng không có video nào vượt qua kiểm tra quyền, thời hạn giấy phép và xác minh độ tuổi/đồng thuận."
+            : payload.rightsGate?.providerApproved === true
+              ? "Nguồn đã được duyệt nhưng hiện chưa có video nào có hồ sơ quyền hợp lệ."
+              : "Chưa có video được duyệt quyền hiển thị. Danh mục sẽ tự cập nhật khi hồ sơ nguồn và từng video được phê duyệt.";
+        renderOpenLicenseCatalog(reason);
+        setMenuApiStatus("CHƯA CÓ VIDEO ĐỦ ĐIỀU KIỆN QUYỀN HIỂN THỊ", "warning");
         return;
       }
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
@@ -168,12 +192,14 @@ function render() {
         card.addEventListener("click", () => openDetail(video));
         grid.append(card);
       }
-      setMenuApiStatus("API danh mục đã kết nối · " + totalResults.toLocaleString("vi-VN") + " video.", "success");
+      setMenuApiStatus("Đã xác minh quyền · " + totalResults.toLocaleString("vi-VN") + " video.", "success");
     })
     .catch((error) => {
       if (sequence !== requestSequence) return;
+      if (loadingState) loadingState.hidden = true;
+      if (apiErrorState) { apiErrorState.hidden = false; apiErrorState.textContent = "Không thể tải danh mục video: " + error.message + ". Hãy thử tải lại sau."; }
       setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
-      showCatalogUnavailable("API video chưa kết nối: " + error.message);
+      renderOpenLicenseCatalog("API AppleCMS chưa khả dụng; đang chuyển sang danh mục phim mở có giấy phép Creative Commons đã xác minh.");
     });
 }
 
@@ -293,18 +319,23 @@ function renderFeatured() {
     image.alt = "Chưa có video nổi bật";
     $("#featured-index").textContent = "—";
     $("#featured-watch").disabled = true;
+    $("#featured-watch").hidden = true;
+    if (playButton) playButton.hidden = true;
     $("#featured-open").disabled = true;
     return;
   }
   const video = featuredVideos[featuredIndex % featuredVideos.length];
-  $("#featured-watch").disabled = false;
+  const playbackAllowed = (video.playbackEnabled === true && video.playbackRightsApproved === true) || (video.isSample === true && video.rightsVerified === true && Boolean(video.videoUrl));
+  $("#featured-watch").disabled = !playbackAllowed;
+  $("#featured-watch").hidden = !playbackAllowed;
+  if (playButton) playButton.hidden = !playbackAllowed;
   $("#featured-open").disabled = false;
   image.src = video.poster || "./poster-fallback.svg";
   image.alt = video.title || "Video nổi bật";
   image.onerror = () => { image.src = "./poster-fallback.svg"; };
   $("#featured-title").textContent = video.title || "Video nổi bật";
   $("#featured-meta").textContent = video.isSample
-    ? "VIDEO MẪU · CC BY 3.0 · BLENDER FOUNDATION"
+    ? "PHIM MỞ · " + (video.license || "CREATIVE COMMONS") + " · " + (video.sourceName || "BLENDER FOUNDATION")
     : [video.year, video.duration, video.country, video.category].filter(Boolean).join(" · ");
   $("#featured-description").textContent = video.description || "Khám phá video đang được quan tâm trên ClipViet.";
   $("#featured-index").textContent = String(featuredIndex + 1).padStart(2, "0");
@@ -323,7 +354,8 @@ function renderFeatured() {
 
 function showCatalogUnavailable(message) {
   grid.replaceChildren();
-  count.textContent = "CHƯA CÓ DỮ LIỆU NGUỒN";
+  if (loadingState) loadingState.hidden = true;
+  count.textContent = "0 VIDEO ĐƯỢC DUYỆT QUYỀN";
   empty.hidden = false;
   empty.textContent = message;
   setFeaturedVideos([]);
@@ -334,33 +366,73 @@ function showCatalogUnavailable(message) {
   if (note) note.textContent = message + " · KHÔNG HIỂN THỊ VIDEO DEMO THAY THẾ";
 }
 
-function renderSampleVideo(reason) {
+const openLicensedVideos = [
+  {
+    id: "tears-of-steel-open-movie", title: "Tears of Steel", category: "Phim ngắn · Khoa học viễn tưởng",
+    year: 2012, duration: "12 phút", rating: "Mọi lứa tuổi",
+    description: "Phim ngắn khoa học viễn tưởng do Blender Foundation sản xuất. Giấy phép CC BY 3.0; giữ nguyên credit cuối phim.",
+    poster: "https://i.ytimg.com/vi/OHOpb2fS-cM/hqdefault.jpg",
+    videoUrl: "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4",
+    originalUrl: "https://mango.blender.org/about/",
+    sourceName: "Blender Foundation", license: "CC BY 3.0",
+    attribution: "(CC) Blender Foundation · mango.blender.org",
+    licenseUrl: "https://creativecommons.org/licenses/by/3.0/", isSample: true, rightsVerified: true
+  },
+  {
+    id: "big-buck-bunny-open-movie", title: "Big Buck Bunny", category: "Hoạt hình · Hài",
+    year: 2008, duration: "10 phút", rating: "Mọi lứa tuổi",
+    description: "Phim hoạt hình mở của Blender Foundation. Giấy phép CC BY 3.0; phải ghi công Blender Foundation.",
+    poster: "https://peach.blender.org/wp-content/uploads/title_anouncement.jpg",
+    videoUrl: "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4",
+    originalUrl: "https://peach.blender.org/about/",
+    sourceName: "Blender Foundation", license: "CC BY 3.0",
+    attribution: "© copyright 2008, Blender Foundation / www.bigbuckbunny.org",
+    licenseUrl: "https://creativecommons.org/licenses/by/3.0/", isSample: true, rightsVerified: true
+  },
+  {
+    id: "elephants-dream-open-movie", title: "Elephants Dream", category: "Hoạt hình · Giả tưởng",
+    year: 2006, duration: "11 phút", rating: "Mọi lứa tuổi",
+    description: "Phim open movie đầu tiên của Blender Foundation. Giấy phép CC BY 2.5; cần ghi công chủ sở hữu.",
+    poster: "./poster-fallback.svg",
+    videoUrl: "https://download.blender.org/ED/elephantsdream-720-h264-st-aac.mov",
+    originalUrl: "https://orange.blender.org/",
+    sourceName: "Blender Foundation", license: "CC BY 2.5",
+    attribution: "(c) copyright 2006, Blender Foundation / Netherlands Media Art Institute / www.elephantsdream.org",
+    licenseUrl: "https://creativecommons.org/licenses/by/2.5/", isSample: true, rightsVerified: true
+  }
+];
+
+function renderOpenLicenseCatalog(reason) {
   grid.replaceChildren();
-  setFeaturedVideos([sampleVideo]);
-  const card = document.createElement("button");
-  card.type = "button";
-  card.className = "video-card";
-  card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
-  const img = card.querySelector("img");
-  img.src = sampleVideo.poster;
-  img.alt = sampleVideo.title;
-  card.querySelector(".poster-label").textContent = "MẪU CC BY";
-  card.querySelector("h3").textContent = sampleVideo.title;
-  card.querySelector(".card-info p").textContent = "2012 · Blender Foundation · CC BY 3.0";
-  card.addEventListener("click", () => openDetail(sampleVideo));
-  grid.append(card);
-  count.textContent = "1 VIDEO MẪU";
+  setFeaturedVideos(openLicensedVideos);
+  for (const video of openLicensedVideos) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "video-card";
+    card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
+    const img = card.querySelector("img");
+    img.src = video.poster || "./poster-fallback.svg";
+    img.alt = video.title;
+    img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
+    card.querySelector(".poster-label").textContent = video.license;
+    card.querySelector("h3").textContent = video.title;
+    card.querySelector(".card-info p").textContent = video.year + " · " + video.sourceName + " · " + video.license;
+    card.addEventListener("click", () => openDetail(video));
+    grid.append(card);
+  }
+  count.textContent = openLicensedVideos.length + " PHIM MỞ · ĐÃ KIỂM TRA GIẤY PHÉP";
   empty.hidden = true;
   renderPagination(0);
   activeFiltersRoot.replaceChildren();
   activeFiltersRoot.hidden = true;
   const note = document.querySelector(".data-note");
-  if (note) note.textContent = reason + " · ĐANG HIỂN THỊ VIDEO MẪU CÓ GIẤY PHÉP";
+  if (note) note.textContent = reason + " · DANH MỤC PHIM MỞ ĐỘC LẬP · APPLECMS VẪN BỊ CHẶN CHO ĐẾN KHI ĐƯỢC DUYỆT.";
+  setMenuApiStatus("ĐANG HIỂN THỊ " + openLicensedVideos.length + " PHIM MỞ CÓ GIẤY PHÉP · APPLECMS CHỜ DUYỆT", "success");
 }
 
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;
-  const blocked = /underage|minor|loli|shota|school\\s?(girl|boy|student)|teen\\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
+  const blocked = /underage|minor|loli|shota|school\s?(girl|boy|student)|teen\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
   featuredVideos = items.filter((video) => !blocked.test([video.title, video.category, video.description, video.genre].filter(Boolean).join(" ")));
   featuredVideos.sort((a, b) => (b.trendingScore - a.trendingScore) || (b.views - a.views) || (b.playCount - a.playCount) || (Number(b.year || 0) - Number(a.year || 0)));
   featuredIndex = 0;
@@ -383,17 +455,17 @@ function openDetail(video) {
   detail.querySelector(".description").textContent = video.description || "";
   detail.querySelector(".meta").textContent = [video.year, video.duration, video.rating, video.country].filter(Boolean).join(" · ");
   detail.querySelector(".detail-source").textContent = video.isSample
-    ? "Nguồn: Blender Foundation · CC BY 3.0 · " + "https://creativecommons.org/licenses/by/3.0/"
+    ? "Nguồn: " + (video.sourceName || "Open Movie") + " · " + (video.license || "Creative Commons") + " · " + (video.attribution || "") + " · " + (video.licenseUrl || "")
     : video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) : "Bản ghi demo.";
   if (video.isSample && video.videoUrl) {
     const link = detail.querySelector(".watch-link");
     link.hidden = false;
-    link.href = video.originalUrl || "https://www.youtube.com/watch?v=OHOpb2fS-cM";
+    link.href = video.videoUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = "PHÁT VIDEO GỐC ↗";
   }
-  if (video.apiManaged && video.sourceId && video.id) {
+  if (video.apiManaged && video.sourceId && video.id && video.playbackEnabled === true && video.playbackRightsApproved === true) {
     const link = detail.querySelector(".watch-link");
     link.hidden = false;
     link.href = "./watch/source.html?sourceId=" + encodeURIComponent(video.sourceId) + "&vodId=" + encodeURIComponent(video.id);
@@ -510,7 +582,8 @@ $("#leave-button")?.addEventListener("click", () => { location.href = "https://w
     const payload = await response.json();
     const categories = Array.isArray(payload.data) ? payload.data : [];
     renderCategories(categories.map((item) => ({ id: String(item.id), name: String(item.name || "Khác") })));
-    setMenuApiStatus("API danh mục đã kết nối · " + categories.length + " danh mục.", "success");
+    if (payload.rightsGate?.providerApproved === false) setMenuApiStatus("Nguồn AppleCMS đang chờ phê duyệt quyền.", "warning");
+    else setMenuApiStatus("API danh mục đã kết nối · " + categories.length + " danh mục.", "success");
     render();
   } catch (error) {
     setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");

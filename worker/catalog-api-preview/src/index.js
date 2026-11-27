@@ -1,4 +1,5 @@
-import { listProviders, getProviderCategories, listProviderVideos, getProviderVideo } from "../../telegram-api/src/applecms.js";
+import { listProviders, getProviderCategories, listProviderVideos, getProviderVideo } from "./applecms.js";
+import { evaluateAdultGeoPolicy } from "./adult-geo-policy.mjs";
 
 function json(data, status=200, headers={}) {
   return new Response(JSON.stringify(data), { status, headers: {
@@ -12,7 +13,15 @@ function allowedOrigin(request, env) {
   const origin=request.headers.get("Origin");
   if (!origin) return "";
   const allowed=new Set(String(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).filter(Boolean));
-  return allowed.has(origin) ? origin : null;
+  if (allowed.has(origin)) return origin;
+  try {
+    const parsed=new URL(origin);
+    const host=parsed.hostname.toLowerCase();
+    const previewHost=host.endsWith(".clipviet-live-preview.pages.dev") ||
+      host.endsWith(".clipviet-live-independent-preview.pages.dev");
+    if (parsed.protocol==="https:" && previewHost && host.split(".").length===4) return origin;
+  } catch {}
+  return null;
 }
 function corsHeaders(origin) {
   return origin ? {
@@ -68,6 +77,12 @@ async function handle(request, env) {
   const headers=corsHeaders(origin);
   if(path.startsWith("/api/admin/")&&!origin) return json({error:"Origin required"},403);
   if(request.method==="OPTIONS") return new Response(null,{status:204,headers});
+  if(path==="/api/adult"||path.startsWith("/api/adult/")) {
+    const policy=evaluateAdultGeoPolicy(request,env);
+    if(!policy.allowed) return json({error:"Adult content is not available in this location.",code:"ADULT_GEO_RESTRICTED",policy},451,headers);
+    if(!policy.enabled) return json({error:"Adult catalog is disabled pending provider rights verification.",code:"ADULT_PROVIDER_RIGHTS_PENDING",policy},503,headers);
+    return json({error:"Adult provider integration is not configured.",code:"ADULT_PROVIDER_NOT_CONFIGURED",policy},503,headers);
+  }
   if(path==="/api/admin/login"&&request.method==="POST") {
     if(!env.ADMIN_PIN || !/^\d{6}$/.test(String(env.ADMIN_PIN))) return json({error:"Admin PIN is not configured as a six-digit Worker Secret."},503,headers);
     const ip=request.headers.get("CF-Connecting-IP")||"unknown";
@@ -166,19 +181,31 @@ async function handle(request, env) {
         return json({sourceId:providerId,data,count:data.length,failover:!explicit&&providerId!=="souavzy"},200,headers);
       } catch(error) { lastError=error; if(explicit) break; }
     }
+    if (lastError?.status === 403) return json({
+      success: true, data: [], count: 0,
+      rightsGate: { policy: "deny-by-default", providerApproved: false, reason: "provider_pending_approval", playbackEnabled: false }
+    }, 200, headers);
     return json({error:"All eligible providers failed",providerId:lastError?.providerId||explicit||"souavzy"},lastError?.status||502,headers);
   }
   if(path==="/api/catalog/videos") {
     const explicit=url.searchParams.get("sourceId"), categoryId=url.searchParams.get("categoryId")||undefined;
     const keyword=url.searchParams.get("keyword")||undefined, page=url.searchParams.get("page")||"1";
     const candidates=explicit?[explicit]:["souavzy","apiyutu","lbapi9","slapibf","jipinvip1"];
-    let lastError=null;
+    let lastError=null, lastEmpty=null;
     for(const providerId of candidates) {
       try {
         const data=await listProviderVideos(providerId,{page,categoryId,keyword},env);
+        if (Array.isArray(data.items) && data.items.length) return json({...data,failover:!explicit&&providerId!=="souavzy"},200,headers);
+        if (data.rightsGate?.providerApproved === true) { lastEmpty=data; continue; }
         return json({...data,failover:!explicit&&providerId!=="souavzy"},200,headers);
       } catch(error) { lastError=error; if(explicit||categoryId) break; }
     }
+    if (lastEmpty) return json({...lastEmpty,rightsGate:{...lastEmpty.rightsGate,reason:"no_approved_video_rights"}},200,headers);
+    if (lastError?.status === 403) return json({
+      success: true, items: [], data: [], results: [], total: 0,
+      page: Number(page) || 1, pageCount: 0, limit: 30,
+      rightsGate: { policy: "deny-by-default", providerApproved: false, approvedCount: 0, playbackEnabled: false, reason: "provider_pending_approval" }
+    }, 200, headers);
     return json({error:"All eligible providers failed",providerId:lastError?.providerId||explicit||"souavzy"},lastError?.status||502,headers);
   }
   const match=path.match(/^\/api\/providers\/([a-z0-9-]+)\/(categories|videos)(?:\/([0-9]+))?$/);

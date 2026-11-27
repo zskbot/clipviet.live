@@ -6,7 +6,11 @@ preview_urls = false
 
 [vars]
 ENVIRONMENT = "preview"
-ALLOWED_ORIGINS = "https://feat-clipviet-preview-accept.clipviet-live-preview.pages.dev,https://preview-admin-password-gate.clipviet-live-preview.pages.dev"
+# Adult catalog stays disabled until provider distribution rights are independently verified.
+ADULT_CONTENT_ENABLED = "false"
+ADULT_PROVIDER_RIGHTS_CONFIRMED = "false"
+ADULT_ALLOWED_COUNTRIES = "US"
+ALLOWED_ORIGINS = "https://clipviet.live,https://feat-clipviet-preview-accept.clipviet-live-preview.pages.dev,https://preview-admin-password-gate.clipviet-live-preview.pages.dev"
 APPLECMS_SOUAVZY_URL = "https://api.souavzy.vip/api.php/provide/vod/"
 APPLECMS_APIYUTU_URL = "https://apiyutu.com/api.php/provide/vod/"
 APPLECMS_LBAPI9_URL = "https://lbapi9.com/api.php/provide/vod/"
@@ -18,3 +22,9 @@ APPLECMS_JIPINVIP1_URL = "https://jipinvip1.com/api.php/provide/vod/"
 binding = "DB"
 database_name = "clipviet-cms-preview"
 database_id = "1e613e7b-5aa3-4927-bf78-552f383c9dce"
+
+# Read-only in application code: provider and per-video legal approvals.
+[[d1_databases]]
+binding = "PROVIDER_DB"
+database_name = "clipviet-provider-registry-preview"
+database_id = "9d26b841-680c-4fa2-bb3e-0f1fa537ad22"

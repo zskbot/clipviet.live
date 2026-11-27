@@ -246,7 +246,7 @@ video.addEventListener("pause", () => {
 (async () => {
   if (!sourceId || !vodId) { say("Thiếu sourceId hoặc vodId."); return; }
   try {
-    const response = await fetch("https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev/api/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", headers: { Accept: "application/json" } });
+    const response = await fetch("https://clipviet-playback-api-preview.huynhthuongg2505-f9b.workers.dev/api/playback/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error("Không tải được chi tiết video · HTTP " + response.status);
     const payload = await response.json();
     data = payload.data || null;

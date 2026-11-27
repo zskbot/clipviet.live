@@ -259,7 +259,7 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
       const ranged = await fetch(parsed.href, { method: "GET",
         headers: { ...headers, range: "bytes=0-1" }, redirect: "error", signal: AbortSignal.timeout(9000) });
       const contentRange = String(ranged.headers.get("content-range") || "");
-      const rangeSupported = ranged.status === 206 && /^bytes\\s+0-1\\//i.test(contentRange);
+      const rangeSupported = ranged.status === 206 && contentRange.toLowerCase().startsWith("bytes 0-1/");
       const corsOk = mediaCorsOk(ranged, requestOrigin);
       await ranged.body?.cancel();
       return { ...base, httpStatus: head.status, mimeOk, corsOk, rangeSupported,

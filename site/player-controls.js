@@ -273,10 +273,12 @@ function playFeaturedVideo(video) {
       hlsEngine = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
-        capLevelToPlayerSize: true,
+        capLevelToPlayerSize: false,
         capLevelOnFPSDrop: true,
-        maxBufferLength: 24,
-        maxMaxBufferLength: 48,
+        startLevel: -1,
+        abrEwmaDefaultEstimate: 5000000,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
         maxBufferSize: 60 * 1000 * 1000,
         abrBandWidthFactor: 0.92,
         abrBandWidthUpFactor: 0.72

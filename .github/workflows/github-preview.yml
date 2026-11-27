@@ -43,6 +43,17 @@ jobs:
           test -s site/admin/adultembed-admin.mjs
           test -s site/admin/adultembed-adapter.mjs
           test ! -e site/package.json
+          test -s site/community/index.html
+          test -s site/community/community.js
+          test -s site/community/community.css
+          grep -q 'id="community-suggestion-form"' site/community/index.html
+          grep -q 'name="sourceUrls\[\]"' site/community/index.html
+          grep -q 'url.protocol === "https:"' site/community/community.js
+          grep -q 'href="./community/"' site/index.html
+          grep -q 'href="./brand-ui.css"' site/index.html
+          grep -q 'href="../brand-ui.css"' site/community/index.html
+          ! grep -q 'id="video-suggestion"' site/index.html
+          ! grep -q 'href="#video-suggestion"' site/index.html
 
       - name: Syntax-check browser JavaScript
         run: |

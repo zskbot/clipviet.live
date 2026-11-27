@@ -5,10 +5,10 @@ const MAX_PAGES = 1000;
 let catalog = { videos: [], categories: [], providers: [] };
 let page = 1, pageCount = 1, activeProvider = "", categoryId = "", keyword = "", country = "", duration = "";
 let items = [], trendingTimer = null, trendingIndex = 0, trendingItems = [], quickCategory = "";
-const initialQuickCategory = new URLSearchParams(location.search).get("quick") || "";
+const browseParams = new URLSearchParams(location.search);\nconst initialQuickCategory = browseParams.get("quick") || "";\nkeyword = browseParams.get("q") || "";\nactiveProvider = browseParams.get("source") || "";\ncategoryId = browseParams.get("category") || "";
 if (["latest","adult","jav","china","europe","vietnam","vietsub","south-asia","actors","genres","uncensored","beauty","amateur","xvideos","xnxx","buomtv","hsex","xnhau","vlxx"].includes(initialQuickCategory)) quickCategory = initialQuickCategory;
 
-const gate = $("age-gate");
+const gate = $("age-gate");\nif ($("keyword")) $("keyword").value = keyword;\nif ($("source")) $("source").value = activeProvider;
 try { if (sessionStorage.getItem("clipviet-age-confirmed") === "yes") gate.hidden = true; } catch {}
 $("confirm").addEventListener("click", () => { try { sessionStorage.setItem("clipviet-age-confirmed", "yes"); } catch {} gate.hidden = true; });
 $("leave").addEventListener("click", () => location.replace("https://www.google.com/"));
@@ -161,7 +161,7 @@ $("next").addEventListener("click",()=>{if(page<pageCount){page++;loadVideos();w
     if(!response.ok)throw new Error("catalog.json HTTP "+response.status);
     catalog=await response.json();
     if(!Array.isArray(catalog.videos)||!Array.isArray(catalog.providers)||!Array.isArray(catalog.categories))throw new Error("Catalog format is invalid");
-    populateCategories();populateSelect("country",catalog.videos.map(x=>x.area),"Tất cả quốc gia");
+    populateCategories();populateSelect("country",catalog.videos.map(x=>x.area),"Tất cả quốc gia"); if(categoryId) $("category").value=activeProvider+":"+categoryId;
     setupTrending();$("count").dataset.total=String(catalog.videos.length);loadVideos();
   }catch(error){status("Không tải được catalog: "+error.message);$("empty").hidden=false;}
 })();

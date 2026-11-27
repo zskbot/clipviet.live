@@ -274,20 +274,25 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
     const text = manifest.ok && mimeOk ? await readTextLimited(manifest) : "";
     const firstResource = text.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.startsWith("#"));
     let firstResourceReachable = false;
+    let firstResourceCorsOk = requestOrigin ? false : null;
     if (firstResource) {
       const resourceUrl = new URL(firstResource, parsed);
       if (isAllowedMediaUrl(resourceUrl.href, mediaHosts)) {
         const resource = await fetch(resourceUrl.href, { method: "HEAD", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
         firstResourceReachable = resource.ok;
+        firstResourceCorsOk = mediaCorsOk(resource, requestOrigin);
         await resource.body?.cancel();
       }
     }
     return { ...base, httpStatus: manifest.status, mimeOk, corsOk,
       manifestOk: manifest.ok && mimeOk && Boolean(firstResource), firstResourceReachable,
-      passed: manifest.ok && mimeOk && corsOk !== false && Boolean(firstResource) && firstResourceReachable,
+      firstResourceCorsOk,
+      passed: manifest.ok && mimeOk && corsOk !== false && firstResourceCorsOk !== false &&
+        Boolean(firstResource) && firstResourceReachable,
       reason: !manifest.ok ? "hls_manifest_request_failed" : !mimeOk ? "hls_mime_invalid" :
-        corsOk === false ? "media_cors_missing" : !firstResource ? "hls_manifest_has_no_media_uri" :
-          !firstResourceReachable ? "hls_first_resource_unreachable_or_unapproved" : "ok" };
+        corsOk === false || firstResourceCorsOk === false ? "media_cors_missing" :
+          !firstResource ? "hls_manifest_has_no_media_uri" :
+            !firstResourceReachable ? "hls_first_resource_unreachable_or_unapproved" : "ok" };
   } catch { return { ...base, reason: "media_probe_failed" }; }
 }
 

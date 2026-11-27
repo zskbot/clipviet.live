@@ -29,5 +29,5 @@ test("player shortcut handlers remain opt-in and do not autoplay on page load", 
 
 test("Browser Tools page attributes the upstream userscripts repository", () => {
   assert.match(page, /https:\/\/github\.com\/CodeSenbot\/UserScripts/);
-  assert.match(page, /không tự tải hoặc thực thi mã userscript bên thứ ba/i);
+  assert.match(page, /không tự tải, tự cài hoặc tự thực thi mã bên thứ ba/i);
 });

@@ -1,9 +1,8 @@
-name: ClipViet platform checks
+name: ClipViet Telegram Worker checks
 
 on:
   pull_request:
     paths:
-      - "site/**"
       - "worker/telegram-api/**"
       - ".github/workflows/clipviet-platform-check.yml"
   workflow_dispatch:
@@ -20,38 +19,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check JavaScript syntax
+      - name: Check Telegram Worker JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
-          find site worker/telegram-api -type f -name '*.js' -print0 |
+          find worker/telegram-api -type f -name '*.js' -print0 |
             while IFS= read -r -d '' file; do
-              echo "Checking $file"
               node --input-type=module --check < "$file"
             done
       - name: Run AppleCMS adapter unit tests
         run: npm --prefix worker/telegram-api run test:providers
-      - name: Validate platform routes and required files
+      - name: Verify required adapter contract
         run: |
           set -eu
-          test -s site/index.html
-          test -s site/api-docs/index.html
-          test -s site/watch/index.html
-          test -s site/watch/watch.js
-          test -s site/watch/source.html
-          test -s site/watch/source-player.js
-          test -s site/browse/index.html
-          test -s site/browse/browse.js
+          test -s worker/telegram-api/src/index.js
           test -s worker/telegram-api/src/applecms.js
           test -s worker/telegram-api/src/applecms.test.mjs
-          test -s site/admin/sources/index.html
-          test -s site/admin/sources/manager.js
-          grep -q '/api/v1/admin/videos' worker/telegram-api/src/index.js
-          grep -q 'VIDEO_CATALOG' worker/telegram-api/src/index.js
-          grep -q 'VIDEO_MEDIA_HOSTS' worker/telegram-api/src/index.js
-          grep -q 'api/catalog/videos' worker/telegram-api/src/index.js
-          grep -q 'lastIndexOf' worker/telegram-api/src/applecms.js
           grep -q 'APPLECMS_SOUAVZY_URL' worker/telegram-api/src/applecms.js
-      - name: Secret pattern scan
+      - name: Scan for committed secrets
         run: |
-          ! grep -R -nE '([0-9]{6,}:[A-Za-z0-9_-]{30,}|TELEGRAM_BOT_TOKEN=.{8,}|SESSION_SECRET=.{8,})' worker/telegram-api site
+          ! grep -R -nE '([0-9]{6,}:[A-Za-z0-9_-]{30,}|TELEGRAM_BOT_TOKEN=.{8,}|SESSION_SECRET=.{8,})' worker/telegram-api

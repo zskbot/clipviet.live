@@ -385,9 +385,16 @@ function openDetail(video) {
 }
 
 let menuReturnFocus = null;
+let menuScrollY = 0;
 function closeMenu(returnFocus = false) {
   menu.hidden = true;
   document.body.classList.remove("menu-open");
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  window.scrollTo(0, menuScrollY);
   menuToggle.setAttribute("aria-expanded", "false");
   menuToggle.setAttribute("aria-label", "Mở menu điều hướng");
   if (returnFocus) (menuReturnFocus || menuToggle).focus();
@@ -396,8 +403,14 @@ menuToggle?.addEventListener("click", () => {
   const opening = menu.hidden;
   if (opening) {
     menuReturnFocus = document.activeElement;
+    menuScrollY = window.scrollY;
     menu.hidden = false;
     document.body.classList.add("menu-open");
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + menuScrollY + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
     menuToggle.setAttribute("aria-expanded", "true");
     menuToggle.setAttribute("aria-label", "Đóng menu điều hướng");
     requestAnimationFrame(() => menu.querySelector("#navigation-search")?.focus());

@@ -137,6 +137,7 @@ test("MacCMS categories use ac=list and expose leaf categories only", async () =
     requestedUrl = new URL(String(input));
     return new Response(JSON.stringify({
       code: 1,
+      list: [],
       class: [
         { type_id: 10, type_pid: 0, type_name: "Parent" },
         { type_id: 11, type_pid: 10, type_name: "Leaf" },

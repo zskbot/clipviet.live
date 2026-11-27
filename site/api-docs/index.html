@@ -51,4 +51,4 @@
 <div class="endpoint"><span class="method">GET</span><code>/api/providers</code><p>Trạng thái cấu hình, connector, quyền provider và số video có hồ sơ quyền hợp lệ. Không gọi upstream.</p></div>
 <div class="endpoint"><span class="method">GET</span><code>/api/providers/diagnostics</code><p>Kiểm tra kỹ thuật từng provider. Provider đang PENDING_RIGHTS không bị gọi; nguồn chỉ được probe sau khi quyền provider được phê duyệt.</p></div>
 <div class="note">Catalog rỗng hiện tại không phải dữ liệu demo bị mất: D1 Preview ghi nhận 5 provider ở trạng thái PENDING, chưa có connector được duyệt và chưa có hồ sơ quyền video APPROVED. Vì vậy API trả trạng thái rights-pending thay vì tự ý thu thập hoặc phát nội dung.</div>
-</main></body></html>
+<div class="endpoint"><span class="method">GET / POST</span><code>https://clipviet-metadata-intake-preview.huynhthuongg2505-f9b.workers.dev/metadata-intake</code><p>Form công khai dành cho chủ thể quyền gửi hồ sơ metadata-only. Mọi hồ sơ được lưu PENDING_REVIEW; không nhận API secret, stream URL hoặc quyền phê duyệt.</p></div></main></body></html>

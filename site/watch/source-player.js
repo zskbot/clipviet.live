@@ -7,6 +7,7 @@ const status = $("status");
 const title = $("title");
 const qualitySelect = $("quality");
 const resolutionLabel = $("resolution");
+const playNowButton = $("play-now");
 let data = null;
 let lineIndex = 0;
 let episodeIndex = 0;
@@ -68,7 +69,9 @@ function destroy() {
   selectedQuality = "auto";
   if (watchdog) { clearTimeout(watchdog); watchdog = null; }
   if (hls) { hls.destroy(); hls = null; }
+  video.onpause = null;
   video.pause();
+  if (playNowButton) playNowButton.hidden = true;
   video.removeAttribute("src");
   video.load();
   video.onerror = null;
@@ -107,6 +110,12 @@ function failed(message) {
   const episode = currentEpisode();
   if (episode?.url) { $("external").hidden = false; $("external").href = episode.url; }
 }
+playNowButton?.addEventListener("click", async () => {
+  try { await video.play(); }
+  catch (error) {
+    say(error?.name === "NotAllowedError" ? "Safari yêu cầu chạm trực tiếp nút Play trên video." : "Không thể bắt đầu phát: " + (error.message || "nguồn video chưa sẵn sàng."));
+  }
+});
 function applyQuality() {
   if (!hls) return;
   if (selectedQuality === "auto") hls.currentLevel = -1;
@@ -130,7 +139,8 @@ function play() {
     if (ready) return;
     ready = true;
     if (watchdog) { clearTimeout(watchdog); watchdog = null; }
-    say("Video đã sẵn sàng. Nhấn Play trên trình phát.");
+    say("Video đã sẵn sàng. Chạm XEM NGAY hoặc Play trên trình phát.");
+    if (playNowButton) playNowButton.hidden = false;
   };
   watchdog = setTimeout(() => {
     if (video.readyState < 2 || video.videoWidth === 0) failed("Quá 25 giây chưa nhận được khung hình.");
@@ -138,8 +148,10 @@ function play() {
   video.onloadeddata = markReady;
   video.onplaying = () => {
     markReady();
+    if (playNowButton) playNowButton.hidden = true;
     say("Đang phát · " + (video.videoWidth ? video.videoWidth + "×" + video.videoHeight : "đang nhận hình ảnh"));
   };
+  video.onpause = () => { if (!video.ended && video.readyState >= 2 && playNowButton) playNowButton.hidden = false; };
   video.onerror = () => failed("Trình duyệt không tải được video hoặc segment.");
   if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
     video.src = mediaUrl.href;
@@ -153,15 +165,14 @@ function play() {
       startLevel: -1,
       capLevelToPlayerSize: false,
       capLevelOnFPSDrop: true,
-      startLevel: -1,
-        abrEwmaDefaultEstimate: 5000000,
-        maxBufferLength: 30,
-      maxMaxBufferLength: 60,
-      maxBufferSize: 60 * 1000 * 1000,
-      backBufferLength: 30,
+      abrEwmaDefaultEstimate: 5000000,
+      maxBufferLength: 18,
+      maxMaxBufferLength: 36,
+      maxBufferSize: 32 * 1024 * 1024,
+      backBufferLength: 18,
       maxBufferHole: 0.15,
-      abrBandWidthFactor: 0.92,
-      abrBandWidthUpFactor: 0.72,
+      abrBandWidthFactor: 0.95,
+      abrBandWidthUpFactor: 0.75,
       manifestLoadingTimeOut: 20000,
       fragLoadingTimeOut: 25000
     });
@@ -178,7 +189,8 @@ function play() {
     });
     hls.on(Hls.Events.ERROR, (_event, detail) => {
       if (!detail.fatal) return;
-      if (detail.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+      if (detail.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+      else if (detail.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
       else failed("HLS lỗi: " + detail.details + ".");
     });
   } else if (isHls) {

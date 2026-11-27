@@ -364,6 +364,12 @@ function initFeaturedPlayer() {
     if (player.webkitEnterFullscreen && /iPhone|iPod/i.test(navigator.userAgent)) player.webkitEnterFullscreen();
     else if (shell?.requestFullscreen) shell.requestFullscreen().catch(() => setStatus("Không thể mở toàn màn hình trên trình duyệt này."));
   });
+  $("#player-pip")?.addEventListener("click", async () => {
+    try {
+      if (!document.pictureInPictureEnabled || !player?.requestPictureInPicture) throw new Error("Thiết bị chưa hỗ trợ Hình trong hình.");
+      await player.requestPictureInPicture();
+    } catch (error) { setStatus(error.message || "Không thể bật Hình trong hình."); }
+  });
   qualitySelect?.addEventListener("change", () => {
     if (!hlsEngine) return;
     hlsEngine.currentLevel = Number(qualitySelect.value);

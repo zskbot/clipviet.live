@@ -113,3 +113,20 @@ These are endpoint URLs, not secrets. Do not add API keys/tokens to the reposito
 - A source webpage or metadata API response is not a media license. Metadata discovery does not authorize copying, rehosting, proxying, or public playback.
 - The supplied Preview URL `https://dc7e4ff9.clipviet-live-independent-preview.pages.dev/?utm_source=chatgpt.com` is a test destination only, not a provider or source of video records.
 
+
+
+## Additional source batch supplied on 2026-11-28 (batch 2)
+
+The following four host URLs were supplied as possible sources. They are recorded as unverified website candidates only. Automated inspection could not retrieve their page contents in this review session; therefore no API, catalog, ownership, authorization, or playback capability is confirmed. No crawling, media extraction, download, embedding, proxying, or playback has been performed.
+
+- https://hlm076la.shanxiuyigdd.icu/
+- https://9ntvm7ib.taopian.us.ci/
+- https://r5tbokbu.jeffreyhale6664.icu/
+- https://npb0vh4u.garymorgan3490.icu/
+
+### Review gate
+
+- Initial state: `PENDING_REVIEW`; `rights_status=PENDING`; `playback_enabled=0`.
+- Require provider-owned API documentation and written permission covering the exact intended use, territories, duration, and individual titles before any ingestion or playback integration.
+- Treat these hostnames as website URLs, not API endpoints or direct HLS/MP4 media URLs. Do not infer AppleCMS compatibility from the domain or path.
+- Do not poll, crawl, index, scrape, proxy, download, or publish content until authorization and rights review are documented.

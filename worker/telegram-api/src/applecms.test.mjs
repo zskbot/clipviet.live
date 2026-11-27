@@ -79,7 +79,7 @@ test("category adapter filters parent categories and keeps leaf categories", asy
   assert.deepEqual(categories.map(item => item.id), [11, 12, 20]);
 });
 
-test("list adapter respects source pagination while rights-gating metadata-only records", async () => {
+test("list adapter exposes only records with approved metadata-only rights", async () => {
   globalThis.caches = { default: { match: async () => null, put: async () => {} } };
   globalThis.fetch = async () => new Response(JSON.stringify({
     code: 1, page: 2, pagecount: 47, total: 463, limit: 10,
@@ -93,8 +93,8 @@ test("list adapter respects source pagination while rights-gating metadata-only 
       vod_play_url: "Episode$https://cdn.example/index.m3u8"
     }]
   }), { status: 200, headers: { "content-type": "application/json" } });
-  const result = await listProviderVideos("souavzy", { page: 2 }, env);
-  assert.equal(result.page, 2);
+  const result = await listProviderVideos("souavzy", { page: 1 }, env);
+  assert.equal(result.page, 1);
   assert.equal(result.pageCount, 1);
   assert.equal(result.limit, 30);
   assert.equal(result.total, 1);

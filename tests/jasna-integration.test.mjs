@@ -11,6 +11,7 @@ test("Jasna integration links both the user's fork and upstream project", () => 
 });
 
 test("Jasna is documented as a local desktop GPU workflow, not a browser player", () => {
+  assert.match(page, /phát hiện vùng mosaic/);
   assert.match(page, /Windows và Linux/);
   assert.match(page, /Không chạy engine Jasna trực tiếp trên iPhone/);
   assert.match(page, /ClipViet không nhận tệp video/);

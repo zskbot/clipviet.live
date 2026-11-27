@@ -378,7 +378,7 @@ async function handle(request, env) {
     }
   }
 
-  const diagnosticMatch = path.match(/^\\/api\\/playback\\/providers\\/([a-z0-9-]+)\\/videos\\/([0-9]+)\\/diagnostics$/);
+  const diagnosticMatch = path.match(/^\/api\/playback\/providers\/([a-z0-9-]+)\/videos\/([0-9]+)\/diagnostics$/);
   if (diagnosticMatch) {
     const [, providerId, videoId] = diagnosticMatch;
     const provider = PROVIDERS.find(item => item.id === providerId);

@@ -220,6 +220,20 @@ $("pip").addEventListener("click", async () => {
 });
 setImageFilter();
 
+const playNowButton = $("play-now");
+playNowButton?.addEventListener("click", async () => {
+  try {
+    await video.play();
+    say("Đang phát video.");
+  } catch (error) {
+    say("Safari chưa thể bắt đầu phát: " + (error.message || "hãy nhấn lại hoặc kiểm tra nguồn."));
+  }
+});
+video.addEventListener("playing", () => { if (playNowButton) playNowButton.hidden = true; });
+video.addEventListener("pause", () => {
+  if (playNowButton && !video.ended && video.currentTime > 0) playNowButton.hidden = false;
+});
+
 (async () => {
   if (!sourceId || !vodId) { say("Thiếu sourceId hoặc vodId."); return; }
   try {

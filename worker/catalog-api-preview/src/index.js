@@ -1,4 +1,5 @@
 import { listProviders, getProviderCategories, listProviderVideos, getProviderVideo } from "../../telegram-api/src/applecms.js";
+import { evaluateAdultGeoPolicy } from "./adult-geo-policy.mjs";
 
 function json(data, status=200, headers={}) {
   return new Response(JSON.stringify(data), { status, headers: {
@@ -76,6 +77,12 @@ async function handle(request, env) {
   const headers=corsHeaders(origin);
   if(path.startsWith("/api/admin/")&&!origin) return json({error:"Origin required"},403);
   if(request.method==="OPTIONS") return new Response(null,{status:204,headers});
+  if(path==="/api/adult"||path.startsWith("/api/adult/")) {
+    const policy=evaluateAdultGeoPolicy(request,env);
+    if(!policy.allowed) return json({error:"Adult content is not available in this location.",code:"ADULT_GEO_RESTRICTED",policy},451,headers);
+    if(!policy.enabled) return json({error:"Adult catalog is disabled pending provider rights verification.",code:"ADULT_PROVIDER_RIGHTS_PENDING",policy},503,headers);
+    return json({error:"Adult provider integration is not configured.",code:"ADULT_PROVIDER_NOT_CONFIGURED",policy},503,headers);
+  }
   if(path==="/api/admin/login"&&request.method==="POST") {
     if(!env.ADMIN_PIN || !/^\d{6}$/.test(String(env.ADMIN_PIN))) return json({error:"Admin PIN is not configured as a six-digit Worker Secret."},503,headers);
     const ip=request.headers.get("CF-Connecting-IP")||"unknown";

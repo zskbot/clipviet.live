@@ -1,9 +1,5 @@
-import { videosResponse } from "../_lib/d1-catalog.js";
-export async function onRequest({ request, env }) {
-  try { return await videosResponse(request, env); }
-  catch (error) {
-    return new Response(JSON.stringify({ success:false, error:"Preview D1 catalog unavailable", detail:String(error?.message || error) }), {
-      status:503, headers:{ "content-type":"application/json; charset=utf-8", "cache-control":"no-store" }
-    });
-  }
+import { catalog } from "../_lib/applecms.js";
+export async function onRequest({request,env}) {
+  if(!["GET","HEAD"].includes(request.method))return new Response("Method not allowed",{status:405,headers:{allow:"GET, HEAD"}});
+  return catalog(request,env);
 }

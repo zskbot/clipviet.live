@@ -6,7 +6,9 @@ The dedicated Preview Worker serves a mobile-first, same-origin admin console at
 - `GET /admin` — Cloudflare Access-protected diagnostics console for iPhone and desktop.
 - `GET /health` — Access-protected service and D1 health summary (provider count, diagnostic run count, provider-state counts).
 - `GET /providers` — existing provider registry list.
-- `GET /metadata-intakes` — admin/legal-only, read-only list of the latest 100 public metadata submissions, including evidence references and review status. It cannot approve or mutate any record.
+- `GET /metadata-intakes` — admin/legal-only, read-only list of the latest 100 public metadata submissions, including evidence references and review status.
+- `GET /connectors` — admin/legal-only, read-only connector contract review queue.
+- `GET /content-rights` — admin/legal-only, read-only per-video rights ledger review queue.
 - `POST /providers/:providerId/diagnostics/run` — technical/admin diagnostic action.
 - `GET /providers/:providerId/diagnostics` — last 20 persisted diagnostic runs.
 
@@ -15,7 +17,7 @@ The UI uses same-origin requests and no third-party scripts, stylesheets, fonts 
 ## Safety boundary
 - Cloudflare Access protects the console, health endpoint and API.
 - Metadata intake submissions are visible only to authenticated `admin` or `legal` roles; technical-only roles receive HTTP 403.
-- The review queue is read-only. A submission remains `PENDING_REVIEW` until the independent legal/technical workflow is completed.
+- All three review queues are read-only. Metadata submissions remain `PENDING_REVIEW`, connector contracts remain `PENDING`, and per-video rights records remain `PENDING` until the independent legal/technical workflow is completed.
 - Health is read-only. Diagnostic runs contact only the fixed API hostnames and persist diagnostic results in the dedicated Preview D1.
 - Diagnostic PASS is not a rights approval and does not enable playback.
 - All five seeded providers remain `PENDING`; media host allowlists remain empty.

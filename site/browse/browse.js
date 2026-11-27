@@ -53,6 +53,7 @@ function matches(item) {
   // Never surface content labeled as minors, schoolchildren, or youth in adult-content recommendations.
   const unsafeMinor=/(học\s*sinh|nữ\s*sinh|nam\s*sinh|school\s*(girl|boy|student)|underage|minor|loli|shota|teen\s*(girl|boy))/i.test(hay);
   const quickMatchers = {
+    adult: /(adult|18\\+|người trưởng thành|người lớn)/i,
     jav: /\b(jav|japan|japanese|nhật|nhat)\b/i,
     china: /(trung quốc|china|chinese|cn)/i,
     europe: /(châu âu|europe|european|pháp|đức|anh|italy|spanish)/i,

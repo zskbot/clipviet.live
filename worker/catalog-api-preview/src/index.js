@@ -1,4 +1,4 @@
-import { listProviders, getProviderCategories, listProviderVideos, getProviderVideo } from "../../telegram-api/src/applecms.js";
+import { listProviders, getProviderCategories, listProviderVideos, getProviderVideo } from "./applecms.js";
 import { evaluateAdultGeoPolicy } from "./adult-geo-policy.mjs";
 
 function json(data, status=200, headers={}) {

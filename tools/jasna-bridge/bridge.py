@@ -235,14 +235,14 @@ class Handler(BaseHTTPRequestHandler):
                     job["status"] = "running"
                 with job["log"].open("wb") as log:
                     result = subprocess.run(
-                    [executable, "--input", str(job["input"]), "--output", str(job["output"])],
-                    cwd=str(job["dir"]),
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
-                    timeout=24 * 60 * 60,
-                    check=False,
-                    shell=False,
-                )
+                        [executable, "--input", str(job["input"]), "--output", str(job["output"])],
+                        cwd=str(job["dir"]),
+                        stdout=log,
+                        stderr=subprocess.STDOUT,
+                        timeout=24 * 60 * 60,
+                        check=False,
+                        shell=False,
+                    )
             with JOBS_LOCK:
                 if result.returncode == 0 and job["output"].is_file() and job["output"].stat().st_size > 0:
                     job["status"] = "completed"

@@ -60,6 +60,7 @@
         <div id="featured-poster" class="live-featured-poster" role="group" aria-label="Trình phát video nổi bật">
           <img id="featured-image" src="./poster-fallback.svg" alt="Video nổi bật đang tải" loading="eager">
           <video id="featured-player" class="featured-native-player" controls playsinline webkit-playsinline preload="metadata" aria-label="Trình phát video ClipViet" hidden></video>
+          <button id="featured-player-play" class="featured-player-play" type="button" hidden>XEM NGAY <span aria-hidden="true">▶</span></button>
           <div id="featured-player-status" class="featured-player-status" role="status" aria-live="polite" hidden></div>
           <button id="featured-play" class="live-featured-play" type="button" aria-label="Phát video">▶</button>
         </div>
@@ -78,7 +79,7 @@
             <label for="player-contrast"><span>Tương phản <output id="player-contrast-value">100%</output></span><input id="player-contrast" type="range" min="60" max="140" value="100"></label>
             <label for="player-saturation"><span>Bão hòa màu <output id="player-saturation-value">100%</output></span><input id="player-saturation" type="range" min="0" max="180" value="100"></label>
           </div>
-          <div class="player-settings-actions"><button id="player-settings-reset" type="button">ĐẶT LẠI HÌNH ẢNH</button><button id="player-fullscreen" type="button">TOÀN MÀN HÌNH ↗</button></div>
+          <div class="player-settings-actions"><button id="player-settings-reset" type="button">ĐẶT LẠI HÌNH ẢNH</button><button id="player-fullscreen" type="button">TOÀN MÀN HÌNH ↗</button><button id="player-pip" type="button">HÌNH TRONG HÌNH</button></div>
           <p id="player-settings-note" class="player-settings-note">Độ phân giải phụ thuộc vào các luồng thực tế của video. Bộ lọc hình ảnh chỉ thay đổi cách hiển thị, không nâng cấp độ phân giải gốc.</p>
         </section>
       </div>

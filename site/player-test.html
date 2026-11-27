@@ -85,7 +85,18 @@
     const messages = {1:"MEDIA_ERR_ABORTED",2:"MEDIA_ERR_NETWORK",3:"MEDIA_ERR_DECODE",4:"MEDIA_ERR_SRC_NOT_SUPPORTED"};
     status("LỖI MEDIA " + code, messages[code] || video.error?.message || "Không xác định");
   });
-  video.addEventListener("timeupdate", update);
+  let lastReportedTime = -1;
+  video.addEventListener("timeupdate", () => {
+    update();
+    const second = Math.floor(video.currentTime);
+    if (second !== lastReportedTime) {
+      lastReportedTime = second;
+      let bufferedEnd = 0;
+      try { if (video.buffered.length) bufferedEnd = video.buffered.end(video.buffered.length - 1); } catch {}
+      log("playback progress: currentTime=" + video.currentTime.toFixed(2) +
+        "s · bufferedUntil=" + bufferedEnd.toFixed(2) + "s · paused=" + video.paused);
+    }
+  });
   async function load(kind) {
     video.pause(); if(video._qaHls){video._qaHls.destroy();video._qaHls=null;} video.removeAttribute("src"); video.load();
     const url = kind === "hls" ? HLS_URL : MP4_URL;
@@ -124,7 +135,7 @@
     video.removeAttribute("src"); video.load(); status("Đã reset","Chọn lại HLS hoặc MP4 để chạy bài kiểm tra.");
   });
   $("copy").addEventListener("click", async () => {
-    const report = JSON.stringify({browser,userAgent:navigator.userAgent,nativeHls:video.canPlayType("application/vnd.apple.mpegurl"),mediaSource:"MediaSource" in window,readyState:video.readyState,networkState:video.networkState,videoWidth:video.videoWidth,videoHeight:video.videoHeight,duration:video.duration,error:video.error?.code||null,events:logs},null,2);
+    let buffered = []; try { for (let i = 0; i < video.buffered.length; i++) buffered.push({ start: video.buffered.start(i), end: video.buffered.end(i) }); } catch {} const report = JSON.stringify({browser,userAgent:navigator.userAgent,nativeHls:video.canPlayType("application/vnd.apple.mpegurl"),mediaSource:"MediaSource" in window,readyState:video.readyState,networkState:video.networkState,videoWidth:video.videoWidth,videoHeight:video.videoHeight,duration:video.duration,currentTime:video.currentTime,paused:video.paused,ended:video.ended,buffered,error:video.error?.code||null,events:logs},null,2);
     try { await navigator.clipboard.writeText(report); status("Đã sao chép log","Gửi log này để khoanh vùng lỗi phát video."); }
     catch { status("Không thể sao chép tự động","Chọn và sao chép nội dung EVENT LOG thủ công."); }
   });

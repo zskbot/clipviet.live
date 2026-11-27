@@ -5,7 +5,7 @@ export async function onRequest({ request, env }) {
       headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", allow: "GET, HEAD" }
     });
   }
-  if (!env?.DB) {
+  if (!env?.PROVIDER_DB) {
     return new Response(JSON.stringify({ success: false, error: "Preview D1 binding unavailable" }), {
       status: 503,
       headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
@@ -25,7 +25,7 @@ export async function onRequest({ request, env }) {
     LEFT JOIN provider_connectors c ON c.provider_id = p.id
     ORDER BY p.id ASC
   `;
-  const result = await env.DB.prepare(sql).all();
+  const result = await env.PROVIDER_DB.prepare(sql).all();
   const data = (result.results || []).map(row => ({
     id: row.id,
     name: row.name,

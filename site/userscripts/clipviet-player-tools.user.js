@@ -84,9 +84,13 @@
       return;
     }
     const target = video.closest(".featured-player-shell, .player-shell, .video-player") || video;
-    const request = target.requestFullscreen || video.requestFullscreen;
-    if (typeof request === "function") request.call(target).catch?.(() => notify("Không thể bật toàn màn hình."));
-    else notify("Trình duyệt không hỗ trợ toàn màn hình cho video này.");
+    if (typeof target.requestFullscreen === "function") {
+      target.requestFullscreen().catch(() => notify("Không thể bật toàn màn hình."));
+    } else if (typeof video.requestFullscreen === "function") {
+      video.requestFullscreen().catch(() => notify("Không thể bật toàn màn hình."));
+    } else {
+      notify("Trình duyệt không hỗ trợ toàn màn hình cho video này.");
+    }
   }
 
   document.addEventListener("keydown", event => {

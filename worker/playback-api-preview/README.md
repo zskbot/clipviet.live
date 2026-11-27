@@ -11,6 +11,10 @@ Dedicated read-only Worker for real video playback authorization.
 - `GET /api/providers/{providerId}/diagnostics` checks one provider.
 - A reachable API is not evidence of a distribution license. The diagnostic never grants playback.
 
+## CORS / Preview origins
+
+The Worker accepts HTTPS origins only from the dedicated Cloudflare Pages Preview projects: `*.clipviet-live-preview.pages.dev`, `*.clipviet-live-qa.pages.dev`, and `*.clipviet-live-independent-preview.pages.dev`. Production/custom domains are not implicitly trusted.
+
 ## Endpoint
 
 `GET /api/playback/providers/{providerId}/videos/{videoId}`

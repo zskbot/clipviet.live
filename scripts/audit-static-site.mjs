@@ -21,8 +21,7 @@ async function existsFile(candidate) {
   try {
     const info = await stat(candidate);
     if (info.isDirectory()) {
-      const indexFile = path.join(candidate, "index.html");
-      const indexInfo = await stat(indexFile).catch(() => null);
+      const indexInfo = await stat(path.join(candidate, "index.html")).catch(() => null);
       return Boolean(indexInfo?.isFile());
     }
     return info.isFile();
@@ -47,14 +46,14 @@ for (const file of htmlFiles) {
   const html = await readFile(file, "utf8");
   const relativeFile = path.relative(process.cwd(), file);
 
-  if (/\\\\n\\s*<(?:a|nav|div|section|script|link)\\b/i.test(html)) {
+  if (/\\n\s*<(?:a|nav|div|section|script|link)\b/i.test(html)) {
     issues.push(relativeFile + ": literal \\n escape appears before an HTML element");
   }
 
-  const attributes = /\\b(?:href|src|poster|action)\\s*=\\s*(["'])(.*?)\\1/gi;
+  const attributes = /\b(?:href|src|poster|action)\s*=\s*(["'])(.*?)\1/gi;
   for (const match of html.matchAll(attributes)) {
     const raw = match[2].trim();
-    if (!raw || raw.startsWith("#") || /^(?:[a-z][a-z0-9+.-]*:|\\/\\/)/i.test(raw)) continue;
+    if (!raw || raw.startsWith("#") || /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(raw)) continue;
 
     let pathname = raw.split(/[?#]/, 1)[0];
     if (!pathname) continue;

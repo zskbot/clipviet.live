@@ -13,6 +13,10 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  if (process.env.APIVIDEO_INGEST_ENABLED !== "true") {
+    return NextResponse.json({ success: false, error: "API.video ingestion is disabled until Preview rights review and configuration are complete." }, { status: 403 });
+  }
+
   const apiKey = String(process.env.APIVIDEO_API_KEY || "").trim();
   if (!apiKey) {
     return NextResponse.json({ success: false, error: "APIVIDEO_API_KEY is not configured in the server Preview environment." }, { status: 503 });

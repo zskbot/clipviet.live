@@ -22,9 +22,9 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: "APIVIDEO_API_KEY is not configured in the server Preview environment." }, { status: 503 });
   }
 
-  const production = process.env.APIVIDEO_ENV === "production";
-  if (production && process.env.APIVIDEO_ALLOW_PRODUCTION_WRITES !== "true") {
-    return NextResponse.json({ success: false, error: "Production API writes are disabled." }, { status: 403 });
+  const apiBaseUrl = getApiVideoApiBaseUrl(process.env);
+  if (!apiBaseUrl) {
+    return NextResponse.json({ success: false, error: "Production API writes are not supported by this Preview integration." }, { status: 403 });
   }
 
   let body;
@@ -42,7 +42,7 @@ export async function POST(request) {
   }
 
   try {
-    const response = await fetch(getApiVideoApiBaseUrl(process.env) + "/videos", {
+    const response = await fetch(apiBaseUrl + "/videos", {
       method: "POST",
       headers: {
         Authorization: "Basic " + Buffer.from(apiKey + ":").toString("base64"),
@@ -64,7 +64,7 @@ export async function POST(request) {
     }
     return NextResponse.json({
       success: true,
-      environment: production ? "production" : "sandbox",
+      environment: "sandbox",
       videoId: payload.videoId || payload.video_id || payload.id || null,
       public: false,
       status: "created_private"

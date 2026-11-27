@@ -81,7 +81,7 @@ export default function WatchPage() {
     <div className="mt-6 grid gap-9 lg:grid-cols-[minmax(0,1fr)_300px]"><section>
       <div className="aspect-video overflow-hidden border border-white/10 bg-black">
         {activeSource && isEmbed ? <iframe title={video.title} src={activeSource.url} className="h-full w-full" allow="fullscreen; picture-in-picture" allowFullScreen loading="lazy" referrerPolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-presentation" /> :
-          activeSource ? <video key={activeSource.url} className="h-full w-full" controls playsInline preload="metadata" referrerPolicy="no-referrer" poster={video.poster}><source src={activeSource.url} type={activeSource.url.toLowerCase().includes(".m3u8") ? "application/vnd.apple.mpegurl" : "video/mp4"} /></video> :
+          activeSource ? <video key={activeSource.url} className="h-full w-full" controls playsInline preload="metadata" referrerPolicy="no-referrer" poster={video.poster} onError={() => setPlaybackMessage("Safari không phát được nguồn này. Kiểm tra định dạng HLS/MP4 và quyền truy cập của máy chủ nguồn.")}><source src={activeSource.url} type={activeSource.url.toLowerCase().includes(".m3u8") ? "application/vnd.apple.mpegurl" : "video/mp4"} /></video> :
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"><span className="text-4xl text-zinc-700">▶</span><p className="font-semibold text-zinc-300">Chưa xác minh quyền phát</p><p className="max-w-md text-xs leading-5 text-zinc-500">Nhấn nút bên dưới để kiểm tra quyền phát riêng của video. Metadata không tự động cấp quyền stream.</p></div>}
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3">

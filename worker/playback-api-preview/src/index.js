@@ -14,7 +14,7 @@ const MAX_API_BYTES = 1024 * 1024;
 
 async function readJsonLimited(response, label) {
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-  if (!/^application\\/(?:[a-z0-9.+-]*\\+)?json(?:\\s*;|$)/i.test(contentType)) {
+  if (!/^application\/(?:[a-z0-9.+-]*\+)?json(?:\s*;|$)/i.test(contentType)) {
     await response.body?.cancel();
     throw new Error(label + "_invalid_content_type");
   }
@@ -288,7 +288,7 @@ async function handle(request, env) {
     }
   }
 
-  const providerDiagnosticMatch = path.match(/^\\/api\\/providers\\/([a-z0-9-]+)\\/diagnostics$/);
+  const providerDiagnosticMatch = path.match(/^\/api\/providers\/([a-z0-9-]+)\/diagnostics$/);
   if (providerDiagnosticMatch) {
     const provider = PROVIDERS.find(item => item.id === providerDiagnosticMatch[1]);
     if (!provider) return json({ error: "Unknown provider", code: "UNKNOWN_PROVIDER" }, 404, headers);

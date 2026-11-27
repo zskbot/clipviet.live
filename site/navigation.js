@@ -1,6 +1,5 @@
 const menu = document.querySelector("#filter-menu");
 if (menu) {
-  const suggestion = menu.querySelector(".suggestion-panel");
   const toggle = document.querySelector("#menu-toggle");
   menu.replaceChildren();
 
@@ -55,7 +54,7 @@ if (menu) {
 
   const community = document.createElement("section");
   community.className = "nav-section nav-community";
-  community.innerHTML = '<h3 class="nav-section-title">CỘNG ĐỒNG</h3><div class="nav-community-links"><a href="./community/">Cộng đồng ClipViet</a><a href="#video-suggestion">Gửi đề xuất video</a></div>';
+  community.innerHTML = '<h3 class="nav-section-title">COMMUNITY / CLIPVIET</h3><div class="nav-community-links"><a href="./community/">Mở không gian Community / ClipViet</a></div>';
 
   const footer = document.createElement("div");
   footer.className = "filter-menu-foot";
@@ -64,13 +63,6 @@ if (menu) {
   menu.append(head,searchForm,primary,discovery,catalogSection,api,about,community,footer);
   // Move the overlay out of the sticky header stacking context.
   document.body.append(menu);
-  // Keep the suggestion form on the page, outside the navigation overlay.
-  if (suggestion) {
-    suggestion.classList.add("standalone-suggestion");
-    const catalog = document.querySelector("#catalog");
-    if (catalog) catalog.append(suggestion);
-    else document.querySelector("main")?.append(suggestion);
-  }
 
   searchForm.addEventListener("submit",event=>{
     event.preventDefault();

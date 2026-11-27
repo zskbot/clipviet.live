@@ -180,18 +180,40 @@ function render() {
       }
       activeFiltersRoot.hidden = !activeCategoryName;
       for (const video of pageItems) {
-        const card = document.createElement("button");
-        card.type = "button";
+        const card = document.createElement("article");
         card.className = "video-card";
-        card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
-        const img = card.querySelector("img");
+        const openButton = document.createElement("button");
+        openButton.type = "button";
+        openButton.className = "video-card-open";
+        openButton.innerHTML = '<div class="poster"><img loading="lazy" decoding="async" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
+        const img = openButton.querySelector("img");
         img.src = video.poster || "./poster-fallback.svg";
         img.alt = video.title || "Video";
         img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
-        card.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.badgeLabel || video.licenseLabel || "CHỈ XEM");
-        card.querySelector("h3").textContent = video.title || "Video";
-        card.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
-        card.addEventListener("click", () => openDetail(video));
+        openButton.querySelector(".poster-label").textContent = video.playbackRightsApproved === true ? "18+" : (video.badgeLabel || video.licenseLabel || "CHỈ XEM");
+        openButton.querySelector("h3").textContent = video.title || "Video";
+        openButton.querySelector(".card-info p").textContent = [video.year, video.area, video.categoryName].filter(Boolean).join(" · ");
+        openButton.addEventListener("click", () => openDetail(video));
+        card.append(openButton);
+        const actions = document.createElement("div");
+        actions.className = "video-card-actions";
+        const detailButton = document.createElement("button");
+        detailButton.type = "button";
+        detailButton.className = "video-card-detail";
+        detailButton.textContent = "CHI TIẾT";
+        detailButton.addEventListener("click", () => openDetail(video));
+        actions.append(detailButton);
+        const canWatch = video.apiManaged === true && Boolean(video.sourceId && video.id) &&
+          video.playbackEnabled === true && video.playbackRightsApproved === true;
+        if (canWatch) {
+          const watchLink = document.createElement("a");
+          watchLink.className = "video-card-watch";
+          watchLink.href = "./watch/source.html?sourceId=" + encodeURIComponent(video.sourceId) + "&vodId=" + encodeURIComponent(video.id);
+          watchLink.textContent = "XEM ↗";
+          watchLink.setAttribute("aria-label", "Xem video " + (video.title || ""));
+          actions.append(watchLink);
+        }
+        card.append(actions);
         grid.append(card);
       }
       setMenuApiStatus(

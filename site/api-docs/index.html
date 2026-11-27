@@ -19,6 +19,14 @@
 <div class="endpoint"><span class="method">POST</span><code>/admin/api/videos/{id}/review</code><p>Ghi nhận quyết định duyệt quyền. Phải có URL bằng chứng HTTPS và ghi chú kiểm tra.</p></div>
 <div class="endpoint"><span class="method">POST</span><code>/admin/api/videos/{id}/publish</code><p>Chỉ xuất bản khi rights status được duyệt, có bằng chứng và video host nằm trong allowlist.</p></div>
 <h2>Video storage</h2><div class="note">Upload tệp video trả <code>501 VIDEO_STORAGE_NOT_PROVISIONED</code>. Bucket hiện có là OpenNext cache, không được tái sử dụng để lưu video. Khi có bucket R2 riêng và được duyệt chi phí, mới bật upload.</div>
+<h2>AppleCMS Provider API v1 · normalized</h2>
+<p>Hợp đồng đầy đủ: <a href="https://github.com/zskbot/clipviet.live/blob/feat/issue-155-provider-api-safari-preview-20261127/docs/API-PROVIDERS-V1.md" target="_blank" rel="noopener noreferrer">docs/API-PROVIDERS-V1.md</a>. Các endpoint đã tách riêng categories, video list, metadata detail và playback info.</p>
+<div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/status</code><p>Provider state: NOT_CONFIGURED, PENDING_RIGHTS, METADATA_ONLY, PLAYBACK_APPROVED; operationalState: NOT_CHECKED, ACTIVE hoặc ERROR.</p></div>
+<div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/categories?sourceId=souavzy</code><p>Lấy danh mục lá AppleCMS sau khi provider có quyền metadata.</p></div>
+<div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/videos?sourceId=souavzy&amp;page=1&amp;limit=30</code><p>Danh sách metadata đã qua duyệt từng video; hỗ trợ categoryId và keyword.</p></div>
+<div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/videos/{videoId}?sourceId=souavzy</code><p>Chi tiết metadata; không trả URL stream hoặc embed.</p></div>
+<div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/videos/{videoId}/playback?sourceId=souavzy</code><p>Thông tin phát độc lập. Chỉ trả official embed hoặc direct browser source khi rights record của provider và video cho phép cùng host allowlist được khai báo.</p></div>
+<div class="note">Không có quyền phát thì endpoint trả 403. Không có proxy, tải xuống, relay segment, re-hosting hay bỏ qua giới hạn nguồn. Các ứng viên hiện vẫn PENDING.</div>
 <h2>api.video · VOD Player SDK</h2>
 <p>Tích hợp tùy chọn SDK <code>@api.video/player-sdk</code> để phát video được lưu trữ trên api.video. SDK chỉ được tải khi bản ghi có <code>apiVideoId</code> hoặc <code>api_video_id</code> hợp lệ. Các video HLS/MP4 từ nhà cung cấp khác tiếp tục dùng HTML5/HLS.js hiện tại.</p>
 <div class="note"><strong>Quyền phát:</strong> SDK chỉ khởi tạo khi <code>playbackEnabled === true</code> và <code>playbackRightsApproved === true</code>. Chỉ có videoId không chứng minh quyền phân phối hoặc quyền truy cập video riêng tư. Không đặt API access key trong trình duyệt.</div>

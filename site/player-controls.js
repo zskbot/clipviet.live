@@ -217,8 +217,20 @@ function handlePlayFailure(error) {
   setFallback(activeVideo?.originalUrl || activeVideo?.sourceUrl);
 }
 function attemptPlayback() {
-  const attempt = player?.play();
+  if (!player || !activeVideo) return;
+  const attempt = player.play();
   if (attempt && typeof attempt.catch === "function") attempt.catch(handlePlayFailure);
+}
+function requiresManualSafariPlay() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && Boolean(player?.canPlayType("application/vnd.apple.mpegurl"));
+}
+function startPlaybackWhenReady() {
+  if (requiresManualSafariPlay()) {
+    if (playButton) playButton.hidden = false;
+    setStatus("Video đã sẵn sàng. Chạm XEM NGAY để phát trên Safari iPhone.");
+    return;
+  }
+  attemptPlayback();
 }
 function onMediaError() {
   if (playButton) playButton.hidden = false;
@@ -285,8 +297,8 @@ function playFeaturedVideo(video) {
         setResolution(player.videoWidth, player.videoHeight);
         resetQualityOptions("Tự động · Safari");
         if (settingsNote) settingsNote.textContent = "Safari iPhone tự chọn chất lượng HLS theo băng thông và khả năng thiết bị. Chế độ chọn độ phân giải thủ công phụ thuộc hỗ trợ của trình duyệt.";
-        setStatus("Đã nạp luồng HLS. Đang bắt đầu phát…");
-        attemptPlayback();
+        setStatus("Đã nạp luồng HLS.");
+        startPlaybackWhenReady();
       }, { once: true });
       return;
     }
@@ -309,8 +321,8 @@ function playFeaturedVideo(video) {
         setHlsQualityLevels(levels);
         const highest = levels.reduce((best, level) => Math.max(best, level.height || 0), 0);
         if (settingsNote) settingsNote.textContent = "Nguồn có các mức chất lượng đến " + (highest || "—") + "p. Auto tự điều chỉnh theo băng thông, kích thước màn hình và khả năng giải mã.";
-        setStatus("Đã nạp luồng thích ứng. Đang bắt đầu phát…");
-        attemptPlayback();
+        setStatus("Đã nạp luồng thích ứng.");
+        startPlaybackWhenReady();
       });
       hlsEngine.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
         const level = hlsEngine.levels[data.level];
@@ -339,8 +351,8 @@ function playFeaturedVideo(video) {
     setResolution(width, height);
     resetQualityOptions(width && height ? "Nguồn gốc · " + height + "p" : "Nguồn đơn");
     if (settingsNote) settingsNote.textContent = "Nguồn MP4 chỉ có một độ phân giải gốc. Muốn chọn Full HD hoặc 4K, nhà cung cấp phải cung cấp luồng tương ứng; không dùng upscale giả.";
+    startPlaybackWhenReady();
   }, { once: true });
-  attemptPlayback();
 }
 function resetFeaturedPlayer() {
   destroyHls();
@@ -387,10 +399,18 @@ function initFeaturedPlayer() {
       setImageFilter();
     });
   }
+  playButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (!activeVideo) return;
+    setStatus("Đang bắt đầu phát video…");
+    attemptPlayback();
+  });
   player.addEventListener("error", onMediaError);
-  player.addEventListener("play", () => { if (playButton) playButton.hidden = true; });
+  player.addEventListener("play", () => { setStatus("Đang khởi tạo phát video…"); });
   player.addEventListener("pause", () => { if (playButton && activeVideo) playButton.hidden = false; });
   player.addEventListener("ended", () => { if (playButton) playButton.hidden = false; });
+  player.addEventListener("waiting", () => { if (activeVideo) setStatus("Đang tải dữ liệu video…"); });
+  player.addEventListener("stalled", () => { if (activeVideo) setStatus("Nguồn video đang tạm ngừng gửi dữ liệu. Đang chờ kết nối…"); });
   player.addEventListener("playing", () => { if (playButton) playButton.hidden = true; setStatus("", false); });
   player.addEventListener("loadedmetadata", () => setResolution(player.videoWidth, player.videoHeight));
   setImageFilter();

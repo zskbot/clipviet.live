@@ -6,6 +6,8 @@ const grid = $("#video-grid");
 const featuredRoot = $("#featured-video");
 const count = $("#result-count");
 const empty = $("#empty-state");
+const loadingState = $("#loading-state");
+const apiErrorState = $("#api-error");
 const search = $("#navigation-search");
 const dialog = $("#detail-dialog");
 const detail = $("#detail-content");
@@ -110,21 +112,43 @@ function render() {
   if (activeCategoryId) params.set("categoryId", activeCategoryId);
   if (activeQuickFilter === "latest") params.set("sort", "latest");
   const url = API_BASE + "/api/catalog/videos?" + params.toString();
-  count.textContent = "ĐANG TẢI…";
+  count.textContent = "ĐANG KIỂM TRA QUYỀN & TẢI VIDEO…";
+  grid.replaceChildren();
   empty.hidden = true;
+  if (loadingState) { loadingState.hidden = false; loadingState.textContent = "Đang tải danh mục và xác minh quyền hiển thị…"; }
+  if (apiErrorState) apiErrorState.hidden = true;
   fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
-    .then((response) => {
-      if (!response.ok) throw new Error("Catalog API HTTP " + response.status);
-      return response.json();
+    .then(async (response) => {
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.error || payload.message || ("Catalog API HTTP " + response.status));
+        error.status = response.status;
+        error.payload = payload;
+        throw error;
+      }
+      return payload;
     })
     .then((payload) => {
       if (sequence !== requestSequence) return;
-      const rows = Array.isArray(payload.items) ? payload.items : [];
-      totalResults = Math.max(0, Number(payload.total) || 0);
+      const rawRows = Array.isArray(payload.items) ? payload.items : [];
+      const excludedAgeLabel = /under[\\s_-]*age|minor|loli|shota|school[\\s_-]*(?:girl|boy|student)|teen[\\s_-]*(?:girl|boy)|học[\\s_-]*sinh|nữ[\\s_-]*sinh|nam[\\s_-]*sinh|thiếu[\\s_-]*niên|vị[\\s_-]*thành[\\s_-]*niên/i;
+      const rows = rawRows.filter((item) => item.rightsVerified === true && item.rightsStatus === "APPROVED" &&
+        Number.isFinite(Date.parse(item.rightsExpiresAt)) && Date.parse(item.rightsExpiresAt) > Date.now() &&
+        !excludedAgeLabel.test([item.title, item.categoryName, item.description, item.actors, item.director].filter(Boolean).join(" ")));
+      if (loadingState) loadingState.hidden = true;
+      totalResults = Math.max(0, Number(payload.total) || rows.length);
       pageSize = Math.max(1, Number(payload.limit) || 30);
       totalPages = Math.max(0, Number(payload.pageCount) || Math.ceil(totalResults / pageSize));
       if (!rows.length) {
-        showCatalogUnavailable("Nguồn chưa trả về video nào.");
+        const reason = payload.rightsGate?.reason === "provider_pending_approval"
+          ? "Các nguồn AppleCMS đang chờ phê duyệt quyền. ClipViet chỉ hiển thị video sau khi nguồn và quyền của từng video được xác minh."
+          : rawRows.length
+            ? "API có dữ liệu nhưng không có video nào vượt qua kiểm tra quyền, thời hạn giấy phép và xác minh độ tuổi/đồng thuận."
+            : payload.rightsGate?.providerApproved === true
+              ? "Nguồn đã được duyệt nhưng hiện chưa có video nào có hồ sơ quyền hợp lệ."
+              : "Chưa có video được duyệt quyền hiển thị. Danh mục sẽ tự cập nhật khi hồ sơ nguồn và từng video được phê duyệt.";
+        showCatalogUnavailable(reason);
+        setMenuApiStatus("CHƯA CÓ VIDEO ĐỦ ĐIỀU KIỆN QUYỀN HIỂN THỊ", "warning");
         return;
       }
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
@@ -168,12 +192,14 @@ function render() {
         card.addEventListener("click", () => openDetail(video));
         grid.append(card);
       }
-      setMenuApiStatus("API danh mục đã kết nối · " + totalResults.toLocaleString("vi-VN") + " video.", "success");
+      setMenuApiStatus("Đã xác minh quyền · " + totalResults.toLocaleString("vi-VN") + " video.", "success");
     })
     .catch((error) => {
       if (sequence !== requestSequence) return;
+      if (loadingState) loadingState.hidden = true;
+      if (apiErrorState) { apiErrorState.hidden = false; apiErrorState.textContent = "Không thể tải danh mục video: " + error.message + ". Hãy thử tải lại sau."; }
       setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
-      showCatalogUnavailable("API video chưa kết nối: " + error.message);
+      showCatalogUnavailable("API video chưa khả dụng. Chi tiết lỗi được hiển thị bên dưới.");
     });
 }
 
@@ -323,7 +349,8 @@ function renderFeatured() {
 
 function showCatalogUnavailable(message) {
   grid.replaceChildren();
-  count.textContent = "CHƯA CÓ DỮ LIỆU NGUỒN";
+  if (loadingState) loadingState.hidden = true;
+  count.textContent = "0 VIDEO ĐƯỢC DUYỆT QUYỀN";
   empty.hidden = false;
   empty.textContent = message;
   setFeaturedVideos([]);
@@ -393,7 +420,7 @@ function openDetail(video) {
     link.rel = "noopener noreferrer";
     link.textContent = "PHÁT VIDEO GỐC ↗";
   }
-  if (video.apiManaged && video.sourceId && video.id) {
+  if (video.apiManaged && video.sourceId && video.id && video.playbackEnabled === true && video.playbackRightsApproved === true) {
     const link = detail.querySelector(".watch-link");
     link.hidden = false;
     link.href = "./watch/source.html?sourceId=" + encodeURIComponent(video.sourceId) + "&vodId=" + encodeURIComponent(video.id);

@@ -23,6 +23,8 @@ jobs:
           node-version: 22
       - name: Audit static-site local links and escaped markup
         run: node scripts/audit-static-site.mjs
+      - name: Test opt-in ClipViet userscript
+        run: node --test tests/clipviet-userscript.test.mjs
       - name: Check JavaScript syntax
         shell: bash
         run: |

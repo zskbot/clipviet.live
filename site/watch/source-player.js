@@ -124,7 +124,7 @@ function play() {
   $("external").hidden = false;
   $("external").href = mediaUrl.href;
   say("Đang tải video trực tiếp từ CDN nguồn…");
-  const isHls = String(episode.type || mediaUrl.pathname).toLowerCase().includes("hls") || /\.m3u8(?:$|\?)/i.test(mediaUrl.href);
+  const isHls = /\.m3u8(?:$|\?)/i.test(mediaUrl.href) || /hls|mpegurl/i.test(String(episode.type || episode.format || episode.mimeType || episode.mime_type || ""));
   let ready = false;
   const markReady = () => {
     if (ready) return;

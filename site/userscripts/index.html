@@ -4,25 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#08090d">
-  <meta name="description" content="Tiện ích trình duyệt tùy chọn cho ClipViet.">
-  <title>Browser Tools — ClipViet</title>
+  <meta name="description" content="Bộ tiện ích trình duyệt được chọn lọc cho ClipViet và các website video.">
+  <title>Browser Tools — ClipViet.live</title>
   <link rel="stylesheet" href="../styles.css">
   <style>
-    .tools-page{max-width:1040px;margin:0 auto;padding:64px 22px 96px}
-    .tools-kicker{color:#ef3340;font-size:11px;letter-spacing:2px;font-weight:800}
-    .tools-page h1{font-size:clamp(34px,6vw,64px);letter-spacing:-2px;margin:14px 0}
-    .tools-lead{max-width:680px;color:#a7a8b0;line-height:1.8}
-    .tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:34px 0}
-    .tools-card{border:1px solid #292a31;background:#11131a;padding:22px;min-width:0}
-    .tools-card h2{font-size:17px;margin:0 0 10px}
-    .tools-card p,.tools-card li{color:#a7a8b0;font-size:13px;line-height:1.7}
-    .tools-card a{display:inline-flex;margin-top:12px;padding:11px 14px;border:1px solid #ef3340;color:#fff;font-size:11px;font-weight:800;letter-spacing:1px}
-    .tools-card a:hover{background:#ef3340}
-    .tools-note{border-left:2px solid #ef3340;padding:12px 16px;background:#11131a;color:#a7a8b0;font-size:12px;line-height:1.7}
-    .tools-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px}
-    .tools-shortcuts span{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #292a31;padding:9px 0;color:#c5c6cc;font-size:12px}
+    .tools-page{max-width:1120px;margin:0 auto;padding:48px 18px 88px}
+    .tools-kicker{color:#ef3340;font-size:10px;letter-spacing:2px;font-weight:900}
+    .tools-page h1{font-size:clamp(34px,6vw,62px);letter-spacing:-2px;margin:12px 0}
+    .tools-lead{max-width:760px;color:#a7a8b0;line-height:1.8;font-size:14px}
+    .tools-section-title{margin:38px 0 14px;font-size:12px;letter-spacing:1.5px;color:#ef737b}
+    .tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+    .tools-card{border:1px solid #292a31;background:#11131a;padding:20px;min-width:0}
+    .tools-card h2{font-size:16px;margin:0 0 9px}
+    .tools-card p,.tools-card li{color:#a7a8b0;font-size:12px;line-height:1.8}
+    .tools-card ul{padding-left:18px}
+    .tools-meta{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+    .tools-meta span{border:1px solid #3a3d47;padding:4px 7px;color:#c7c8cf;font-size:9px;letter-spacing:.6px}
+    .tools-card a,.tools-link{display:inline-flex;margin:8px 8px 0 0;padding:10px 13px;border:1px solid #ef3340;color:#fff;font-size:10px;font-weight:900;letter-spacing:1px;text-decoration:none;border-radius:0}
+    .tools-card a:hover,.tools-link:hover{background:#ef3340}
+    .tools-note{border-left:2px solid #ef3340;padding:13px 16px;background:#11131a;color:#a7a8b0;font-size:12px;line-height:1.8;margin-top:24px}
+    .tools-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+    .tools-shortcuts span{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #292a31;padding:8px 0;color:#c5c6cc;font-size:11px}
     kbd{font:inherit;color:#fff;border:1px solid #555;padding:2px 6px}
-    @media(max-width:640px){.tools-grid,.tools-shortcuts{grid-template-columns:1fr}.tools-page{padding-top:38px}}
+    @media(max-width:640px){.tools-grid,.tools-shortcuts{grid-template-columns:1fr}.tools-page{padding-top:34px}.tools-card{padding:16px}}
   </style>
 </head>
 <body>
@@ -33,17 +37,20 @@
   <main class="tools-page">
     <p class="tools-kicker">CLIPVIET / BROWSER TOOLS</p>
     <h1>Tiện ích trình duyệt</h1>
-    <p class="tools-lead">Tích hợp theo hướng chọn lọc từ bộ sưu tập <a href="https://github.com/CodeSenbot/UserScripts" target="_blank" rel="noopener noreferrer">CodeSenbot/UserScripts</a>. ClipViet không tự tải hoặc thực thi mã userscript bên thứ ba. Mỗi tiện ích cần được người dùng chủ động cài đặt và bật trong trình quản lý userscript.</p>
+    <p class="tools-lead">Tích hợp chọn lọc từ <a href="https://github.com/CodeSenbot/UserScripts" target="_blank" rel="noopener noreferrer">CodeSenbot/UserScripts</a>. ClipViet không tự tải, tự cài hoặc tự thực thi mã bên thứ ba. Người dùng chủ động chọn tiện ích và cài qua trình quản lý userscript.</p>
+
+    <h2 class="tools-section-title">CLIPVIET PLAYER</h2>
     <div class="tools-grid">
       <article class="tools-card">
         <h2>ClipViet Player Tools</h2>
         <p>Phím tắt tùy chọn cho video HTML5: phát/tạm dừng, tua, âm lượng, toàn màn hình, Picture-in-Picture và tốc độ phát. Không gọi API ngoài, không gửi dữ liệu và không tự phát video.</p>
+        <div class="tools-meta"><span>CLIPVIET ONLY</span><span>NO GM PERMISSIONS</span><span>NO NETWORK</span></div>
         <ul>
-          <li>Chỉ chạy trên domain ClipViet và hai Preview Pages đã chỉ định</li>
-          <li>Không yêu cầu quyền GM hoặc quyền truy cập dữ liệu ngoài trang</li>
-          <li>Chỉ thao tác video đang hiển thị lớn nhất</li>
+          <li>Chỉ chạy trên clipviet.live và các domain Preview ClipViet đã chỉ định</li>
+          <li>Bỏ qua ô nhập liệu, nút và vùng contenteditable</li>
+          <li>Chọn video đang hiển thị có diện tích lớn nhất</li>
         </ul>
-        <a href="https://raw.githubusercontent.com/zskbot/clipviet.live/preview/jzvd-android-sdk-view-button-20261127/site/userscripts/clipviet-player-tools.user.js" target="_blank" rel="noopener noreferrer">MỞ USERSCRIPT ↗</a>
+        <a href="./clipviet-player-tools.user.js">CÀI ĐẶT USERSCRIPT ↗</a>
         <div class="tools-shortcuts">
           <span>Phát / Tạm dừng <kbd>Space / K</kbd></span>
           <span>Tua 5 giây <kbd>← / →</kbd></span>
@@ -55,14 +62,45 @@
           <span>Đặt tốc độ 1× <kbd>0</kbd></span>
         </div>
       </article>
+    </div>
+
+    <h2 class="tools-section-title">CHỌN LỌC TỪ CODESENBOT / USERSCRIPTS</h2>
+    <div class="tools-grid">
       <article class="tools-card">
-        <h2>Upstream Userscripts</h2>
-        <p>Kho nguồn có nhiều tiện ích độc lập cho YouTube, Bilibili, GitHub, dịch thuật và cải thiện giao diện. Không phải tất cả đều tương thích với ClipViet hoặc iPhone Safari.</p>
-        <p>Chúng tôi chỉ liên kết tới mã nguồn gốc; chưa nhúng các downloader hoặc script có quyền truy cập rộng vào trang xem video.</p>
-        <a href="https://github.com/CodeSenbot/UserScripts" target="_blank" rel="noopener noreferrer">XEM KHO NGUỒN ↗</a>
+        <h2>Scroll Button</h2>
+        <p>Tạo nút cuộn nhanh lên đầu hoặc xuống cuối trang. Script nguồn khai báo <code>@grant none</code>, nhưng phạm vi khớp là mọi website.</p>
+        <div class="tools-meta"><span>ALL WEBSITES</span><span>NO GM PERMISSIONS</span></div>
+        <a href="https://raw.githubusercontent.com/CodeSenbot/UserScripts/main/scroll-button/scroll-button.user.js" target="_blank" rel="noopener noreferrer">MÃ NGUỒN / CÀI ĐẶT ↗</a>
+      </article>
+      <article class="tools-card">
+        <h2>YouTube Better Volume Control</h2>
+        <p>Cải thiện thao tác điều chỉnh âm lượng trên YouTube. Script giới hạn ở tên miền YouTube và lưu một số tùy chọn trong localStorage.</p>
+        <div class="tools-meta"><span>YOUTUBE ONLY</span><span>LOCAL STORAGE</span></div>
+        <a href="https://raw.githubusercontent.com/CodeSenbot/UserScripts/main/youtube-better-volume-control/youtube-better-volume-control.user.js" target="_blank" rel="noopener noreferrer">MÃ NGUỒN / CÀI ĐẶT ↗</a>
+      </article>
+      <article class="tools-card">
+        <h2>YouTube Dynamic Video Grid</h2>
+        <p>Tùy chỉnh bố cục lưới video YouTube. Script chỉ khớp các trang YouTube; không được nhúng vào player ClipViet.</p>
+        <div class="tools-meta"><span>YOUTUBE ONLY</span><span>THIRD-PARTY SCRIPT</span></div>
+        <a href="https://raw.githubusercontent.com/CodeSenbot/UserScripts/main/youtube-dynamic-grid/youtube-dynamic-grid.user.js" target="_blank" rel="noopener noreferrer">MÃ NGUỒN / CÀI ĐẶT ↗</a>
+      </article>
+      <article class="tools-card">
+        <h2>YouTube Helper</h2>
+        <p>Thêm một số thao tác hỗ trợ YouTube. Script yêu cầu quyền GM_addStyle trong trình quản lý userscript; hãy xem mã nguồn và quyền trước khi cài.</p>
+        <div class="tools-meta"><span>YOUTUBE ONLY</span><span>GM_ADDSTYLE</span></div>
+        <a href="https://raw.githubusercontent.com/CodeSenbot/UserScripts/main/youtube-helper/youtube-helper.user.js" target="_blank" rel="noopener noreferrer">MÃ NGUỒN / CÀI ĐẶT ↗</a>
       </article>
     </div>
-    <p class="tools-note">An toàn và quyền nội dung: kiểm tra quyền phân phối trước khi tải hoặc lưu video. Không cài script không rõ nguồn. Userscript là tiện ích phía trình duyệt; nó không thay thế player HLS/MP4 của ClipViet và không thể khôi phục chất lượng cao hơn chất lượng nguồn.</p>
+
+    <h2 class="tools-section-title">TRÌNH QUẢN LÝ USERSCRIPT</h2>
+    <div class="tools-card">
+      <p>Máy tính: dùng Tampermonkey hoặc Violentmonkey. iPhone/iPad: có thể tham khảo Userscripts cho Safari. Khả năng cài đặt và phím tắt tùy thuộc trình duyệt, phiên bản iOS và tiện ích quản lý.</p>
+      <a href="https://github.com/quoid/userscripts" target="_blank" rel="noopener noreferrer">USERSCRIPTS FOR SAFARI ↗</a>
+      <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">TAMPERMONKEY ↗</a>
+      <a href="https://violentmonkey.github.io/" target="_blank" rel="noopener noreferrer">VIOLENTMONKEY ↗</a>
+    </div>
+
+    <p class="tools-note"><strong>Giới hạn an toàn:</strong> Không nhúng các script downloader, auto-login, script cho website người lớn hoặc script yêu cầu quyền truy cập mạng rộng vào ClipViet. Một số script upstream yêu cầu <code>GM_xmlhttpRequest</code>, <code>@require</code> hoặc quyền lưu trữ; chúng không nằm trong danh sách cài nhanh. Hãy kiểm tra <code>@match</code>, <code>@grant</code>, <code>@require</code> và giấy phép trước khi cài. Userscript không thể tăng chất lượng vượt quá chất lượng của nguồn video.</p>
   </main>
 </body>
 </html>

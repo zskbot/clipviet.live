@@ -2,6 +2,15 @@
 
 Dedicated read-only Worker for real video playback authorization.
 
+## Provider state and diagnostics
+
+- `GET /api/providers` returns each configured source with a rights `status`, `playbackMode`, `rightsApproved`, and independent `operationalState`.
+- Rights states: `PENDING_RIGHTS`, `METADATA_ONLY`, `PLAYBACK_APPROVED`, `NOT_CONFIGURED`.
+- Technical states: `NOT_CHECKED`, `ACTIVE`, `ERROR`.
+- `GET /api/providers/diagnostics` checks all five metadata APIs and combines technical reachability with the separate rights state.
+- `GET /api/providers/{providerId}/diagnostics` checks one provider.
+- A reachable API is not evidence of a distribution license. The diagnostic never grants playback.
+
 ## Endpoint
 
 `GET /api/playback/providers/{providerId}/videos/{videoId}`

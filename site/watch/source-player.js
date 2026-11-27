@@ -247,9 +247,20 @@ setImageFilter();
 (async () => {
   if (!sourceId || !vodId) { say("Thiếu sourceId hoặc vodId."); return; }
   try {
-    const response = await fetch("https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev/api/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error("Không tải được chi tiết video · HTTP " + response.status);
-    const payload = await response.json();
+    const controller = new AbortController();
+    const requestTimer = setTimeout(() => controller.abort(), 15000);
+    let response;
+    let payload;
+    try {
+      response = await fetch("https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev/api/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", signal: controller.signal, headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("Không tải được chi tiết video · HTTP " + response.status);
+      payload = await response.json();
+    } catch (error) {
+      if (error?.name === "AbortError") throw new Error("Nguồn chi tiết video quá thời gian chờ 15 giây. Hãy thử lại hoặc đổi nguồn.");
+      throw error;
+    } finally {
+      clearTimeout(requestTimer);
+    }
     data = payload.data || null;
     if (!data) throw new Error(payload.error || "Video không còn tại nguồn.");
     if (!Array.isArray(data.lines) || !data.lines.length) throw new Error("Nguồn chưa cung cấp đường phát trực tiếp hợp lệ.");

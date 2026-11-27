@@ -7,6 +7,8 @@ on:
       - "tests/maccms-provider.test.mjs"
       - "workers/provider-registry/migrations/**"
       - "tests/provider-registry-rights-migration.test.mjs"
+      - "scripts/import-licensed-catalog.mjs"
+      - "tests/licensed-catalog-import.test.mjs"
       - ".github/workflows/provider-rights-preview-check.yml"
   workflow_dispatch:
 
@@ -24,5 +26,5 @@ jobs:
           node-version: 22
       - name: Check adapter syntax
         run: node --check lib/maccms-provider.mjs
-      - name: Run provider adapter and rights migration tests
-        run: node --test tests/maccms-provider.test.mjs tests/provider-registry-rights-migration.test.mjs
+      - name: Run provider adapter, rights migration, and licensed import tests
+        run: node --test tests/maccms-provider.test.mjs tests/provider-registry-rights-migration.test.mjs tests/licensed-catalog-import.test.mjs

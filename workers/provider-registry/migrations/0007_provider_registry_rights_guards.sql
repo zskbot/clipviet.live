@@ -68,3 +68,5 @@ WHEN NEW.status = 'APPROVED' AND (
 BEGIN
   SELECT RAISE(ABORT, 'connector cannot be approved without verified provider rights and evidence');
 END;
+-- Record this migration in the registry's own migration ledger.
+INSERT OR IGNORE INTO schema_migrations (name) VALUES ('0007_provider_registry_rights_guards.sql');

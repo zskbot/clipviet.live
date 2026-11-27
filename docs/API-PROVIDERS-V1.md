@@ -54,7 +54,7 @@ Response:
 ```json
 {
   "success": true,
-  "provider": { "id": "souavzy", "name": "Souavzy", "status": "ACTIVE" },
+  "provider": { "id": "souavzy", "name": "Souavzy", "status": "METADATA_ONLY", "operationalState": "ACTIVE" },
   "categories": [{ "id": "12", "parentId": "2", "name": "Category" }],
   "rightsGate": { "policy": "deny-by-default", "metadataOnly": true }
 }

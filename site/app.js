@@ -376,11 +376,23 @@ function showCatalogUnavailable(message) {
   if (note) note.textContent = message + " · TRÌNH PHÁT MẪU DÙNG PHIM MỞ CÓ GIẤY PHÉP; KHÔNG MỞ KHÓA APPLECMS.";
 }
 
+const isHttpUrl = (value) => typeof value === "string" && (value.startsWith("https://") || value.startsWith("http://"));
+
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;
   const blocked = /underage|minor|loli|shota|school\s?(girl|boy|student)|teen\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
   const safeItems = items.filter((video) => !blocked.test([video.title, video.category, video.description, video.genre].filter(Boolean).join(" ")));
-  const playableItems = safeItems.filter((video) => video.playbackEnabled === true && video.playbackRightsApproved === true && Boolean(video.videoUrl || video.video_url || video.hlsUrl || video.hls_url));
+  const playableItems = safeItems.filter((video) => {
+    if (video.playbackEnabled !== true || video.playbackRightsApproved !== true) return false;
+    const sources = [...(Array.isArray(video.sources) ? video.sources : []), ...(Array.isArray(video.playbackSources) ? video.playbackSources : []), ...(Array.isArray(video.playback_sources) ? video.playback_sources : [])];
+    const directUrls = [video.videoUrl, video.video_url, video.hlsUrl, video.hls_url, video.playbackUrl, video.playback_url];
+    const hasDirectUrl = directUrls.some((url) => typeof url === "string" && isHttpUrl(url));
+    const hasSourceUrl = sources.some((source) => {
+      const url = typeof source === "string" ? source : source?.url || source?.src || source?.file || "";
+      return typeof url === "string" && isHttpUrl(url);
+    });
+    return hasDirectUrl || hasSourceUrl;
+  });
   featuredVideos = playableItems;
   featuredVideos.sort((a, b) => (b.trendingScore - a.trendingScore) || (b.views - a.views) || (b.playCount - a.playCount) || (Number(b.year || 0) - Number(a.year || 0)));
   featuredIndex = 0;

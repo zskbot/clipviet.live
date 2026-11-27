@@ -168,6 +168,52 @@ async function listMetadataIntakes(db) {
     updatedAt: row.updated_at
   }));
 }
+async function listContentRights(db) {
+  const result = await db.prepare(`
+    SELECT r.id,r.provider_id,p.name AS provider_name,r.source_platform,r.source_content_id,
+      r.source_url,r.creator,r.rights_holder,r.license_reference,r.evidence_url,
+      r.license_expires_at,r.permitted_uses_json,r.regions_json,r.source_verified,
+      r.ownership_verified,r.performer_age_verified,r.performer_consent_verified,
+      r.status,r.created_at,r.updated_at
+    FROM provider_content_rights r
+    LEFT JOIN provider_registry p ON p.id=r.provider_id
+    ORDER BY r.created_at DESC
+    LIMIT 500
+  `).all();
+  return (result.results || []).map(row => ({
+    id: row.id, providerId: row.provider_id, providerName: row.provider_name,
+    sourcePlatform: row.source_platform, sourceContentId: row.source_content_id,
+    sourceUrl: row.source_url, creator: row.creator, rightsHolder: row.rights_holder,
+    licenseReference: row.license_reference, evidenceUrl: row.evidence_url,
+    licenseExpiresAt: row.license_expires_at,
+    permittedUses: (() => { try { const v=JSON.parse(row.permitted_uses_json||"[]"); return Array.isArray(v)?v:[]; } catch { return []; } })(),
+    regions: (() => { try { const v=JSON.parse(row.regions_json||"[]"); return Array.isArray(v)?v:[]; } catch { return []; } })(),
+    sourceVerified: Boolean(row.source_verified), ownershipVerified: Boolean(row.ownership_verified),
+    performerAgeVerified: Boolean(row.performer_age_verified),
+    performerConsentVerified: Boolean(row.performer_consent_verified),
+    status: row.status, createdAt: row.created_at, updatedAt: row.updated_at
+  }));
+}
+async function listConnectors(db) {
+  const result = await db.prepare(`
+    SELECT c.provider_id,p.name AS provider_name,c.connector_id,c.auth_mode,
+      c.scopes_json,c.regions_json,c.playback_mode,c.documentation_url,c.status,
+      c.evidence_reference,c.created_at,c.updated_at
+    FROM provider_connectors c
+    LEFT JOIN provider_registry p ON p.id=c.provider_id
+    ORDER BY c.created_at DESC
+    LIMIT 200
+  `).all();
+  return (result.results || []).map(row => ({
+    providerId: row.provider_id, providerName: row.provider_name,
+    connectorId: row.connector_id, authMode: row.auth_mode,
+    scopes: (() => { try { const v=JSON.parse(row.scopes_json||"[]"); return Array.isArray(v)?v:[]; } catch { return []; } })(),
+    regions: (() => { try { const v=JSON.parse(row.regions_json||"[]"); return Array.isArray(v)?v:[]; } catch { return []; } })(),
+    playbackMode: row.playback_mode, documentationUrl: row.documentation_url,
+    status: row.status, evidenceReference: row.evidence_reference,
+    createdAt: row.created_at, updatedAt: row.updated_at
+  }));
+}
 async function createProvider(db, data, role, env) {
   const id = crypto.randomUUID();
   const encryptedCredential = await encryptCredential(data.apiCredential, env, id);
@@ -307,6 +353,28 @@ export default {
           intakes: records,
           count: records.length,
           pendingReview: records.filter(item => item.status === "PENDING_REVIEW").length,
+          mode: "read-only-preview"
+        });
+      }
+      if (request.method === "GET" && parts.length === 1 && parts[0] === "content-rights") {
+        if (!["admin","legal"].includes(role)) return respond({error:"Legal reviewer or admin role required."},403);
+        const records = await listContentRights(env.PROVIDER_DB);
+        return respond({
+          records,
+          count: records.length,
+          pendingReview: records.filter(item => item.status === "PENDING").length,
+          approved: records.filter(item => item.status === "APPROVED").length,
+          mode: "read-only-preview"
+        });
+      }
+      if (request.method === "GET" && parts.length === 1 && parts[0] === "connectors") {
+        if (!["admin","legal"].includes(role)) return respond({error:"Legal reviewer or admin role required."},403);
+        const records = await listConnectors(env.PROVIDER_DB);
+        return respond({
+          connectors: records,
+          count: records.length,
+          pendingReview: records.filter(item => item.status === "PENDING").length,
+          approved: records.filter(item => item.status === "APPROVED").length,
           mode: "read-only-preview"
         });
       }

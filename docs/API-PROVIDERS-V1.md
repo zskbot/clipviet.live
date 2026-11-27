@@ -131,3 +131,18 @@ A diagnostic page reporting `PENDING` means there is no authorized media sample 
 - Deploy only the branch Preview for review.
 - Do not merge this branch, change `main`, Production deployments, DNS, custom domains, or persistent databases.
 - Do not activate a provider or edit rights records until legal evidence is reviewed.
+
+## Preview media diagnostics
+
+The dedicated Playback Worker exposes:
+
+`GET /api/playback/providers/{providerId}/videos/{videoId}/diagnostics`
+
+It is gated by the same provider + connector + per-video license, territory, source, ownership, performer-age and performer-consent checks as playback. Pending rights return 403 before any upstream request.
+
+For up to four approved media entries:
+- HLS: manifest status, Apple HLS MIME, browser CORS and first allowlisted media resource reachability/CORS.
+- MP4: HEAD status, `video/mp4` MIME, CORS on HEAD and ranged GET, `Range: bytes=0-1`, HTTP 206 and `Content-Range`.
+- The report omits raw URLs and manifest content.
+
+No actual provider media has been certified while the supplied provider records remain pending. A passing fixture-based test proves the diagnostic logic, not the remote CDN or Safari playback.

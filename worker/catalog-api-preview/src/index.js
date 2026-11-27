@@ -12,7 +12,15 @@ function allowedOrigin(request, env) {
   const origin=request.headers.get("Origin");
   if (!origin) return "";
   const allowed=new Set(String(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).filter(Boolean));
-  return allowed.has(origin) ? origin : null;
+  if (allowed.has(origin)) return origin;
+  try {
+    const parsed=new URL(origin);
+    const host=parsed.hostname.toLowerCase();
+    const previewHost=host.endsWith(".clipviet-live-preview.pages.dev") ||
+      host.endsWith(".clipviet-live-independent-preview.pages.dev");
+    if (parsed.protocol==="https:" && previewHost && host.split(".").length===4) return origin;
+  } catch {}
+  return null;
 }
 function corsHeaders(origin) {
   return origin ? {

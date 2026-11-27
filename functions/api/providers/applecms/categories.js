@@ -7,6 +7,9 @@ export async function onRequest({ request, env }) {
   try { return json(await listAppleCmsCategories(request, env), 200, request.method); }
   catch (error) {
     const status = error instanceof AppleCmsProviderError ? error.status : 502;
-    return json({ success: false, error: error.message || "Provider categories request failed", code: error.code || "PROVIDER_ERROR" }, status, request.method);
+    const sourceId = new URL(request.url).searchParams.get("sourceId") || new URL(request.url).searchParams.get("provider") || "";
+    return json({ success: false, error: error.message || "Provider categories request failed", code: error.code || "PROVIDER_ERROR",
+      provider: sourceId ? { id: sourceId, status: status === 403 ? "PENDING_RIGHTS" : status === 503 ? "NOT_CONFIGURED" : "ERROR", operationalState: status === 403 ? "NOT_CHECKED" : "ERROR" } : null
+    }, status, request.method);
   }
 }

@@ -267,7 +267,7 @@ test("HLS diagnostics verify manifest MIME, CORS and first segment without retur
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.equal(body.data.checked, 1);
-    assert.equal(body.data.passed, 1);
+    assert.equal(body.data.passed, 1, JSON.stringify(body));
     assert.equal(body.data.results[0].mediaType, "hls");
     assert.equal(body.data.results[0].mimeOk, true);
     assert.equal(body.data.results[0].corsOk, true);

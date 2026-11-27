@@ -1,7 +1,7 @@
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
   headers: {
-    "access-control-allow-origin": "https://94aac206.clipviet-live-independent-preview.pages.dev",
+    "access-control-allow-origin": "https://preview-fix-admin-read-api-4.clipviet-live-independent-preview.pages.dev",
     "access-control-allow-methods": "GET, OPTIONS",
     "access-control-allow-headers": "content-type",
     "vary": "Origin",
@@ -80,7 +80,7 @@ function videoRow(row) {
 async function handle(request, env) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/$/, "") || "/";
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "access-control-allow-origin": "https://94aac206.clipviet-live-independent-preview.pages.dev", "access-control-allow-methods": "GET, OPTIONS", "access-control-allow-headers": "content-type", "access-control-max-age": "86400", "vary": "Origin" } });
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "access-control-allow-origin": "https://preview-fix-admin-read-api-4.clipviet-live-independent-preview.pages.dev", "access-control-allow-methods": "GET, OPTIONS", "access-control-allow-headers": "content-type", "access-control-max-age": "86400", "vary": "Origin" } });
   if (path === "/health" && request.method === "GET") {
     return json({ ok: true, service: "clipviet-video-cms-preview", environment: "preview", storage: "D1 metadata only", videoUpload: "disabled-no-dedicated-r2" });
   }

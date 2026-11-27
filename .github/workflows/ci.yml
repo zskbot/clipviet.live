@@ -46,9 +46,9 @@ jobs:
             exit 1
           fi
           if [[ -z "$GITLAB_API_TOKEN" ]]; then
-            echo "final_status=error" >> "$GITHUB_OUTPUT"
-            echo "Missing GitHub repository secret: GITLAB_API_TOKEN" >> artifacts/gitlab-job-logs.txt
-            exit 1
+            echo "final_status=skipped" >> "$GITHUB_OUTPUT"
+            echo "GitLab relay skipped: GITLAB_API_TOKEN is not configured. Native Preview Quality Gate performs code validation." >> artifacts/gitlab-job-logs.txt
+            exit 0
           fi
           payload="$(jq -n --arg ref "$GITLAB_REF" --arg sha "$SOURCE_SHA" '{ref:$ref,inputs:{source_sha:$sha}}')"
           response="$(curl --fail-with-body --silent --show-error --request POST \
@@ -134,6 +134,10 @@ jobs:
           PIPELINE_URL: ${{ steps.relay.outputs.pipeline_url }}
         shell: bash
         run: |
+          if [[ "$FINAL_STATUS" == "skipped" ]]; then
+            echo "GitLab relay skipped because GITLAB_API_TOKEN is not configured; see Preview Quality Gate for native checks." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           case "$FINAL_STATUS" in
             success) state=success ;;
             failed|canceled|timeout) state=failure ;;
@@ -152,6 +156,10 @@ jobs:
         env:
           FINAL_STATUS: ${{ steps.relay.outputs.final_status }}
         run: |
+          if [[ "$FINAL_STATUS" == "skipped" ]]; then
+            echo "GitLab CI relay skipped; native Preview Quality Gate is the validation path."
+            exit 0
+          fi
           if [[ "$FINAL_STATUS" != "success" ]]; then
             echo "GitLab CI did not pass: ${FINAL_STATUS:-error}"
             exit 1

@@ -397,7 +397,7 @@ function showCatalogUnavailable(message) {
   if (note) note.textContent = message + " · TRÌNH PHÁT MẪU DÙNG PHIM MỞ CÓ GIẤY PHÉP; KHÔNG MỞ KHÓA APPLECMS.";
 }
 
-const isHttpUrl = (value) => typeof value === "string" && (value.startsWith("https://") || value.startsWith("http://"));
+const isHttpUrl = (value) => typeof value === "string" && /^https:\/\//i.test(value);
 
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;

@@ -130,3 +130,37 @@ The following four host URLs were supplied as possible sources. They are recorde
 - Require provider-owned API documentation and written permission covering the exact intended use, territories, duration, and individual titles before any ingestion or playback integration.
 - Treat these hostnames as website URLs, not API endpoints or direct HLS/MP4 media URLs. Do not infer AppleCMS compatibility from the domain or path.
 - Do not poll, crawl, index, scrape, proxy, download, or publish content until authorization and rights review are documented.
+
+
+## Source-specific verification: www.91taopian.com (2026-11-28)
+
+### Current findings
+
+- Submitted URL: `https://www.91taopian.com`.
+- Classification: website/homepage candidate only; it is not an API endpoint or a direct HLS/MP4 URL.
+- Official provider API documentation: not located in the available review.
+- Provider-issued API credentials or authentication instructions: not supplied or verified.
+- Written permission for catalog ingestion, embedding, redistribution, and territories: not supplied as documentary evidence.
+- Stable content identifiers, metadata schema, pagination, rate limits, and media-host allowlist: not verified.
+- Per-title rights/age/consent records: not verified.
+- Registry state must remain `PENDING_REVIEW`; `rights_status=PENDING`; `playback_enabled=0`.
+
+A public third-party IPTV configuration found during research mentions a similarly named Taopian API host. It is not provider-owned documentation and does not establish that it belongs to 91taopian.com. Do not use that host, infer an API path, or configure it as this provider's endpoint.
+
+### Authentication setup — secure Preview procedure
+
+Authentication cannot be correctly configured until the provider supplies its official API contract. Do not guess whether it uses a bearer token, API key, signed request, cookie, or no authentication.
+
+When the provider supplies the contract:
+
+1. Verify the document is published or confirmed by the provider and that it explicitly authorizes ClipViet's intended metadata and playback use.
+2. Record the exact API base URL, auth scheme, required headers/signature inputs, credential scope, token expiry/rotation rules, and permitted IP/hostnames in the provider review record.
+3. Add credentials only in the isolated Cloudflare Worker **Preview** environment as encrypted secrets, using names derived from the verified integration contract. Never commit credentials, paste them into chat, expose them to browser JavaScript, or copy Production secrets into Preview.
+4. Implement a server-side adapter with fixed documented paths, strict HTTPS host allowlisting, bounded timeouts, rate limits, schema validation, redacted diagnostics, and no arbitrary URL forwarding.
+5. Run a read-only authentication/health check and a metadata-schema check against a provider-authorized test record. Do not request or expose media bytes during metadata validation.
+6. Require source-level written distribution rights and per-title rights evidence before any title can be published or played. Keep playback disabled until the registry's existing database guards accept the complete evidence.
+7. Rotate/revoke test credentials after validation if the provider requires it; record the rotation date without recording the secret value.
+
+### Current implementation decision
+
+No provider credential field, endpoint, adapter, or playback switch is being fabricated for this domain. This avoids storing a credential against an unverified service and avoids accidentally treating an unrelated third-party API as the official 91taopian integration. Existing Preview-only rights gates remain authoritative.

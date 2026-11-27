@@ -253,18 +253,20 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
   if (requestOrigin) headers.origin = requestOrigin;
   try {
     if (isMp4) {
-      const head = await fetch(parsed.href, { method: "HEAD", headers, redirect: "error", signal: AbortSignal.timeout(9000) });
-      const contentType = String(head.headers.get("content-type") || "").toLowerCase();
-      const mimeOk = contentType.startsWith("video/mp4");
+      // Probe with the same GET+Range pattern used by browser media clients.
+      // Some CDNs reject HEAD while correctly serving byte-range GET requests.
       const ranged = await fetch(parsed.href, { method: "GET",
         headers: { ...headers, range: "bytes=0-1" }, redirect: "error", signal: AbortSignal.timeout(9000) });
+      const contentType = String(ranged.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      const mimeOk = contentType === "video/mp4";
       const contentRange = String(ranged.headers.get("content-range") || "");
-      const rangeSupported = ranged.status === 206 && contentRange.toLowerCase().startsWith("bytes 0-1/");
+      const rangeSupported = ranged.status === 206 && /^bytes\\s+0-1\\//i.test(contentRange);
       const corsOk = mediaCorsOk(ranged, requestOrigin);
+      const httpStatus = ranged.status;
       await ranged.body?.cancel();
-      return { ...base, httpStatus: head.status, mimeOk, corsOk, rangeSupported,
-        passed: head.ok && mimeOk && corsOk !== false && rangeSupported,
-        reason: !head.ok ? "media_head_failed" : !mimeOk ? "mp4_mime_invalid" :
+      return { ...base, httpStatus, mimeOk, corsOk, rangeSupported,
+        passed: ranged.ok && mimeOk && corsOk !== false && rangeSupported,
+        reason: !ranged.ok ? "mp4_range_request_failed" : !mimeOk ? "mp4_mime_invalid" :
           corsOk === false ? "media_cors_missing" : !rangeSupported ? "mp4_byte_range_not_supported" : "ok" };
     }
     const manifest = await fetch(parsed.href, { method: "GET", headers, redirect: "error", signal: AbortSignal.timeout(9000) });

@@ -166,6 +166,15 @@ async function handle(request, env) {
         return json({sourceId:providerId,data,count:data.length,failover:!explicit&&providerId!=="souavzy"},200,headers);
       } catch(error) { lastError=error; if(explicit) break; }
     }
+    if (lastError?.status === 403) return json({
+      success: true, data: [], count: 0,
+      rightsGate: { policy: "deny-by-default", providerApproved: false, reason: "provider_pending_approval", playbackEnabled: false }
+    }, 200, headers);
+    if (lastError?.status === 403) return json({
+      success: true, items: [], data: [], results: [], total: 0,
+      page: Number(page) || 1, pageCount: 0, limit: 30,
+      rightsGate: { policy: "deny-by-default", providerApproved: false, approvedCount: 0, playbackEnabled: false, reason: "provider_pending_approval" }
+    }, 200, headers);
     return json({error:"All eligible providers failed",providerId:lastError?.providerId||explicit||"souavzy"},lastError?.status||502,headers);
   }
   if(path==="/api/catalog/videos") {

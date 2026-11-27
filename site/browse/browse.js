@@ -6,7 +6,7 @@ let catalog = { videos: [], categories: [], providers: [] };
 let page = 1, pageCount = 1, activeProvider = "", categoryId = "", keyword = "", country = "", duration = "";
 let items = [], trendingTimer = null, trendingIndex = 0, trendingItems = [], quickCategory = "";
 const initialQuickCategory = new URLSearchParams(location.search).get("quick") || "";
-if (["jav","china","europe","vietnam","vietsub","south-asia","actors","genres","uncensored","beauty","amateur","xvideos","xnxx"].includes(initialQuickCategory)) quickCategory = initialQuickCategory;
+if (["latest","adult","jav","china","europe","vietnam","vietsub","south-asia","actors","genres","uncensored","beauty","amateur","xvideos","xnxx","buomtv","hsex","xnhau","vlxx"].includes(initialQuickCategory)) quickCategory = initialQuickCategory;
 
 const gate = $("age-gate");
 try { if (sessionStorage.getItem("clipviet-age-confirmed") === "yes") gate.hidden = true; } catch {}
@@ -63,9 +63,9 @@ function matches(item) {
     beauty: /(gái xinh|beautiful|beauty|hot girl)/i,
     amateur: /(nghiệp dư|amateur|homemade|user generated)/i,
     xvideos: /xvideos/i,
-    xnxx: /xnxx/i
+    xnxx: /xnxx/i, buomtv: /buomtv/i, hsex: /hsex/i, xnhau: /xnhau/i, vlxx: /vlxx/i
   };
-  const quickMatch = !quickCategory || (quickCategory === "actors" ? Boolean(item.actors) : quickCategory === "genres" ? Boolean(item.categoryName || item.categoryId) : Boolean(quickMatchers[quickCategory]?.test(hay)));
+  const quickMatch = !quickCategory || quickCategory === "latest" || (quickCategory === "actors" ? Boolean(item.actors) : quickCategory === "genres" ? Boolean(item.categoryName || item.categoryId) : Boolean(quickMatchers[quickCategory]?.test(hay)));
   return !unsafeMinor && quickMatch && (!activeProvider||item.sourceId===activeProvider) &&
     (!categoryId||item.categoryId===categoryId) && (!country||String(item.area||"").toLocaleLowerCase("vi")===country.toLocaleLowerCase("vi")) &&
     (!keyword||hay.includes(keyword.toLocaleLowerCase("vi"))) && durationMatches(item);
@@ -121,7 +121,7 @@ function render() {
   $("prev").textContent="← TRANG TRƯỚC";$("next").textContent="TRANG SAU →";
 }
 function loadVideos() {
-  const filtered=catalog.videos.filter(matches),total=filtered.length;
+  const filtered=catalog.videos.filter(matches);\n  if(quickCategory==="latest")filtered.sort((a,b)=>new Date(b.publishedAt||b.createdAt||b.updatedAt||0)-new Date(a.publishedAt||a.createdAt||a.updatedAt||0)||Number(b.year||0)-Number(a.year||0));\n  const total=filtered.length;
   pageCount=Math.min(MAX_PAGES,Math.max(1,Math.ceil(total/PAGE_SIZE)));
   page=Math.min(page,pageCount);items=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
   $("count").dataset.total=String(total);render();

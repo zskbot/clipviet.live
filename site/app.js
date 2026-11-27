@@ -140,7 +140,9 @@ function render() {
         item.rightsVerified === true &&
         item.rightsStatus === "APPROVED" &&
         Number.isFinite(Date.parse(item.rightsExpiresAt)) &&
-        Date.parse(item.rightsExpiresAt) > Date.now();
+        Date.parse(item.rightsExpiresAt) > Date.now() &&
+        item.playbackEnabled === true &&
+        item.playbackRightsApproved === true;
       const approvedCount = rows.filter(hasApprovedPlaybackRights).length;
       if (loadingState) loadingState.hidden = true;
       totalResults = Math.max(0, Number(payload.total) || rows.length);
@@ -160,8 +162,7 @@ function render() {
       }
       currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
       const pageItems = rows.map((item) => {
-        const playbackApproved = hasApprovedPlaybackRights(item) &&
-          item.playbackEnabled === true && item.playbackRightsApproved === true;
+        const playbackApproved = hasApprovedPlaybackRights(item);
         return ({
           ...item,
           category: item.categoryName || "Khác",

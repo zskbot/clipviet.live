@@ -79,6 +79,7 @@ let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
 const API_BASE = "";
+// Preview-only recovery: keep the original AppleCMS Worker as the sole catalog source.
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.
 // Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.
@@ -145,10 +146,17 @@ function render() {
         item.playbackRightsApproved === true;
       const approvedCount = rows.filter(hasApprovedPlaybackRights).length;
       if (loadingState) loadingState.hidden = true;
-      totalResults = Math.max(0, Number(payload.total) || rows.length);
-      pageSize = Math.max(1, Number(payload.limit) || 30);
-      totalPages = Math.max(0, Number(payload.pageCount) || Math.ceil(totalResults / pageSize));
+      totalResults = Math.max(0, Number(payload.total ?? payload.totalCount) || rows.length);
+      pageSize = Math.max(1, Number(payload.limit ?? payload.pageSize) || 30);
+      const reportedPageCount = Number(payload.pageCount ?? payload.pagecount ?? payload.totalPages) || 0;
+      totalPages = Math.max(reportedPageCount, Math.ceil(totalResults / pageSize));
+      currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+      // Keep the provider's page count visible even when this page has no displayable metadata.
+      renderPagination(totalPages);
       if (!rows.length) {
+        count.textContent = totalResults
+          ? totalResults.toLocaleString("vi-VN") + " VIDEO · TRANG " + currentPage.toLocaleString("vi-VN") + " / " + totalPages.toLocaleString("vi-VN")
+          : "0 VIDEO";
         const reason = payload.rightsGate?.reason === "provider_pending_approval"
           ? "Các nguồn AppleCMS đang chờ phê duyệt quyền. ClipViet chỉ hiển thị video sau khi nguồn và quyền của từng video được xác minh."
           : rawRows.length
@@ -156,11 +164,10 @@ function render() {
             : payload.rightsGate?.providerApproved === true
               ? "Nguồn đã được duyệt nhưng hiện chưa có video nào có hồ sơ quyền hợp lệ."
               : "Chưa có video được duyệt quyền hiển thị. Danh mục sẽ tự cập nhật khi hồ sơ nguồn và từng video được phê duyệt.";
-        renderOpenLicenseCatalog(reason);
+        showCatalogUnavailable(reason + " · Không thay thế bằng catalog bên thứ ba.");
         setMenuApiStatus("CHƯA CÓ VIDEO ĐỦ ĐIỀU KIỆN QUYỀN HIỂN THỊ", "warning");
         return;
       }
-      currentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
       const pageItems = rows.map((item) => {
         const playbackApproved = hasApprovedPlaybackRights(item);
         return ({
@@ -182,7 +189,6 @@ function render() {
       count.textContent = totalResults.toLocaleString("vi-VN") + " VIDEO";
       empty.hidden = pageItems.length > 0;
       setFeaturedVideos(pageItems);
-      renderPagination(totalPages);
       activeFiltersRoot.replaceChildren();
       if (activeCategoryName) {
         const chip = document.createElement("span");
@@ -217,7 +223,7 @@ function render() {
       if (loadingState) loadingState.hidden = true;
       if (apiErrorState) { apiErrorState.hidden = false; apiErrorState.textContent = "Không thể tải danh mục video: " + error.message + ". Hãy thử tải lại sau."; }
       setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
-      renderOpenLicenseCatalog("API AppleCMS chưa khả dụng; đang chuyển sang danh mục phim mở có giấy phép Creative Commons đã xác minh.");
+      showCatalogUnavailable("API AppleCMS chưa khả dụng: " + error.message + ". Không thay thế bằng catalog khác.");
     });
 }
 
@@ -225,6 +231,12 @@ function renderPagination(totalPages) {
   pagination.replaceChildren();
   if (totalPages < 1) { pagination.hidden = true; return; }
   pagination.hidden = false;
+  const summary = document.createElement("span");
+  summary.className = "page-summary";
+  summary.setAttribute("aria-live", "polite");
+  summary.textContent = "Trang " + currentPage.toLocaleString("vi-VN") + " / " + totalPages.toLocaleString("vi-VN") +
+    (totalResults ? " · " + totalResults.toLocaleString("vi-VN") + " video" : "");
+  pagination.append(summary);
 
   const goToPage = (page) => {
     if (!Number.isInteger(page) || page < 1 || page > totalPages || page === currentPage) return;

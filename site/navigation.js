@@ -17,7 +17,7 @@ if (menu) {
 
   const primary = document.createElement("section");
   primary.className = "nav-section";
-  primary.innerHTML = '<h3 class="nav-section-title">TRUY CẬP NHANH</h3><div class="nav-community-links"><a href="./browse/">Khám phá tất cả video</a><a href="./library/">Thư viện</a><a href="./playlists/">Danh sách phát</a><a href="./sources.html">Nguồn video</a><a href="./api-docs/">Tài liệu API</a><a href="./watch/">Trình phát video</a><a href="./music/">Trình phát nhạc</a><a href="./video/">Trình phát độc lập</a></div>';
+  primary.innerHTML = '<h3 class="nav-section-title">TRUY CẬP NHANH</h3><div class="nav-community-links"><a href="./browse/">Khám phá tất cả video</a><a href="./library/">Thư viện</a><a href="./playlists/">Danh sách phát</a><a href="./sources.html">Nguồn video</a><a href="./userscripts/">Browser Tools / Userscripts</a><a href="./api-docs/">Tài liệu API</a><a href="./watch/">Trình phát video</a><a href="./music/">Trình phát nhạc</a><a href="./video/">Trình phát độc lập</a></div>';
 
   const discovery = document.createElement("section");
   discovery.className = "nav-section nav-discovery";

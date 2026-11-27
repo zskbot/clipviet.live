@@ -936,3 +936,73 @@ body.menu-open{overflow:hidden}
  .nav-about>p:last-child{font-size:10px!important}
 }
 @media(max-width:360px){.nav-community-links{grid-template-columns:1fr!important}.nav-catalog-list{grid-template-columns:1fr}}
+
+
+/* 2026-11-27 hotfix: true viewport overlay, iOS scroll lock and standalone suggestion form. */
+html:has(body.menu-open),body.menu-open{overflow:hidden!important;overscroll-behavior:none!important}
+body.menu-open{touch-action:none}
+.filter-menu{
+ position:fixed!important;inset:0!important;z-index:2147483000!important;
+ width:100%!important;height:100vh!important;height:100dvh!important;
+ max-width:none!important;max-height:none!important;margin:0!important;
+ overflow-x:hidden!important;overflow-y:auto!important;
+ overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch;
+ isolation:isolate!important;transform:none!important;
+ background:#08090d!important;opacity:1!important;
+ padding:0 clamp(14px,5vw,72px) 30px!important;
+}
+.filter-menu[hidden]{display:none!important}
+.filter-menu-head{
+ position:sticky!important;top:0!important;z-index:5!important;
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ max-width:none!important;margin:0 calc(clamp(14px,5vw,72px)*-1) 22px!important;
+ padding:18px clamp(14px,5vw,72px)!important;
+ min-height:86px;background:#08090d!important;
+ border-bottom:1px solid #292a31!important;
+}
+.filter-menu-head h2{margin:0!important}
+.filter-menu-head .eyebrow{margin:0 0 6px!important}
+.menu-close{flex:0 0 46px;background:#101219!important}
+.navigation-search{position:relative!important;z-index:1!important;width:100%!important;box-sizing:border-box!important}
+.navigation-search input{width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+.navigation-search button{flex:0 0 auto!important}
+.nav-section-title small{display:none!important}
+.nav-category-chips a{min-height:44px!important;padding-inline:15px!important}
+.nav-community-links a{position:relative;min-height:48px}
+.nav-community-links a span{display:none!important}
+.nav-community-links a::after{content:none!important;display:none!important}
+.nav-empty-state{margin:0;padding:11px 13px;border:1px solid #292a31;background:#101219;color:#9698a2;font-size:11px;line-height:1.7}
+.nav-catalog-list .nav-empty-state{grid-column:1/-1}
+.standalone-suggestion{display:block!important;position:relative!important;max-width:900px!important;width:calc(100% - 32px)!important;margin:30px auto!important;padding:clamp(16px,3vw,28px)!important;box-sizing:border-box!important;border:1px solid #30333d!important;background:#101219!important}
+.standalone-suggestion h3{margin:4px 0 8px;font-size:22px}
+.standalone-suggestion .suggestion-intro{color:#9b9da7;font-size:12px;line-height:1.7}
+.standalone-suggestion form{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;width:100%!important;min-width:0!important}
+.standalone-suggestion label{display:block!important;width:100%!important;margin:8px 0 0!important;font-size:10px!important;letter-spacing:.8px}
+.standalone-suggestion input,.standalone-suggestion textarea{
+ display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ min-height:46px!important;margin:0!important;padding:12px 13px!important;
+ box-sizing:border-box!important;border:1px solid #383a44!important;
+ background:#090b10!important;color:#f4f4f5!important;
+ font:inherit!important;font-size:13px!important;line-height:1.5!important;
+}
+.standalone-suggestion textarea{min-height:88px!important;resize:vertical}
+.standalone-suggestion button,.standalone-suggestion a{width:100%!important;box-sizing:border-box!important}
+.standalone-suggestion .suggestion-status{font-size:11px!important;line-height:1.7!important;color:#9b9da7}
+@media(max-width:700px){
+ .filter-menu{padding:0 14px 24px!important}
+ .filter-menu-head{margin:0 -14px 18px!important;padding:14px!important;min-height:76px}
+ .filter-menu-head h2{font-size:26px!important}
+ .menu-lead{font-size:10px!important}
+ .navigation-search{height:48px!important;margin:0 0 20px!important}
+ .navigation-search input{font-size:12px!important;padding:0 8px!important}
+ .navigation-search button{padding:0 12px!important;font-size:9px!important}
+ .nav-section{margin-bottom:18px!important;padding-bottom:16px!important}
+ .nav-community-links{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .nav-community-links a{min-height:48px!important;padding:0 10px!important;font-size:10px!important}
+ .nav-category-chips{gap:7px!important}
+ .nav-category-chips a{min-height:44px!important;padding:0 11px!important;font-size:10px!important}
+ .nav-catalog-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .nav-about{padding:16px!important}
+ .nav-about>p:last-child{font-size:11px!important}
+ .standalone-suggestion{width:calc(100% - 24px)!important;margin:22px auto!important;padding:16px!important}
+}

@@ -281,7 +281,8 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
         const resource = await fetch(resourceUrl.href, { method: "GET",
           headers: { ...headers, range: "bytes=0-1" }, redirect: "error", signal: AbortSignal.timeout(9000) });
         const resourceType = String(resource.headers.get("content-type") || "").toLowerCase();
-        const resourceMimeOk = /^(video\\/(?:mp2t|mp4|iso\\.segment)|audio\\/(?:aac|mp4)|application\\/(?:octet-stream|mp2t|vnd\\.apple\\.mpegurl|x-mpegurl))(?:\\s*;|$)/i.test(resourceType);
+        const resourceMime = resourceType.split(";")[0].trim();
+        const resourceMimeOk = new Set(["video/mp2t", "video/mp4", "video/iso.segment", "audio/aac", "audio/mp4", "application/octet-stream", "application/mp2t", "application/vnd.apple.mpegurl", "application/x-mpegurl"]).has(resourceMime);
         firstResourceReachable = resource.ok && [200, 206].includes(resource.status) && resourceMimeOk;
         firstResourceCorsOk = mediaCorsOk(resource, requestOrigin);
         await resource.body?.cancel();

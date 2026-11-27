@@ -250,7 +250,7 @@ test("HLS diagnostics verify manifest MIME, CORS and first segment without retur
       code: 1, list: [{ vod_id: 123, vod_name: "Licensed HLS",
         vod_play_from: "CDN", vod_play_url: "Episode$https://cdn.example.com/master.m3u8" }]
     });
-    if (url === "https://cdn.example.com/master.m3u8") return new Response("#EXTM3U\\n#EXT-X-TARGETDURATION:6\\nsegment.ts\\n", {
+    if (url === "https://cdn.example.com/master.m3u8") return new Response("#EXTM3U\n#EXT-X-TARGETDURATION:6\nsegment.ts\n", {
       status: 200, headers: { "content-type": "application/vnd.apple.mpegurl",
         "access-control-allow-origin": PREVIEW_ORIGIN }
     });

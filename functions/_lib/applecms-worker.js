@@ -268,7 +268,7 @@ export async function listAppleCmsVideos(request, env) {
   const provider = getProvider(id, env);
   const page = Math.max(1, Math.min(100000, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1));
   const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "30", 10) || 30));
-  const params = { ac: "detail", pg: page, pagesize: limit };
+  const params = { ac: "list", pg: page, pagesize: limit };
   const category = clean(url.searchParams.get("categoryId"));
   const keyword = clean(url.searchParams.get("keyword") || url.searchParams.get("wd")).slice(0, 100);
   if (category) params.t = category.slice(0, 20);

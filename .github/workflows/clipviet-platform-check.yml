@@ -25,6 +25,8 @@ jobs:
         run: node scripts/audit-static-site.mjs
       - name: Test opt-in ClipViet userscript
         run: node --test tests/clipviet-userscript.test.mjs
+      - name: Test Jasna integration and licensing guardrails
+        run: node --test tests/jasna-integration.test.mjs
       - name: Check JavaScript syntax
         shell: bash
         run: |

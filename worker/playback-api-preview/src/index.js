@@ -260,10 +260,10 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
       const contentType = String(ranged.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
       const mimeOk = contentType === "video/mp4";
       const contentRange = String(ranged.headers.get("content-range") || "");
-      const rangeSupported = ranged.status === 206 && /^bytes\\s+0-1\\//i.test(contentRange);
+      const rangeSupported = ranged.status === 206 && contentRange.toLowerCase().startsWith("bytes 0-1/");
       const corsOk = mediaCorsOk(ranged, requestOrigin);
       const httpStatus = ranged.status;
-      await ranged.body?.cancel();
+      try { await ranged.body?.cancel(); } catch { /* body cancellation is best-effort */ }
       return { ...base, httpStatus, mimeOk, corsOk, rangeSupported,
         passed: ranged.ok && mimeOk && corsOk !== false && rangeSupported,
         reason: !ranged.ok ? "mp4_range_request_failed" : !mimeOk ? "mp4_mime_invalid" :
@@ -287,7 +287,7 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
         const resourceMimeOk = new Set(["video/mp2t", "video/mp4", "video/iso.segment", "audio/aac", "audio/mp4", "application/octet-stream", "application/mp2t", "application/vnd.apple.mpegurl", "application/x-mpegurl"]).has(resourceMime);
         firstResourceReachable = resource.ok && [200, 206].includes(resource.status) && resourceMimeOk;
         firstResourceCorsOk = mediaCorsOk(resource, requestOrigin);
-        await resource.body?.cancel();
+        try { await resource.body?.cancel(); } catch { /* body cancellation is best-effort */ }
       }
     }
     return { ...base, httpStatus: manifest.status, mimeOk, corsOk,
@@ -300,8 +300,9 @@ async function diagnoseMediaUrl(rawUrl, requestOrigin, mediaHosts) {
           !firstResource ? "hls_manifest_has_no_media_uri" :
             !firstResourceReachable ? "hls_first_resource_unreachable_or_unapproved" : "ok" };
   } catch (error) {
-    console.error("media_probe_failed", error?.name || "UnknownError");
-    return { ...base, reason: error?.name === "TypeError" ? "media_probe_type_error" : "media_probe_failed" };
+    const errorType = String(error?.name || "UnknownError").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40);
+    console.error("media_probe_failed", errorType || "UnknownError");
+    return { ...base, reason: "media_probe_failed", errorType: errorType || "UnknownError" };
   }
 }
 

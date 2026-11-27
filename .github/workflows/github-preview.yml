@@ -1,26 +1,12 @@
-name: GitHub Preview Artifact
+name: GitHub Preview Artifact (manual)
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "site/**"
-      - ".github/workflows/github-preview.yml"
-      - "docs/GITHUB-PREVIEW.md"
-  push:
-    branches:
-      - "preview/**"
-    paths:
-      - "site/**"
-      - ".github/workflows/github-preview.yml"
-      - "docs/GITHUB-PREVIEW.md"
+  # Cloudflare Pages deploys Preview directly and GitLab validates it without
+  # GitHub-hosted runners. Keep artifact packaging as an optional manual tool.
+  workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: clipviet-preview-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   package-preview:
@@ -28,43 +14,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Validate GitHub Pages static site
+      - uses: actions/checkout@v4
+      - name: Validate static Preview
         run: |
           set -eu
           test -s site/index.html
           test -s site/styles.css
           test -s site/app.js
-          test -s site/data.js
-          test -s site/admin/index.html
-          test -s site/admin/admin.js
-          test -s site/admin/adultembed-admin.mjs
-          test -s site/admin/adultembed-adapter.mjs
-          test ! -e site/package.json
-          test -s site/community/index.html
-          test -s site/community/community.js
-          test -s site/community/community.css
-          grep -q 'id="community-suggestion-form"' site/community/index.html
-          grep -q 'name="sourceUrls\[\]"' site/community/index.html
-          grep -q 'url.protocol === "https:"' site/community/community.js
-          grep -q 'href="./community/"' site/index.html
-          grep -q 'href="./brand-ui.css"' site/index.html
-          grep -q 'href="../brand-ui.css"' site/community/index.html
-          ! grep -q 'id="video-suggestion"' site/index.html
-          ! grep -q 'href="#video-suggestion"' site/index.html
-
-      - name: Syntax-check browser JavaScript
-        run: |
-          set -eu
-          find site -type f \( -name '*.js' -o -name '*.mjs' \) -print0 |
-            while IFS= read -r -d '' file; do
-              echo "Checking $file"
-              node --input-type=module --check < "$file"
-            done
-
-      - name: Assemble isolated Preview artifact
+          test -s site/watch/source.html
+          test -s site/watch/source-player.js
+          test -s site/diagnostics/index.html
+          test -s site/diagnostics/diagnostics.js
+      - name: Assemble isolated artifact
         run: |
           set -eu
           rm -rf preview-site
@@ -72,10 +33,8 @@ jobs:
           cp -R site/. preview-site/
           rm -f preview-site/CNAME
           test ! -e preview-site/CNAME
-          printf '%s\n' "Preview artifact only. No custom domain or production deployment." > preview-site/PREVIEW-NOTICE.txt
-
-      - name: Upload Preview artifact
-        uses: actions/upload-artifact@v4
+          printf '%s\\n' "Preview artifact only. No custom domain or production deployment." > preview-site/PREVIEW-NOTICE.txt
+      - uses: actions/upload-artifact@v4
         with:
           name: clipviet-github-preview
           path: preview-site/

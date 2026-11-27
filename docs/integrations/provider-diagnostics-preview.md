@@ -30,9 +30,21 @@
 5. Production remains locked until technical and legal gates are independently complete.
 
 ## Current blockers
-- No D1 database is provisioned or bound by this PR.
-- No Preview Worker deployment is performed by this PR.
 - No CDN media host allowlists are populated.
 - No provider rights documents or per-clip licenses are recorded.
 - DNS/network reachability may be unavailable from the execution environment; such outcomes remain `UNVERIFIED`.
-- The provider seed migration is idempotent; it does not overwrite an existing provider row.
+
+## Pages Preview routing
+- Exact branch: `preview/playback-api-diagnostics-20261127`.
+- This branch is enabled in the Cloudflare Pages Preview branch allowlist for the independent Preview project.
+- Production deployments remain disabled; no DNS or custom-domain changes are part of this Preview.
+
+
+## Provider state API
+
+The dedicated Playback Preview Worker exposes:
+- `GET /api/providers` — one record per provider, with rights `status`, `playbackMode`, `rightsApproved` and independent `operationalState`.
+- `GET /api/providers/diagnostics` — technical API reachability merged with rights state.
+- `GET /api/providers/:providerId/diagnostics` — the same for one provider.
+
+Rights states are `PENDING_RIGHTS`, `METADATA_ONLY`, `PLAYBACK_APPROVED`, or `NOT_CONFIGURED`. Technical states are `NOT_CHECKED`, `ACTIVE`, or `ERROR`. A successful metadata API check never changes a rights state. This Worker currently permits only owner-hosted streams; official embed remains disabled pending a verified provider-specific embed contract.

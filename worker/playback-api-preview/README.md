@@ -2,6 +2,19 @@
 
 Dedicated read-only Worker for real video playback authorization.
 
+## Provider state and diagnostics
+
+- `GET /api/providers` returns each configured source with a rights `status`, `playbackMode`, `rightsApproved`, and independent `operationalState`.
+- Rights states: `PENDING_RIGHTS`, `METADATA_ONLY`, `PLAYBACK_APPROVED`, `NOT_CONFIGURED`.
+- Technical states: `NOT_CHECKED`, `ACTIVE`, `ERROR`.
+- `GET /api/providers/diagnostics` checks all five metadata APIs and combines technical reachability with the separate rights state.
+- `GET /api/providers/{providerId}/diagnostics` checks one provider.
+- A reachable API is not evidence of a distribution license. The diagnostic never grants playback.
+
+## CORS / Preview origins
+
+The Worker accepts HTTPS origins only from the dedicated Cloudflare Pages Preview projects: `*.clipviet-live-preview.pages.dev`, `*.clipviet-live-qa.pages.dev`, and `*.clipviet-live-independent-preview.pages.dev`. Production/custom domains are not implicitly trusted.
+
 ## Endpoint
 
 `GET /api/playback/providers/{providerId}/videos/{videoId}`
@@ -34,3 +47,25 @@ The Worker returns 403 with a stable `code` when any requirement is not met. It 
 ## Playback/CORS note
 
 The upstream media host must permit browser playback from the Preview Pages origins. HLS.js requires CORS on manifests and segments; native Safari playback still depends on a valid media URL and supported stream format.
+
+
+## Live source connectivity diagnostics
+
+- `GET /api/providers/diagnostics` checks all five configured AppleCMS list endpoints.
+- `GET /api/providers/{providerId}/diagnostics` checks one provider.
+- The diagnostic reports reachability, HTTP status, response latency, AppleCMS response code and catalog item count only.
+- It never returns episode URLs, playback lines, tokens or other stream data.
+- A reachable metadata API is not proof of content ownership or a playback license. The response always keeps `playbackEnabled: false`; the playback endpoint continues to require the separate provider, connector, per-video rights and media-host approvals.
+
+## Media diagnostics (rights-gated)
+
+`GET /api/playback/providers/{providerId}/videos/{videoId}/diagnostics`
+
+This endpoint returns a bounded, URL-redacted technical report only after provider-level and per-video rights checks pass. It checks up to four approved media entries:
+
+- HLS: manifest HTTP status, Apple HLS MIME, CORS and first allowlisted playlist resource reachability/CORS.
+- MP4: HEAD status, `video/mp4` MIME, CORS, `Range: bytes=0-1`, HTTP 206 and `Content-Range`.
+- It never returns media URLs, credentials, manifest contents or stream segments.
+- When rights are pending, it returns 403 and does not make any provider or media request.
+
+A passing automated probe is not a substitute for playback on a physical iPhone in Safari.

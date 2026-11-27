@@ -1,4 +1,5 @@
 const params = new URLSearchParams(location.search);
+const PLAYBACK_API = "https://clipviet-playback-api-preview.huynhthuongg2505-f9b.workers.dev";
 const sourceId = params.get("sourceId");
 const vodId = params.get("vodId");
 const $ = (id) => document.getElementById(id);
@@ -121,7 +122,6 @@ function applyQuality() {
 }
 function play() {
   if (!isPlaybackAuthorized(data)) { failed("Quyền phát chưa được xác minh, đã hết hạn hoặc chưa được cấp phép cho nội dung này."); return; }
-  if (playNowButton) playNowButton.hidden = false;
   const episode = currentEpisode();
   if (!episode || typeof episode.url !== "string") { failed("Không có URL phát hợp lệ."); return; }
   let mediaUrl;
@@ -129,6 +129,11 @@ function play() {
     mediaUrl = new URL(episode.url);
     if (mediaUrl.protocol !== "https:" || mediaUrl.username || mediaUrl.password) throw new Error("Chỉ cho phép media URL HTTPS không chứa thông tin đăng nhập.");
   } catch (error) { failed(error.message || "Media URL không hợp lệ."); return; }
+  if (playNowButton) {
+    playNowButton.hidden = false;
+    playNowButton.disabled = false;
+    playNowButton.textContent = "XEM NGAY ▶";
+  }
   destroy();
   $("external").hidden = false;
   $("external").href = mediaUrl.href;
@@ -199,6 +204,42 @@ function play() {
   }
   video.addEventListener("loadedmetadata", () => setResolution(video.videoWidth, video.videoHeight), { once: true });
 }
+$("diagnostics").addEventListener("click", async () => {
+  const button = $("diagnostics");
+  if (!isPlaybackAuthorized(data)) {
+    say("Không thể kiểm tra media: quyền phát chưa được xác minh.");
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "ĐANG KIỂM TRA…";
+  say("Đang kiểm tra MIME, CORS, HLS manifest và MP4 byte-range trên Preview…");
+  try {
+    const endpoint = PLAYBACK_API + "/api/playback/providers/" +
+      encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId) + "/diagnostics";
+    const response = await fetch(endpoint, { cache: "no-store", headers: { Accept: "application/json" } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || payload.code || ("HTTP " + response.status));
+    const results = Array.isArray(payload.data?.results) ? payload.data.results : [];
+    if (!results.length) {
+      say("Nguồn đã qua quyền nhưng chưa trả URL HLS/MP4 hợp lệ để kiểm tra.");
+      return;
+    }
+    const summary = results.map(item => {
+      const checks = item.mediaType === "mp4"
+        ? ["MIME " + (item.mimeOk ? "OK" : "LỖI"), "CORS " + (item.corsOk ? "OK" : "LỖI"), "Range " + (item.rangeSupported ? "206 OK" : "LỖI")]
+        : ["MIME " + (item.mimeOk ? "OK" : "LỖI"), "CORS " + (item.corsOk ? "OK" : "LỖI"),
+          "Manifest " + (item.manifestOk ? "OK" : "LỖI"), "Segment " + (item.firstResourceReachable ? "OK" : "LỖI")];
+      return item.mediaType.toUpperCase() + ": " + (item.passed ? "ĐẠT" : "LỖI") + " · " + checks.join(" · ");
+    });
+    say("Kiểm tra Preview: " + payload.data.passed + "/" + payload.data.checked + " nguồn đạt. " + summary.join(" | "));
+  } catch (error) {
+    say("Không thể kiểm tra media: " + (error.message || "lỗi kết nối hoặc quyền truy cập."));
+  } finally {
+    button.disabled = false;
+    button.textContent = "KIỂM TRA HLS / MP4";
+  }
+});
+
 $("quality").addEventListener("change", () => {
   selectedQuality = $("quality").value;
   applyQuality();
@@ -231,6 +272,14 @@ setImageFilter();
 
 const playNowButton = $("play-now");
 playNowButton?.addEventListener("click", async () => {
+  if (!isPlaybackAuthorized(data)) {
+    say("Quyền phát chưa được duyệt cho video này.");
+    return;
+  }
+  if (!video.currentSrc && !video.src) {
+    say("Chưa có luồng video hợp lệ để phát.");
+    return;
+  }
   try {
     await video.play();
     say("Đang phát video.");
@@ -240,13 +289,24 @@ playNowButton?.addEventListener("click", async () => {
 });
 video.addEventListener("playing", () => { if (playNowButton) playNowButton.hidden = true; });
 video.addEventListener("pause", () => {
-  if (playNowButton && !video.ended && video.currentTime > 0) playNowButton.hidden = false;
+  if (playNowButton && !video.ended && video.currentTime > 0) {
+    playNowButton.hidden = false;
+    playNowButton.disabled = false;
+    playNowButton.textContent = "TIẾP TỤC ▶";
+  }
+});
+video.addEventListener("ended", () => {
+  if (playNowButton) {
+    playNowButton.hidden = false;
+    playNowButton.disabled = false;
+    playNowButton.textContent = "PHÁT LẠI ▶";
+  }
 });
 
 (async () => {
   if (!sourceId || !vodId) { say("Thiếu sourceId hoặc vodId."); return; }
   try {
-    const response = await fetch("https://clipviet-playback-api-preview.huynhthuongg2505-f9b.workers.dev/api/playback/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", headers: { Accept: "application/json" } });
+    const response = await fetch(PLAYBACK_API + "/api/playback/providers/" + encodeURIComponent(sourceId) + "/videos/" + encodeURIComponent(vodId), { cache: "no-store", headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error("Không tải được chi tiết video · HTTP " + response.status);
     const payload = await response.json();
     data = payload.data || null;
@@ -262,6 +322,7 @@ video.addEventListener("pause", () => {
       }).filter(Boolean)
     })).filter((line) => line.episodes.length > 0);
     if (!data.lines.length) throw new Error("Không có đường phát HTTPS hợp lệ trong nội dung đã được cấp quyền.");
+    $("diagnostics").disabled = false;
     title.textContent = data.title;
     $("meta").textContent = [data.sourceName, data.year, data.area, data.categoryName, data.duration].filter(Boolean).join(" · ");
     $("description").textContent = data.description || "";

@@ -1006,3 +1006,6 @@ body.menu-open{touch-action:none}
  .nav-about>p:last-child{font-size:11px!important}
  .standalone-suggestion{width:calc(100% - 24px)!important;margin:22px auto!important;padding:16px!important}
 }
+
+/* Preserve vertical touch scrolling inside the fixed drawer on iOS Safari. */
+.filter-menu{touch-action:pan-y!important}

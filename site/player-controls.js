@@ -187,7 +187,7 @@ function getSource(video) {
   const hlsUrl = video.hlsUrl || video.hls_url || video.m3u8 || video.m3u8Url || video.m3u8_url || video.hls || (hlsSource && sourceUrl(hlsSource));
   const mp4Url = video.videoUrl || video.video_url || video.playbackUrl || video.playback_url || video.mp4Url || video.mp4_url || video.playUrl || video.play_url || (mp4Source && sourceUrl(mp4Source));
   const url = hlsUrl || mp4Url;
-  if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return null;
+  if (typeof url !== "string" || !/^https:\/\//i.test(url)) return null;
   return { url, hls: Boolean(hlsUrl), fallbackUrl: video.originalUrl || video.original_url || video.sourceUrl || video.source_url || "" };
 }
 function loadHlsLibrary() {
@@ -221,16 +221,10 @@ function attemptPlayback() {
   const attempt = player.play();
   if (attempt && typeof attempt.catch === "function") attempt.catch(handlePlayFailure);
 }
-function requiresManualSafariPlay() {
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && Boolean(player?.canPlayType("application/vnd.apple.mpegurl"));
-}
 function startPlaybackWhenReady() {
-  if (requiresManualSafariPlay()) {
-    if (playButton) playButton.hidden = false;
-    setStatus("Video đã sẵn sàng. Chạm XEM NGAY để phát trên Safari iPhone.");
-    return;
-  }
-  attemptPlayback();
+  // Never autoplay after metadata/manifest loading. A real user gesture is required on every device.
+  if (playButton) playButton.hidden = false;
+  setStatus("Video đã sẵn sàng. Nhấn Play để bắt đầu phát.");
 }
 function onMediaError() {
   if (playButton) playButton.hidden = false;

@@ -284,7 +284,6 @@ export async function listAppleCmsVideos(request, env) {
   if (!id) throw new AppleCmsProviderError("sourceId is required.", 400, "SOURCE_ID_REQUIRED");
   const provider = getProvider(id, env);
   const page = Math.max(1, Math.min(100000, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1));
-  const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "30", 10) || 30));
   // Video rows require ac=detail. ac=list is categories-only and omits vod_pic.
   // Respect the upstream response limit; sources vary between 10 and 20 rows.
   const params = { ac: "detail", pg: page };

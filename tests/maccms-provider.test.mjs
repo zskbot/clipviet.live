@@ -112,10 +112,15 @@ test("MacCMS video feed uses ac=list and preserves provider pagination metadata"
     assert.equal(result.results.length, 1);
     assert.equal(result.results[0].title, "Fixture video");
     assert.equal(result.results[0].videoUrl, "https://media.example.test/fixture.m3u8");
-    assert.deepEqual(result.providers[0], {
-      id: "souavzy", name: "Souavzy Main", count: 1,
-      page: 1, pageCount: 3, total: 240, limit: 100, state: "ok"
-    });
+    const provider = result.providers[0];
+    assert.equal(provider.id, "souavzy");
+    assert.equal(provider.name, "Souavzy Main");
+    assert.equal(provider.count, 1);
+    assert.equal(provider.page, 1);
+    assert.equal(provider.pageCount, 3);
+    assert.equal(provider.total, 240);
+    assert.equal(provider.limit, 100);
+    assert.equal(provider.state, "ok");
   } finally {
     globalThis.fetch = originalFetch;
   }

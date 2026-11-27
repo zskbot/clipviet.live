@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08090d">
+  <meta name="description" content="Tiện ích trình duyệt tùy chọn cho ClipViet.">
+  <title>Browser Tools — ClipViet</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .tools-page{max-width:1040px;margin:0 auto;padding:64px 22px 96px}
+    .tools-kicker{color:#ef3340;font-size:11px;letter-spacing:2px;font-weight:800}
+    .tools-page h1{font-size:clamp(34px,6vw,64px);letter-spacing:-2px;margin:14px 0}
+    .tools-lead{max-width:680px;color:#a7a8b0;line-height:1.8}
+    .tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:34px 0}
+    .tools-card{border:1px solid #292a31;background:#11131a;padding:22px;min-width:0}
+    .tools-card h2{font-size:17px;margin:0 0 10px}
+    .tools-card p,.tools-card li{color:#a7a8b0;font-size:13px;line-height:1.7}
+    .tools-card a{display:inline-flex;margin-top:12px;padding:11px 14px;border:1px solid #ef3340;color:#fff;font-size:11px;font-weight:800;letter-spacing:1px}
+    .tools-card a:hover{background:#ef3340}
+    .tools-note{border-left:2px solid #ef3340;padding:12px 16px;background:#11131a;color:#a7a8b0;font-size:12px;line-height:1.7}
+    .tools-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px}
+    .tools-shortcuts span{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #292a31;padding:9px 0;color:#c5c6cc;font-size:12px}
+    kbd{font:inherit;color:#fff;border:1px solid #555;padding:2px 6px}
+    @media(max-width:640px){.tools-grid,.tools-shortcuts{grid-template-columns:1fr}.tools-page{padding-top:38px}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../" aria-label="ClipViet trang chủ"><img src="../clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
+    <nav aria-label="Điều hướng" class="primary-nav"><a href="../browse/">Khám phá</a><a href="../watch/">Trình phát</a><a href="./">Browser Tools</a></nav>
+  </header>
+  <main class="tools-page">
+    <p class="tools-kicker">CLIPVIET / BROWSER TOOLS</p>
+    <h1>Tiện ích trình duyệt</h1>
+    <p class="tools-lead">Tích hợp theo hướng chọn lọc từ bộ sưu tập <a href="https://github.com/CodeSenbot/UserScripts" target="_blank" rel="noopener noreferrer">CodeSenbot/UserScripts</a>. ClipViet không tự tải hoặc thực thi mã userscript bên thứ ba. Mỗi tiện ích cần được người dùng chủ động cài đặt và bật trong trình quản lý userscript.</p>
+    <div class="tools-grid">
+      <article class="tools-card">
+        <h2>ClipViet Player Tools</h2>
+        <p>Phím tắt tùy chọn cho video HTML5: phát/tạm dừng, tua, âm lượng, toàn màn hình, Picture-in-Picture và tốc độ phát. Không gọi API ngoài, không gửi dữ liệu và không tự phát video.</p>
+        <ul>
+          <li>Chỉ chạy trên domain ClipViet và hai Preview Pages đã chỉ định</li>
+          <li>Không yêu cầu quyền GM hoặc quyền truy cập dữ liệu ngoài trang</li>
+          <li>Chỉ thao tác video đang hiển thị lớn nhất</li>
+        </ul>
+        <a href="https://raw.githubusercontent.com/zskbot/clipviet.live/preview/jzvd-android-sdk-view-button-20261127/site/userscripts/clipviet-player-tools.user.js" target="_blank" rel="noopener noreferrer">MỞ USERSCRIPT ↗</a>
+        <div class="tools-shortcuts">
+          <span>Phát / Tạm dừng <kbd>Space / K</kbd></span>
+          <span>Tua 5 giây <kbd>← / →</kbd></span>
+          <span>Tua 10 giây <kbd>J / L</kbd></span>
+          <span>Tắt tiếng <kbd>M</kbd></span>
+          <span>Toàn màn hình <kbd>F</kbd></span>
+          <span>Picture-in-Picture <kbd>P</kbd></span>
+          <span>Giảm / tăng tốc độ <kbd>[ / ]</kbd></span>
+          <span>Đặt tốc độ 1× <kbd>0</kbd></span>
+        </div>
+      </article>
+      <article class="tools-card">
+        <h2>Upstream Userscripts</h2>
+        <p>Kho nguồn có nhiều tiện ích độc lập cho YouTube, Bilibili, GitHub, dịch thuật và cải thiện giao diện. Không phải tất cả đều tương thích với ClipViet hoặc iPhone Safari.</p>
+        <p>Chúng tôi chỉ liên kết tới mã nguồn gốc; chưa nhúng các downloader hoặc script có quyền truy cập rộng vào trang xem video.</p>
+        <a href="https://github.com/CodeSenbot/UserScripts" target="_blank" rel="noopener noreferrer">XEM KHO NGUỒN ↗</a>
+      </article>
+    </div>
+    <p class="tools-note">An toàn và quyền nội dung: kiểm tra quyền phân phối trước khi tải hoặc lưu video. Không cài script không rõ nguồn. Userscript là tiện ích phía trình duyệt; nó không thay thế player HLS/MP4 của ClipViet và không thể khôi phục chất lượng cao hơn chất lượng nguồn.</p>
+  </main>
+</body>
+</html>

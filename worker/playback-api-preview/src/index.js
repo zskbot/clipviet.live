@@ -10,6 +10,83 @@ const PROVIDERS = [
 const USER_AGENT = "ClipVietPlaybackPreview/1.0";
 const TIMEOUT_MS = 12000;
 
+const MAX_API_BYTES = 1024 * 1024;
+
+async function readJsonLimited(response, label) {
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  if (!/^application\\/(?:[a-z0-9.+-]*\\+)?json(?:\\s*;|$)/i.test(contentType)) {
+    await response.body?.cancel();
+    throw new Error(label + "_invalid_content_type");
+  }
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error(label + "_empty_body");
+  const chunks = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_API_BYTES) {
+      await reader.cancel();
+      throw new Error(label + "_response_too_large");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  try { return JSON.parse(new TextDecoder().decode(bytes)); }
+  catch { throw new Error(label + "_invalid_json"); }
+}
+
+function parseJsonArray(value) {
+  try {
+    const parsed = Array.isArray(value) ? value : JSON.parse(String(value || "[]"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function providerRightsState(row) {
+  if (!row) return { status: "NOT_CONFIGURED", playbackMode: "none", rightsApproved: false };
+  const providerStatus = String(row.provider_status || "").toUpperCase();
+  const connectorStatus = String(row.connector_status || "").toUpperCase();
+  const mode = String(row.playback_mode || "none");
+  const expiry = Date.parse(row.provider_license_expires_at || "");
+  const licenseValid = ["APPROVED", "ENABLED"].includes(providerStatus) &&
+    Boolean(String(row.provider_rights_holder || "").trim()) &&
+    Boolean(String(row.provider_license_reference || "").trim()) &&
+    Boolean(String(row.provider_rights_evidence_url || "").trim()) &&
+    Number.isFinite(expiry) && expiry > Date.now();
+  if (!licenseValid || connectorStatus !== "APPROVED") return { status: "PENDING_RIGHTS", playbackMode: mode, rightsApproved: false };
+  if (mode === "metadata_only") return { status: "METADATA_ONLY", playbackMode: mode, rightsApproved: true };
+  if (mode === "official_embed") return { status: "PLAYBACK_APPROVED", playbackMode: mode, rightsApproved: true };
+  if (mode === "owner_hosted_stream" && parseJsonArray(row.media_hosts_json).length) {
+    return { status: "PLAYBACK_APPROVED", playbackMode: mode, rightsApproved: true };
+  }
+  return { status: "PENDING_RIGHTS", playbackMode: mode, rightsApproved: false };
+}
+
+async function readProviderStatuses(env) {
+  if (!env.PROVIDER_DB) throw new Error("provider_registry_unavailable");
+  const result = await env.PROVIDER_DB.prepare(`
+    SELECT p.id, p.status AS provider_status,
+      p.rights_holder AS provider_rights_holder,
+      p.license_reference AS provider_license_reference,
+      p.rights_evidence_url AS provider_rights_evidence_url,
+      p.license_expires_at AS provider_license_expires_at,
+      p.media_hosts_json AS media_hosts_json,
+      c.status AS connector_status, c.playback_mode AS playback_mode
+    FROM provider_registry p
+    LEFT JOIN provider_connectors c ON c.provider_id = p.id
+  `).all();
+  const rows = new Map((result.results || []).map(row => [row.id, row]));
+  return PROVIDERS.map(provider => ({
+    id: provider.id, name: provider.name, protocol: "AppleCMS V10",
+    ...providerRightsState(rows.get(provider.id)),
+    operationalState: "NOT_CHECKED"
+  }));
+}
+
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -100,11 +177,18 @@ async function diagnoseProvider(provider) {
         httpStatus: response.status,
         latencyMs,
         apiProtocol: "AppleCMS V10",
+        operationalState: "ERROR",
         playbackEnabled: false,
         reason: "upstream_http_error"
       };
     }
-    const payload = await response.json();
+    let payload;
+    try { payload = await readJsonLimited(response, "provider_diagnostics"); }
+    catch (error) {
+      return { providerId: provider.id, reachable: false, httpStatus: response.status,
+        latencyMs: Date.now() - started, apiProtocol: "AppleCMS V10",
+        operationalState: "ERROR", playbackEnabled: false, reason: error.message };
+    }
     const valid = payload && Number(payload.code) === 1 && Array.isArray(payload.list);
     return {
       providerId: provider.id,
@@ -114,6 +198,7 @@ async function diagnoseProvider(provider) {
       apiProtocol: "AppleCMS V10",
       appleCmsCode: Number.isFinite(Number(payload?.code)) ? Number(payload.code) : null,
       catalogCount: Array.isArray(payload?.list) ? payload.list.length : 0,
+      operationalState: valid ? "ACTIVE" : "ERROR",
       playbackEnabled: false,
       reason: valid ? "metadata_api_reachable_rights_not_approved" : "invalid_applecms_response"
     };
@@ -124,6 +209,7 @@ async function diagnoseProvider(provider) {
       httpStatus: null,
       latencyMs: Date.now() - started,
       apiProtocol: "AppleCMS V10",
+      operationalState: "ERROR",
       playbackEnabled: false,
       reason: "upstream_unreachable_or_timeout"
     };
@@ -141,7 +227,7 @@ async function fetchProviderVideo(provider, videoId) {
     signal: AbortSignal.timeout(TIMEOUT_MS)
   });
   if (!response.ok) throw new Error("Upstream provider returned HTTP " + response.status);
-  const payload = await response.json();
+  const payload = await readJsonLimited(response, "provider_detail");
   if (!payload || Number(payload.code) !== 1 || !Array.isArray(payload.list)) throw new Error("Upstream provider returned an invalid AppleCMS response");
   return payload.list.find(item => String(item.vod_id) === videoId) || null;
 }
@@ -175,26 +261,46 @@ async function handle(request, env) {
   }
 
   if (path === "/api/providers") {
-    return json({
-      data: PROVIDERS.map(({ id, name }) => ({ id, name, protocol: "AppleCMS V10" })),
-      count: PROVIDERS.length
-    }, 200, headers);
+    try {
+      const data = await readProviderStatuses(env);
+      return json({ data, count: data.length, statusModel: { status: "rights", operationalState: "technical_health" } }, 200, headers);
+    } catch {
+      return json({ error: "Provider registry unavailable", code: "PROVIDER_REGISTRY_UNAVAILABLE" }, 503, headers);
+    }
   }
 
   if (path === "/api/providers/diagnostics") {
-    const results = await Promise.all(PROVIDERS.map(diagnoseProvider));
-    return json({
-      data: results,
-      count: results.length,
-      note: "Connectivity diagnostics do not grant playback rights or expose stream URLs."
-    }, 200, headers);
+    try {
+      const [statuses, diagnostics] = await Promise.all([
+        readProviderStatuses(env),
+        Promise.all(PROVIDERS.map(diagnoseProvider))
+      ]);
+      const statusMap = new Map(statuses.map(item => [item.id, item]));
+      const data = diagnostics.map(item => ({
+        ...statusMap.get(item.providerId), ...item,
+        status: statusMap.get(item.providerId)?.status || "UNKNOWN"
+      }));
+      return json({ data, count: data.length,
+        note: "Technical health is independent from legal rights. Diagnostics never grant playback or expose media URLs."
+      }, 200, headers);
+    } catch {
+      return json({ error: "Provider registry unavailable", code: "PROVIDER_REGISTRY_UNAVAILABLE" }, 503, headers);
+    }
   }
 
-  const providerDiagnosticMatch = path.match(/^\/api\/providers\/([a-z0-9-]+)\/diagnostics$/);
+  const providerDiagnosticMatch = path.match(/^\\/api\\/providers\\/([a-z0-9-]+)\\/diagnostics$/);
   if (providerDiagnosticMatch) {
     const provider = PROVIDERS.find(item => item.id === providerDiagnosticMatch[1]);
     if (!provider) return json({ error: "Unknown provider", code: "UNKNOWN_PROVIDER" }, 404, headers);
-    return json({ data: await diagnoseProvider(provider) }, 200, headers);
+    try {
+      const [statuses, diagnostic] = await Promise.all([
+        readProviderStatuses(env), diagnoseProvider(provider)
+      ]);
+      const state = statuses.find(item => item.id === provider.id);
+      return json({ data: { ...state, ...diagnostic, status: state?.status || "UNKNOWN" } }, 200, headers);
+    } catch {
+      return json({ error: "Provider registry unavailable", code: "PROVIDER_REGISTRY_UNAVAILABLE" }, 503, headers);
+    }
   }
 
   const match = path.match(/^\/api\/playback\/providers\/([a-z0-9-]+)\/videos\/([0-9]+)$/);

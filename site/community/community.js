@@ -67,13 +67,6 @@
   };
 
   addUrlButton?.addEventListener("click", () => addUrlRow());
-  urlList?.addEventListener("click", (event) => {
-    const remove = event.target.closest(".remove-source-url");
-    if (!remove) return;
-    const rows = [...urlList.querySelectorAll(".source-url-row")];
-    if (rows.length > 1) { remove.closest(".source-url-row").remove(); updateUrlControls(); }
-  });
-
   suggestionForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = document.querySelector("#community-suggest-title")?.value.trim() || "";

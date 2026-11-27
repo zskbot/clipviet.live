@@ -193,7 +193,8 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, TypeError) as error:
             self._send(400, {"error": str(error)})
             return
-        executable = shutil.which(JASNA_BIN) or (JASNA_BIN if Path(JASNA_BIN).is_file() else "")
+        candidate = Path(JASNA_BIN).expanduser()
+        executable = shutil.which(JASNA_BIN) or (str(candidate.resolve()) if candidate.is_file() else "")
         if not executable:
             self._send(503, {"error": "Jasna CLI was not found. Set JASNA_BIN to the installed executable."})
             return
@@ -227,12 +228,13 @@ class Handler(BaseHTTPRequestHandler):
 
     @staticmethod
     def _run_job(job_id: str, executable: str) -> None:
-        with JOBS_LOCK:
-            job = JOBS[job_id]
-            job["status"] = "running"
         try:
-            with GPU_SLOT, job["log"].open("wb") as log:
-                result = subprocess.run(
+            with GPU_SLOT:
+                with JOBS_LOCK:
+                    job = JOBS[job_id]
+                    job["status"] = "running"
+                with job["log"].open("wb") as log:
+                    result = subprocess.run(
                     [executable, "--input", str(job["input"]), "--output", str(job["output"])],
                     cwd=str(job["dir"]),
                     stdout=log,
@@ -258,6 +260,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    if not str(WORKDIR).isascii():
+        raise SystemExit("JASNA_WORKDIR must use an ASCII-only path.")
     WORKDIR.mkdir(parents=True, exist_ok=True)
     if not TOKEN or len(TOKEN) < 32:
         raise SystemExit("CLIPVIET_JASNA_TOKEN must contain at least 32 characters.")

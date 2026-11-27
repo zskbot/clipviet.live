@@ -123,6 +123,11 @@ function mapMetadata(provider, row, rightsRegistry) {
     area: String(row.vod_area || "").slice(0, 100),
     language: String(row.vod_lang || "").slice(0, 80),
     duration: String(row.vod_duration || "").slice(0, 40),
+    remarks: String(row.vod_remarks || "").slice(0, 160),
+    actors: String(row.vod_actor || "").slice(0, 500),
+    director: String(row.vod_director || "").slice(0, 240),
+    score: String(row.vod_score || "").slice(0, 20),
+    blurb: String(row.vod_blurb || "").replace(/<[^>]*>/g, " ").trim().slice(0, 1000),
     publishedAt: String(row.vod_pubdate || "").slice(0, 40),
     updatedAt: String(row.vod_time || "").slice(0, 40),
     views: Number(row.vod_hits) || 0,
@@ -142,18 +147,25 @@ async function requestAppleCms(provider, params) {
     const cached = await caches.default.match(new Request(url.toString(), { method: "GET" }));
     if (cached) return cached.json();
   }
-  let response;
-  try {
-    response = await fetch(url.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json", "User-Agent": "ClipViet-Preview/1.0" },
-      redirect: "error",
-      signal: AbortSignal.timeout(15000)
-    });
-  } catch {
-    throw new AppleCmsProviderError("Provider API could not be reached.", 502, "PROVIDER_NETWORK_ERROR");
+  const cacheKey = new Request(url.toString(), { method: "GET" });
+  if (!isCategoryRequest) {
+    const cached = await caches.default.match(cacheKey);
+    if (cached) return cached.json();
   }
-  if (!response.ok) throw new AppleCmsProviderError("Provider API returned HTTP " + response.status + ".", 502, "PROVIDER_UPSTREAM_ERROR");
+  let response;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      response = await fetch(url.toString(), {
+        method: "GET",
+        headers: { Accept: "application/json", "User-Agent": "ClipViet-Preview/1.0" },
+        redirect: "error",
+        signal: AbortSignal.timeout(15000)
+      });
+      if (response.ok) break;
+    } catch { /* retry once after a short backoff */ }
+    if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  if (!response || !response.ok) throw new AppleCmsProviderError("Provider API request failed after one retry.", 502, "PROVIDER_UPSTREAM_ERROR");
   let payload;
   try { payload = await response.json(); } catch {
     throw new AppleCmsProviderError("Provider returned invalid JSON.", 502, "PROVIDER_INVALID_JSON");
@@ -168,6 +180,10 @@ async function requestAppleCms(provider, params) {
     }));
   } else if (!Array.isArray(payload.list)) {
     throw new AppleCmsProviderError("Provider video list is missing.", 502, "PROVIDER_INVALID_VIDEOS");
+  } else {
+    await caches.default.put(cacheKey, new Response(JSON.stringify(payload), {
+      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=0, s-maxage=30" }
+    }));
   }
   return payload;
 }
@@ -268,8 +284,9 @@ export async function listAppleCmsVideos(request, env) {
   if (!id) throw new AppleCmsProviderError("sourceId is required.", 400, "SOURCE_ID_REQUIRED");
   const provider = getProvider(id, env);
   const page = Math.max(1, Math.min(100000, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1));
-  const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "30", 10) || 30));
-  const params = { ac: "list", pg: page, pagesize: limit };
+  // Video rows require ac=detail. ac=list is categories-only and omits vod_pic.
+  // Respect the upstream response limit; sources vary between 10 and 20 rows.
+  const params = { ac: "detail", pg: page };
   const category = clean(url.searchParams.get("categoryId"));
   const keyword = clean(url.searchParams.get("keyword") || url.searchParams.get("wd")).slice(0, 100);
   if (category) params.t = category.slice(0, 20);
@@ -280,7 +297,7 @@ export async function listAppleCmsVideos(request, env) {
   return {
     success: true, provider: { id, name: provider.name, status: "ACTIVE" },
     items, page: Number(payload.page) || page, pageCount: Number(payload.pagecount) || 0,
-    total: Number(payload.total) || items.length, limit: Number(payload.limit) || limit,
+    total: Number(payload.total) || items.length, limit: Number(payload.limit) || items.length || 10,
     catalogMode: provider.rights.playbackMode === "metadata_only" ? "metadata-only" : "rights-scoped"
   };
 }

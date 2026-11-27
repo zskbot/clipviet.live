@@ -161,60 +161,63 @@ async function loadApprovedRights(providerId, videoId, env, region) {
 async function diagnoseProvider(provider) {
   const started = Date.now();
   const url = new URL("https://" + provider.host + "/api.php/provide/vod/");
+  // AppleCMS ac=list is the category endpoint and returns payload.class.
+  // It is a metadata-only probe; it must never be interpreted as playback approval.
   url.searchParams.set("ac", "list");
-  url.searchParams.set("pg", "1");
-  try {
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: { accept: "application/json", "user-agent": USER_AGENT },
-      redirect: "error",
-      signal: AbortSignal.timeout(9000)
-    });
-    const latencyMs = Date.now() - started;
-    if (!response.ok) {
+  const base = {
+    providerId: provider.id,
+    apiProtocol: "AppleCMS V10",
+    playbackEnabled: false
+  };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: { accept: "application/json", "user-agent": USER_AGENT },
+        redirect: "error",
+        signal: AbortSignal.timeout(9000)
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        return { ...base, reachable: false, httpStatus: response.status,
+          latencyMs: Date.now() - started, operationalState: "ERROR",
+          reason: "upstream_http_error" };
+      }
+      let payload;
+      try { payload = await readJsonLimited(response, "provider_diagnostics"); }
+      catch (error) {
+        return { ...base, reachable: false, httpStatus: response.status,
+          latencyMs: Date.now() - started, operationalState: "ERROR",
+          reason: error.message };
+      }
+      const categories = Array.isArray(payload?.class) ? payload.class : [];
+      const valid = Number(payload?.code) === 1 && Array.isArray(payload?.class);
       return {
-        providerId: provider.id,
-        reachable: false,
+        ...base,
+        reachable: valid,
         httpStatus: response.status,
-        latencyMs,
-        apiProtocol: "AppleCMS V10",
-        operationalState: "ERROR",
-        playbackEnabled: false,
-        reason: "upstream_http_error"
+        latencyMs: Date.now() - started,
+        appleCmsCode: Number.isFinite(Number(payload?.code)) ? Number(payload.code) : null,
+        catalogCount: categories.length,
+        operationalState: valid ? "ACTIVE" : "ERROR",
+        reason: valid ? "metadata_api_reachable_rights_not_approved" : "invalid_applecms_categories_response"
       };
+    } catch (error) {
+      if (attempt === 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+      const errorName = error?.name || "UnknownError";
+      return { ...base, reachable: false, httpStatus: null,
+        latencyMs: Date.now() - started, operationalState: "ERROR",
+        reason: errorName === "TimeoutError" || errorName === "AbortError"
+          ? "upstream_timeout" : errorName === "TypeError"
+            ? "upstream_network_or_tls_error" : "upstream_request_failed" };
     }
-    let payload;
-    try { payload = await readJsonLimited(response, "provider_diagnostics"); }
-    catch (error) {
-      return { providerId: provider.id, reachable: false, httpStatus: response.status,
-        latencyMs: Date.now() - started, apiProtocol: "AppleCMS V10",
-        operationalState: "ERROR", playbackEnabled: false, reason: error.message };
-    }
-    const valid = payload && Number(payload.code) === 1 && Array.isArray(payload.list);
-    return {
-      providerId: provider.id,
-      reachable: valid,
-      httpStatus: response.status,
-      latencyMs,
-      apiProtocol: "AppleCMS V10",
-      appleCmsCode: Number.isFinite(Number(payload?.code)) ? Number(payload.code) : null,
-      catalogCount: Array.isArray(payload?.list) ? payload.list.length : 0,
-      operationalState: valid ? "ACTIVE" : "ERROR",
-      playbackEnabled: false,
-      reason: valid ? "metadata_api_reachable_rights_not_approved" : "invalid_applecms_response"
-    };
-  } catch {
-    return {
-      providerId: provider.id,
-      reachable: false,
-      httpStatus: null,
-      latencyMs: Date.now() - started,
-      apiProtocol: "AppleCMS V10",
-      operationalState: "ERROR",
-      playbackEnabled: false,
-      reason: "upstream_unreachable_or_timeout"
-    };
   }
+  return { ...base, reachable: false, httpStatus: null,
+    latencyMs: Date.now() - started, operationalState: "ERROR",
+    reason: "upstream_request_failed" };
 }
 
 async function readTextLimited(response, maxBytes = 256 * 1024) {
@@ -362,15 +365,9 @@ async function handle(request, env) {
     try {
       const statuses = await readProviderStatuses(env);
       const statusMap = new Map(statuses.map(item => [item.id, item]));
-      const diagnostics = await Promise.all(PROVIDERS.map(provider => {
-        const state = statusMap.get(provider.id);
-        if (state?.rightsApproved !== true) return Promise.resolve({
-          providerId: provider.id, reachable: false, httpStatus: null, latencyMs: null,
-          apiProtocol: "AppleCMS V10", operationalState: "NOT_CHECKED",
-          playbackEnabled: false, reason: "provider_rights_pending"
-        });
-        return diagnoseProvider(provider);
-      }));
+      // Technical metadata reachability is independent from the rights gate.
+      // Run read-only category probes for pending providers, but keep playback disabled.
+      const diagnostics = await Promise.all(PROVIDERS.map(provider => diagnoseProvider(provider)));
       const data = diagnostics.map(item => ({
         ...statusMap.get(item.providerId), ...item,
         status: statusMap.get(item.providerId)?.status || "UNKNOWN"
@@ -390,11 +387,8 @@ async function handle(request, env) {
     try {
       const statuses = await readProviderStatuses(env);
       const state = statuses.find(item => item.id === provider.id);
-      const diagnostic = state?.rightsApproved === true
-        ? await diagnoseProvider(provider)
-        : { providerId: provider.id, reachable: false, httpStatus: null, latencyMs: null,
-            apiProtocol: "AppleCMS V10", operationalState: "NOT_CHECKED",
-            playbackEnabled: false, reason: "provider_rights_pending" };
+      // Safe metadata-only probe is allowed while legal rights remain pending.
+      const diagnostic = await diagnoseProvider(provider);
       return json({ data: { ...state, ...diagnostic, status: state?.status || "UNKNOWN" } }, 200, headers);
     } catch {
       return json({ error: "Provider registry unavailable", code: "PROVIDER_REGISTRY_UNAVAILABLE" }, 503, headers);

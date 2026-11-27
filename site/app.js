@@ -79,6 +79,7 @@ let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
 const API_BASE = "https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev";
+// Preview-only recovery: keep the original AppleCMS Worker as the sole catalog source.
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.
 // Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.

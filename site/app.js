@@ -96,7 +96,13 @@ function renderProviderStatuses(providers) {
     READY: "Đủ điều kiện metadata",
     "pending-rights": "Chờ phê duyệt quyền",
     "not-configured": "Chưa cấu hình API",
-    "api-ok": "API hoạt động",
+    "api-ok": "API upstream hoạt động",
+    "invalid-config": "Cấu hình API không hợp lệ",
+    "upstream-http-error": "Upstream trả lỗi HTTP",
+    timeout: "Upstream quá thời gian",
+    "invalid-api-response": "Phản hồi không đúng AppleCMS",
+    "upstream-unreachable": "Không kết nối được upstream",
+    "unknown-provider": "Provider không hợp lệ",
     degraded: "Thiếu dữ liệu catalog",
     offline: "Nguồn không truy cập được"
   };
@@ -108,11 +114,20 @@ function renderProviderStatuses(providers) {
     const state = document.createElement("span");
     const rawState = provider.status || provider.diagnostic || provider.state || "UNKNOWN";
     state.textContent = labels[rawState] || rawState;
-    state.dataset.state = /PENDING|pending|NOT_CONFIGURED|not-configured/.test(rawState) ? "pending" :
-      /ERROR|offline|degraded/.test(rawState) ? "error" : /READY|ACTIVE|api-ok/.test(rawState) ? "ready" : "info";
+    state.dataset.state = /ERROR|offline|degraded|timeout|unreachable|invalid|http-error/.test(rawState) ? "error" :
+      /PENDING|pending|NOT_CONFIGURED|not-configured/.test(rawState) ? "pending" :
+      /READY|ACTIVE|api-ok/.test(rawState) ? "ready" : "info";
     const meta = document.createElement("small");
-    meta.textContent = provider.operationalState || provider.diagnostic ||
-      (provider.approvedContentCount !== undefined ? provider.approvedContentCount + " video có hồ sơ quyền" : "Chưa kiểm tra upstream");
+    if (Number.isFinite(Number(provider.latencyMs))) {
+      const latency = Math.max(0, Math.round(Number(provider.latencyMs)));
+      const details = provider.status === "api-ok"
+        ? [provider.categoryCount + " nhóm", provider.sampleCount + " mẫu"].join(" · ")
+        : (provider.operationalState || "chưa kết nối");
+      meta.textContent = details + " · " + latency + " ms · playback OFF";
+    } else {
+      meta.textContent = provider.operationalState || provider.diagnostic ||
+        (provider.approvedContentCount !== undefined ? provider.approvedContentCount + " video có hồ sơ quyền" : "Chưa kiểm tra upstream");
+    }
     card.append(name, state, meta);
     providerStatusList.append(card);
   }
@@ -131,8 +146,8 @@ async function loadProviderStatuses(runDiagnostics = false) {
     const providers = Array.isArray(payload.providers) ? payload.providers : Array.isArray(payload.data) ? payload.data : [];
     renderProviderStatuses(providers);
     if (providerStatusNote) providerStatusNote.textContent = runDiagnostics
-      ? "Đã kiểm tra kỹ thuật các nguồn đủ điều kiện. Nguồn đang chờ quyền được giữ nguyên và không bị gọi."
-      : "5 nguồn AppleCMS được cấu hình tham chiếu. Mỗi nguồn vẫn cần quyền provider và quyền metadata từng video.";
+      ? "Đã chạy probe metadata chỉ đọc ac=list cho từng nguồn. Kết quả chỉ xác nhận API metadata, không xác nhận quyền phân phối hoặc luồng media; playback vẫn OFF."
+      : "5 nguồn AppleCMS là cấu hình tham chiếu. Mỗi nguồn vẫn cần quyền provider và quyền metadata từng video.";
   } catch (error) {
     if (providerStatusNote) providerStatusNote.textContent = "Không đọc được trạng thái provider: " + error.message;
     if (providerStatusPanel) providerStatusPanel.hidden = false;

@@ -52,6 +52,6 @@ The api.video Player SDK controls api.video's hosted HTML5 player by video ID. I
 
 ## Private video playback
 
-api.video private playback uses a short-lived, one-time viewing token. The Preview playback route requests the video object from the Sandbox API with the server-only `APIVIDEO_API_KEY`, extracts the token from `assets.player`, and returns it only to an authorized ClipViet admin session. The Player SDK receives that token in its `token` option. Each request may issue a new token; do not cache, log, commit, or reuse it. Public static pages must not expose this token broker without an authenticated viewer session.
+api.video private playback uses a short-lived, one-time viewing token. The Preview playback route requests the video object from the Sandbox API with the server-only `APIVIDEO_API_KEY`, extracts the token from `assets.player`, and returns it only to an authorized ClipViet admin session. The Player SDK receives that token in its `token` option. Each request may issue a new token; do not cache, log, commit, or reuse it. The private playback route is deliberately admin-only in Preview until a separate authenticated viewer session is implemented. Public static pages must not expose this token broker without an authenticated viewer session.
 
 The main static `zskbot/clipviet` site uses the SDK for public, explicitly approved api.video playback only. The `zskbot/clipviet.live` Preview backend owns private-video creation and the admin-only one-time-token flow. Both sites retain their existing HLS/MP4 playback paths for other providers.

@@ -118,6 +118,7 @@ function mapMetadata(provider, row, rightsRegistry) {
     categoryId: Number(row.type_id) || 0,
     parentCategoryId: Number(row.type_id_1) || 0,
     categoryName: String(row.type_name || "").slice(0, 120),
+    category: String(row.type_name || "").slice(0, 120),
     year: String(row.vod_year || "").slice(0, 8),
     area: String(row.vod_area || "").slice(0, 100),
     language: String(row.vod_lang || "").slice(0, 80),

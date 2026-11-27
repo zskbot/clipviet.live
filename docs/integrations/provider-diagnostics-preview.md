@@ -38,3 +38,13 @@
 - Exact branch: `preview/playback-api-diagnostics-20261127`.
 - This branch is enabled in the Cloudflare Pages Preview branch allowlist for the independent Preview project.
 - Production deployments remain disabled; no DNS or custom-domain changes are part of this Preview.
+
+
+## Provider state API
+
+The dedicated Playback Preview Worker exposes:
+- `GET /api/providers` — one record per provider, with rights `status`, `playbackMode`, `rightsApproved` and independent `operationalState`.
+- `GET /api/providers/diagnostics` — technical API reachability merged with rights state.
+- `GET /api/providers/:providerId/diagnostics` — the same for one provider.
+
+Rights states are `PENDING_RIGHTS`, `METADATA_ONLY`, `PLAYBACK_APPROVED`, or `NOT_CONFIGURED`. Technical states are `NOT_CHECKED`, `ACTIVE`, or `ERROR`. A successful metadata API check never changes a rights state. This Worker currently permits only owner-hosted streams; official embed remains disabled pending a verified provider-specific embed contract.

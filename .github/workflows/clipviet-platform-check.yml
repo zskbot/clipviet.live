@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - "worker/telegram-api/**"
-      - ".github/workflows/clipviet-platform-check.yml"
   workflow_dispatch:
 
 permissions:
@@ -29,13 +28,11 @@ jobs:
             done
       - name: Run AppleCMS adapter unit tests
         run: npm --prefix worker/telegram-api run test:providers
-      - name: Verify required adapter contract
+      - name: Verify adapter contract and secret hygiene
         run: |
           set -eu
           test -s worker/telegram-api/src/index.js
           test -s worker/telegram-api/src/applecms.js
           test -s worker/telegram-api/src/applecms.test.mjs
           grep -q 'APPLECMS_SOUAVZY_URL' worker/telegram-api/src/applecms.js
-      - name: Scan for committed secrets
-        run: |
           ! grep -R -nE '([0-9]{6,}:[A-Za-z0-9_-]{30,}|TELEGRAM_BOT_TOKEN=.{8,}|SESSION_SECRET=.{8,})' worker/telegram-api

@@ -7,7 +7,7 @@ const SOURCE_KEYS = [
 ];
 const json = (data,status=200)=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"public, max-age=30, s-maxage=60","access-control-allow-origin":"*","x-content-type-options":"nosniff"}});
 const asHttps = value => { try { const u=new URL(value); return u.protocol==="https:"?u.href:""; } catch { return ""; } };
-const listOf = payload => Array.isArray(payload)?payload:(payload?.list||payload?.data?.list||payload?.result?.list||payload?.data||payload?.videos||[]);
+const listOf = payload => { const candidates=[payload,payload?.list,payload?.data?.list,payload?.result?.list,payload?.data,payload?.videos]; return candidates.find(Array.isArray)||[]; };
 const sourceConfig = env => SOURCE_KEYS.map(([id,key])=>({id,key,url:asHttps(env?.[key])})).filter(x=>x.url);
 const parsePlayLines = item => {
   const from=String(item.vod_play_from||"").split("$$$");

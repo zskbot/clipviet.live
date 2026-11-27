@@ -78,7 +78,7 @@ let requestSequence = 0;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
-const API_BASE = "https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev";
+const API_BASE = "";
 // Preview-only recovery: keep the original AppleCMS Worker as the sole catalog source.
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.

@@ -20,7 +20,7 @@
 <div class="endpoint"><span class="method">POST</span><code>/admin/api/videos/{id}/publish</code><p>Chỉ xuất bản khi rights status được duyệt, có bằng chứng và video host nằm trong allowlist.</p></div>
 <h2>Video storage</h2><div class="note">Upload tệp video trả <code>501 VIDEO_STORAGE_NOT_PROVISIONED</code>. Bucket hiện có là OpenNext cache, không được tái sử dụng để lưu video. Khi có bucket R2 riêng và được duyệt chi phí, mới bật upload.</div>
 <h2>AppleCMS Provider API v1 · normalized</h2>
-<p>Hợp đồng đầy đủ: <a href="../../docs/API-PROVIDERS-V1.md">docs/API-PROVIDERS-V1.md</a>. Các endpoint đã tách riêng categories, video list, metadata detail và playback info.</p>
+<p>Hợp đồng đầy đủ: <a href="https://github.com/zskbot/clipviet.live/blob/feat/issue-155-provider-api-safari-preview-20261127/docs/API-PROVIDERS-V1.md" target="_blank" rel="noopener noreferrer">docs/API-PROVIDERS-V1.md</a>. Các endpoint đã tách riêng categories, video list, metadata detail và playback info.</p>
 <div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/status</code><p>Provider state: NOT_CONFIGURED, PENDING_RIGHTS, METADATA_ONLY, PLAYBACK_APPROVED; operationalState: NOT_CHECKED, ACTIVE hoặc ERROR.</p></div>
 <div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/categories?sourceId=souavzy</code><p>Lấy danh mục lá AppleCMS sau khi provider có quyền metadata.</p></div>
 <div class="endpoint"><span class="method">GET</span><code>/api/providers/applecms/videos?sourceId=souavzy&amp;page=1&amp;limit=30</code><p>Danh sách metadata đã qua duyệt từng video; hỗ trợ categoryId và keyword.</p></div>

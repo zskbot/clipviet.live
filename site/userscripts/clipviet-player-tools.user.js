@@ -8,6 +8,8 @@
 // @match        https://*.clipviet-live-preview.pages.dev/*
 // @match        https://*.clipviet-live-independent-preview.pages.dev/*
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/zskbot/clipviet.live/preview/jzvd-android-sdk-view-button-20261127/site/userscripts/clipviet-player-tools.user.js
+// @updateURL    https://raw.githubusercontent.com/zskbot/clipviet.live/preview/jzvd-android-sdk-view-button-20261127/site/userscripts/clipviet-player-tools.user.js
 // @run-at       document-idle
 // @noframes
 // ==/UserScript==
@@ -77,8 +79,14 @@
       document.exitFullscreen?.().catch(() => {});
       return;
     }
+    if (typeof video.webkitEnterFullscreen === "function") {
+      video.webkitEnterFullscreen();
+      return;
+    }
     const target = video.closest(".featured-player-shell, .player-shell, .video-player") || video;
-    (target.requestFullscreen || video.webkitEnterFullscreen || video.requestFullscreen)?.call(target);
+    const request = target.requestFullscreen || video.requestFullscreen;
+    if (typeof request === "function") request.call(target).catch?.(() => notify("Không thể bật toàn màn hình."));
+    else notify("Trình duyệt không hỗ trợ toàn màn hình cho video này.");
   }
 
   document.addEventListener("keydown", event => {
@@ -130,7 +138,7 @@
         notify("Tốc độ bình thường · 1×");
         break;
       case "p":
-        if (document.pictureInPictureEnabled && video.readyState >= 1) {
+        if (document.pictureInPictureEnabled && typeof video.requestPictureInPicture === "function" && video.readyState >= 1) {
           const pip = document.pictureInPictureElement
             ? document.exitPictureInPicture()
             : video.requestPictureInPicture();

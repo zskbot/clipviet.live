@@ -6,6 +6,10 @@ preview_urls = false
 
 [vars]
 ENVIRONMENT = "preview"
+# Adult catalog stays disabled until provider distribution rights are independently verified.
+ADULT_CONTENT_ENABLED = "false"
+ADULT_PROVIDER_RIGHTS_CONFIRMED = "false"
+ADULT_ALLOWED_COUNTRIES = "US"
 ALLOWED_ORIGINS = "https://clipviet.live,https://feat-clipviet-preview-accept.clipviet-live-preview.pages.dev,https://preview-admin-password-gate.clipviet-live-preview.pages.dev"
 APPLECMS_SOUAVZY_URL = "https://api.souavzy.vip/api.php/provide/vod/"
 APPLECMS_APIYUTU_URL = "https://apiyutu.com/api.php/provide/vod/"

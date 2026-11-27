@@ -15,7 +15,7 @@
     .eyebrow{font-size:10px;letter-spacing:2px;color:var(--red);font-weight:800;margin:28px 0 8px}h1{font-size:clamp(32px,7vw,54px);line-height:1.02;letter-spacing:-2px;margin:0 0 12px}p{color:var(--muted)}
     .notice{border:1px solid #55412a;background:#241d13;padding:12px 14px;color:#e8d5b3;font-size:12px;margin:22px 0}
     .stage{background:#000;border:1px solid var(--line);aspect-ratio:16/9;display:grid;place-items:center;overflow:hidden}
-    video{width:100%;height:100%;max-height:62vh;background:#000;object-fit:contain}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+    video{width:100%;height:100%;max-height:62vh;background:#000;object-fit:contain}.stage{position:relative}.idle{position:absolute;inset:0;display:grid;place-content:center;gap:8px;text-align:center;padding:18px;background:#050609;color:#f4f4f5;pointer-events:none}.idle[hidden]{display:none}.idle strong{font-size:clamp(13px,3vw,18px);letter-spacing:1px}.idle span{font-size:11px;color:#92939b}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
     button{border:1px solid var(--line);background:#14151b;color:#fff;padding:12px 15px;font:inherit;font-size:11px;font-weight:700;line-height:1.2;letter-spacing:.5px;border-radius:0;cursor:pointer}
     button.primary{background:var(--red);border-color:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}
     .status{border:1px solid var(--line);background:var(--panel);padding:14px;margin-top:14px}.status strong{display:block;font-size:12px;margin-bottom:5px}.status p{margin:0;font-size:12px;overflow-wrap:anywhere}
@@ -31,14 +31,14 @@
     <h1>Kiểm tra trình phát video</h1>
     <p>Trang QA độc lập để kiểm tra khả năng phát MP4 và HLS trên Safari iPhone. Các luồng bên dưới chỉ là mẫu kỹ thuật, không được đưa vào catalog hay dùng làm nguồn nội dung sản xuất.</p>
     <div class="notice">Chỉ kiểm tra trình phát bằng video mẫu công khai. Trang này không mở khóa provider AppleCMS, không bỏ qua quyền phân phối và không dùng proxy để phát URL tùy ý.</div>
-    <section class="stage"><video id="qa-video" controls playsinline preload="metadata" webkit-playsinline></video></section>
+    <section class="stage"><video id="qa-video" controls playsinline preload="none" webkit-playsinline></video><div class="idle" id="qa-idle"><strong>PLAYER ĐANG CHỜ</strong><span>Chọn “KIỂM TRA HLS” hoặc “KIỂM TRA MP4” để bắt đầu tải và phát video.</span></div></section>
     <div class="controls">
       <button class="primary" id="test-hls" type="button">KIỂM TRA HLS</button>
       <button id="test-mp4" type="button">KIỂM TRA MP4</button>
       <button id="stop" type="button">DỪNG / RESET</button>
       <button id="copy" type="button">SAO CHÉP LOG</button>
     </div>
-    <section class="status" aria-live="polite"><strong id="status-title">Sẵn sàng kiểm tra</strong><p id="status-text">Chọn HLS hoặc MP4, sau đó nhấn Play trực tiếp trên video để kiểm tra thao tác người dùng.</p></section>
+    <section class="status" aria-live="polite"><strong id="status-title">Sẵn sàng kiểm tra</strong><p id="status-text">Player đang nghỉ. Video và luồng mạng chỉ được tải sau khi bạn nhấn một nút kiểm tra.</p></section>
     <section class="grid">
       <div class="metric"><small>TRÌNH DUYỆT</small><b id="browser">Đang nhận diện…</b></div>
       <div class="metric"><small>NATIVE HLS</small><b id="native-hls">—</b></div>
@@ -97,13 +97,32 @@
         "s · bufferedUntil=" + bufferedEnd.toFixed(2) + "s · paused=" + video.paused);
     }
   });
+  function requestPlay(kind) {
+    const result = video.play();
+    if (result && typeof result.then === "function") {
+      result.then(() => {
+        $("qa-idle").hidden = true;
+        status("ĐANG PHÁT " + kind.toUpperCase(), "Video đã bắt đầu phát. Theo dõi PLAYBACK TIME và EVENT LOG để xác nhận thời gian tiếp tục tăng.");
+      }).catch((error) => {
+        status("ĐÃ NẠP " + kind.toUpperCase() + " · CHỜ PLAY", "Trình duyệt chặn phát tự động sau khi nạp nguồn (" + (error?.name || "play-error") + "). Chạm nút Play trên video để tiếp tục.");
+        $("qa-idle").hidden = true;
+        video.controls = true;
+      });
+    }
+  }
+  function resetMedia() {
+    video.pause();
+    if (video._qaHls) { video._qaHls.destroy(); video._qaHls = null; }
+    video.removeAttribute("src");
+    video.load();
+    $("qa-idle").hidden = false;
+    lastReportedTime = -1;
+  }
   async function load(kind) {
-    video.pause(); if(video._qaHls){video._qaHls.destroy();video._qaHls=null;} video.removeAttribute("src"); video.load();
+    resetMedia();
     const url = kind === "hls" ? HLS_URL : MP4_URL;
     const type = kind === "hls" ? "application/vnd.apple.mpegurl" : "video/mp4";
-    status("Đang nạp " + kind.toUpperCase(), "Đang tải metadata từ nguồn video mẫu. Chưa tự động phát.");
-    video.src = url;
-    video.load();
+    status("ĐANG KIỂM TRA " + kind.toUpperCase(), "Bạn đã chủ động bắt đầu bài kiểm tra. Đang nạp nguồn video mẫu.");
     log("source=" + kind + " · host=" + new URL(url).hostname);
     if (kind === "hls" && !video.canPlayType(type) && "MediaSource" in window) {
       try {
@@ -116,17 +135,28 @@
           document.head.append(script);
         });
         if (Hls.isSupported()) {
-          video.removeAttribute("src"); video.load();
           const engine = new Hls({enableWorker:true,lowLatencyMode:false});
+          video._qaHls = engine;
           engine.attachMedia(video);
           engine.on(Hls.Events.MEDIA_ATTACHED, () => engine.loadSource(url));
-          engine.on(Hls.Events.MANIFEST_PARSED, () => status("HLS manifest đã nạp","HLS.js đã đọc manifest. Nhấn Play để kiểm tra giải mã và tải segment."));
+          engine.on(Hls.Events.MANIFEST_PARSED, () => {
+            status("HLS ĐÃ SẴN SÀNG", "Manifest đã nạp. Đang yêu cầu trình duyệt bắt đầu phát.");
+            requestPlay("hls");
+          });
           engine.on(Hls.Events.ERROR, (_event,data) => { if(data.fatal) status("HLS.JS LỖI",data.type + " · " + data.details); });
-          video._qaHls = engine;
           return;
         }
-      } catch(error) { log(error.message); }
+      } catch(error) {
+        log(error.message);
+        status("KHÔNG THỂ KHỞI TẠO HLS", error.message);
+        return;
+      }
+      status("HLS KHÔNG ĐƯỢC HỖ TRỢ", "Trình duyệt không hỗ trợ native HLS hoặc Media Source Extensions.");
+      return;
     }
+    video.src = url;
+    video.load();
+    requestPlay(kind);
   }
   $("test-hls").addEventListener("click", () => load("hls"));
   $("test-mp4").addEventListener("click", () => load("mp4"));

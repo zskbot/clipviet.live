@@ -1,5 +1,4 @@
 const UPSTREAM = "https://clipviet-catalog-metadata-preview.huynhthuongg2505-f9b.workers.dev";
-const TRUSTED_WORKER_ORIGIN = "https://024bcb8c.clipviet-live-independent-preview.pages.dev";
 const PROVIDERS = new Set(["souavzy", "apiyutu", "lbapi9", "slapibf", "jipinvip1"]);
 
 export async function onRequest({ request, params }) {
@@ -30,7 +29,7 @@ export async function onRequest({ request, params }) {
         method: request.method,
         headers: {
           Accept: request.headers.get("Accept") || "application/json",
-          Origin: TRUSTED_WORKER_ORIGIN
+          Origin: new URL(request.url).origin
         },
         redirect: "manual"
       }

@@ -376,6 +376,8 @@ function showCatalogUnavailable(message) {
   if (note) note.textContent = message + " · TRÌNH PHÁT MẪU DÙNG PHIM MỞ CÓ GIẤY PHÉP; KHÔNG MỞ KHÓA APPLECMS.";
 }
 
+const isHttpUrl = (value) => typeof value === "string" && (value.startsWith("https://") || value.startsWith("http://"));
+
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;
   const blocked = /underage|minor|loli|shota|school\s?(girl|boy|student)|teen\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
@@ -384,10 +386,10 @@ function setFeaturedVideos(items) {
     if (video.playbackEnabled !== true || video.playbackRightsApproved !== true) return false;
     const sources = [...(Array.isArray(video.sources) ? video.sources : []), ...(Array.isArray(video.playbackSources) ? video.playbackSources : []), ...(Array.isArray(video.playback_sources) ? video.playback_sources : [])];
     const directUrls = [video.videoUrl, video.video_url, video.hlsUrl, video.hls_url, video.playbackUrl, video.playback_url];
-    const hasDirectUrl = directUrls.some((url) => typeof url === "string" && /^https?:\\/\\//i.test(url));
+    const hasDirectUrl = directUrls.some((url) => typeof url === "string" && isHttpUrl(url));
     const hasSourceUrl = sources.some((source) => {
       const url = typeof source === "string" ? source : source?.url || source?.src || source?.file || "";
-      return typeof url === "string" && /^https?:\\/\\//i.test(url);
+      return typeof url === "string" && isHttpUrl(url);
     });
     return hasDirectUrl || hasSourceUrl;
   });

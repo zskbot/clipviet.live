@@ -76,7 +76,7 @@ let requestSequence = 0;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
-const API_BASE = "";
+const API_BASE = "https://clipviet-catalog-api-preview.huynhthuongg2505-f9b.workers.dev";
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.
 // Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.
@@ -109,7 +109,7 @@ function render() {
   if (query.trim()) params.set("keyword", query.trim().slice(0, 100));
   if (activeCategoryId) params.set("categoryId", activeCategoryId);
   if (activeQuickFilter === "latest") params.set("sort", "latest");
-  const url = API_BASE + "/api/videos?" + params.toString();
+  const url = API_BASE + "/api/catalog/videos?" + params.toString();
   count.textContent = "ĐANG TẢI…";
   empty.hidden = true;
   fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" })
@@ -134,6 +134,10 @@ function render() {
         genre: item.categoryName || "",
         country: item.area || "",
         apiManaged: true,
+        sources: (Array.isArray(item.lines) ? item.lines : []).flatMap((line) => (Array.isArray(line.episodes) ? line.episodes : []).map((episode) => ({
+          url: episode.url,
+          type: /\\.m3u8(?:$|\\?)/i.test(String(episode.url || "")) ? "hls" : "mp4"
+        }))),
         rating: "18+"
       }));
       grid.replaceChildren();

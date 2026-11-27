@@ -98,7 +98,7 @@ function setStatus(message, show = true) {
 }
 function setFallback(url) {
   if (!fallback) return;
-  const target = url || activeVideo?.originalUrl || (activeVideo?.isSample ? "https://www.youtube.com/watch?v=OHOpb2fS-cM" : "");
+  const target = url || activeVideo?.originalUrl || activeVideo?.original_url || activeVideo?.sourceUrl || activeVideo?.source_url || "";
   fallback.href = target || "#";
   fallback.hidden = !target;
 }

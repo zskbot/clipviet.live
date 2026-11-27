@@ -1,4 +1,3 @@
-import { videos as demoVideos } from "./data.js";
 import { initFeaturedPlayer, playFeaturedVideo, resetFeaturedPlayer } from "./player-controls.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -18,7 +17,7 @@ const genreRoot = $("#genre-filters");
 const activeFiltersRoot = $("#active-filters");
 const menu = $("#filter-menu");
 const menuToggle = $("#menu-toggle");
-let videos = demoVideos;
+let videos = [];
 let activeCategory = "Tất cả";
 let activeCountry = "";
 let activeGenre = "";

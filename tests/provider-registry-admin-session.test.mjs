@@ -18,6 +18,8 @@ function dbFor(session = null, intakes = []) {
         },
         async all() {
           if (sql.includes("FROM provider_metadata_intake")) return { results: intakes };
+          if (sql.includes("FROM provider_content_rights")) return { results: [] };
+          if (sql.includes("FROM provider_connectors")) return { results: [] };
           return { results: [] };
         }
       };
@@ -78,4 +80,29 @@ test("Technical-only role cannot read metadata intake evidence", async () => {
     headers: { authorization: "Bearer technical-secret" }
   }), { ...env, REGISTRY_TECH_TOKEN: "technical-secret", PROVIDER_DB: dbFor() }, {});
   assert.equal(response.status, 403);
+});
+
+test("Admin session can read connector and per-video rights review queues", async () => {
+  const expires = new Date(Date.now() + 60_000).toISOString();
+  const providerDb = dbFor({ role: "admin", active: 1, expires_at: expires });
+  const connectors = await registryWorker.fetch(new Request(origin + "/connectors", {
+    headers: { cookie: "cv_session=opaque-session-token" }
+  }), { ...env, PROVIDER_DB: providerDb }, {});
+  const rights = await registryWorker.fetch(new Request(origin + "/content-rights", {
+    headers: { cookie: "cv_session=opaque-session-token" }
+  }), { ...env, PROVIDER_DB: providerDb }, {});
+  assert.equal(connectors.status, 200);
+  assert.equal((await connectors.json()).count, 0);
+  assert.equal(rights.status, 200);
+  assert.equal((await rights.json()).count, 0);
+});
+
+test("Technical-only role cannot read connector or content-rights queues", async () => {
+  const headers = { authorization: "Bearer technical-secret" };
+  const providerDb = { ...dbFor(), };
+  const envWithTechnical = { ...env, REGISTRY_TECH_TOKEN: "technical-secret", PROVIDER_DB: providerDb };
+  const connectors = await registryWorker.fetch(new Request(origin + "/connectors", { headers }), envWithTechnical, {});
+  const rights = await registryWorker.fetch(new Request(origin + "/content-rights", { headers }), envWithTechnical, {});
+  assert.equal(connectors.status, 403);
+  assert.equal(rights.status, 403);
 });

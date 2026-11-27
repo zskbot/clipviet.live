@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08090d">
+  <meta name="description" content="Tích hợp quy trình phục hồi và nâng cấp video Jasna bằng GPU cục bộ, giữ nguyên quyền riêng tư và quyền kiểm soát tệp.">
+  <title>Jasna AI Video Restoration — ClipViet</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .jasna-page{max-width:1120px;margin:0 auto;padding:48px 18px 88px}
+    .jasna-kicker{color:#ef3340;font-size:10px;letter-spacing:2px;font-weight:900}
+    .jasna-page h1{font-size:clamp(34px,6vw,62px);letter-spacing:-2px;margin:12px 0}
+    .jasna-lead{max-width:780px;color:#a7a8b0;line-height:1.85;font-size:14px}
+    .jasna-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}
+    .jasna-card{border:1px solid #292a31;background:#11131a;padding:20px;min-width:0}
+    .jasna-card h2{font-size:16px;margin:0 0 10px}
+    .jasna-card p,.jasna-card li{color:#a7a8b0;font-size:12px;line-height:1.85}
+    .jasna-card ul{padding-left:18px}
+    .jasna-tag{display:inline-flex;border:1px solid #3a3d47;padding:5px 8px;margin:3px 5px 3px 0;color:#c7c8cf;font-size:9px;letter-spacing:.6px}
+    .jasna-section{margin:38px 0 12px;font-size:12px;letter-spacing:1.5px;color:#ef737b}
+    .jasna-steps{counter-reset:step;display:grid;gap:10px}
+    .jasna-step{border:1px solid #292a31;padding:14px 16px;background:#11131a;color:#b9bac2;font-size:12px;line-height:1.8}
+    .jasna-step strong{color:#fff}
+    .jasna-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+    .jasna-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border:1px solid #ef3340;border-radius:0;color:#fff;text-decoration:none;font-size:10px;font-weight:900;letter-spacing:1px}
+    .jasna-actions a:hover{background:#ef3340}
+    .jasna-note{border-left:2px solid #ef3340;padding:13px 16px;background:#11131a;color:#a7a8b0;font-size:12px;line-height:1.85;margin-top:24px}
+    @media(max-width:640px){.jasna-page{padding:34px 14px 70px}.jasna-grid{grid-template-columns:1fr}.jasna-card{padding:16px}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../" aria-label="ClipViet trang chủ"><img src="../clipviet-logo.svg" alt=""><span>Clip<span class="brand-accent">Viet</span><small>.live</small></span></a>
+    <nav aria-label="Điều hướng" class="primary-nav"><a href="../browse/">Khám phá</a><a href="../watch/">Trình phát</a><a href="../userscripts/">Browser Tools</a><a href="./">Jasna AI</a></nav>
+  </header>
+  <main class="jasna-page">
+    <p class="jasna-kicker">CLIPVIET / DESKTOP GPU WORKFLOW</p>
+    <h1>Jasna AI<br><span>Video Restoration</span></h1>
+    <p class="jasna-lead">ClipViet kết nối quy trình phục hồi video với <strong>Jasna</strong> — ứng dụng desktop mã nguồn mở sử dụng GPU để xử lý video và hình ảnh. Tệp được xử lý trên máy của bạn; ClipViet không tải video riêng tư lên máy chủ, không giữ license key và không giả lập khả năng xử lý trực tiếp trong Safari.</p>
+    <div class="jasna-actions">
+      <a href="https://github.com/zskbot/jasna" target="_blank" rel="noopener noreferrer">MÃ NGUỒN ZSKBOT ↗</a>
+      <a href="https://github.com/Kruk2/jasna" target="_blank" rel="noopener noreferrer">DỰ ÁN GỐC ↗</a>
+      <a href="https://github.com/Kruk2/jasna/releases" target="_blank" rel="noopener noreferrer">BẢN PHÁT HÀNH ↗</a>
+    </div>
+
+    <h2 class="jasna-section">KHẢ NĂNG XỬ LÝ</h2>
+    <div class="jasna-grid">
+      <article class="jasna-card">
+        <h2>GPU Video Restoration</h2>
+        <p>Jasna có pipeline phục hồi video theo vùng, giữ các vùng không cần xử lý. BasicVSR++ là lựa chọn miễn phí; LTX là model hỗ trợ dành cho người có license hợp lệ.</p>
+        <span class="jasna-tag">BASICVSR++</span><span class="jasna-tag">LTX / LICENSED</span><span class="jasna-tag">GPU LOCAL</span>
+      </article>
+      <article class="jasna-card">
+        <h2>Upscale & Sharpen</h2>
+        <p>Hỗ trợ quy trình upscale toàn khung hình và làm sắc nét vùng đã phục hồi. Kết quả phụ thuộc chất lượng nguồn, model, GPU và thiết lập encode; upscale không đảm bảo khôi phục chi tiết đã mất.</p>
+        <span class="jasna-tag">1080P</span><span class="jasna-tag">1440P</span><span class="jasna-tag">4K OUTPUT</span>
+      </article>
+      <article class="jasna-card">
+        <h2>Queue & Segment Editor</h2>
+        <p>Xử lý nhiều tệp theo hàng đợi, chọn đoạn cần xử lý, xem trước vùng chọn, lưu preset và tiếp tục các tác vụ hỗ trợ sau khi tạm dừng.</p>
+        <span class="jasna-tag">BATCH QUEUE</span><span class="jasna-tag">SEGMENT EDITOR</span>
+      </article>
+      <article class="jasna-card">
+        <h2>Video formats & VR</h2>
+        <p>Hỗ trợ video thông thường, ảnh tĩnh và quy trình VR180. Kiểm tra tài liệu Jasna cho codec, cấu hình GPU và giới hạn định dạng cụ thể.</p>
+        <span class="jasna-tag">VIDEO</span><span class="jasna-tag">IMAGES</span><span class="jasna-tag">VR180</span>
+      </article>
+    </div>
+
+    <h2 class="jasna-section">QUY TRÌNH KẾT NỐI CLIPVIET</h2>
+    <div class="jasna-steps">
+      <div class="jasna-step"><strong>01 · Chọn video hợp pháp để xử lý.</strong> Chỉ dùng tệp bạn sở hữu hoặc được cấp quyền tải xuống, chỉnh sửa và xử lý.</div>
+      <div class="jasna-step"><strong>02 · Tải Jasna từ GitHub chính thức.</strong> Chọn bản Windows hoặc Linux phù hợp GPU; không tải bản đóng gói từ nguồn không xác minh.</div>
+      <div class="jasna-step"><strong>03 · Mở video cục bộ trong Jasna.</strong> Chọn model, vùng/đoạn cần xử lý, codec và chất lượng đầu ra; chạy thử trước khi đưa vào hàng đợi lớn.</div>
+      <div class="jasna-step"><strong>04 · Kiểm tra file kết quả.</strong> So sánh với bản gốc, xác nhận hình ảnh/âm thanh/đồng bộ và dung lượng trước khi tự quyết định lưu trữ hoặc chia sẻ.</div>
+    </div>
+
+    <h2 class="jasna-section">YÊU CẦU THIẾT BỊ</h2>
+    <div class="jasna-grid">
+      <article class="jasna-card">
+        <h2>Windows / Linux</h2>
+        <p>Jasna hiện công bố ứng dụng desktop cho Windows và Linux, yêu cầu GPU tương thích và driver phù hợp. Model LTX có yêu cầu GPU/VRAM cao hơn. Xem bảng tương thích mới nhất trong README trước khi cài.</p>
+      </article>
+      <article class="jasna-card">
+        <h2>iPhone / Safari</h2>
+        <p>Không chạy engine Jasna trực tiếp trên iPhone hoặc trong trình duyệt. iPhone có thể duyệt trang hướng dẫn; việc phục hồi cần máy tính Windows/Linux có GPU phù hợp.</p>
+      </article>
+    </div>
+
+    <p class="jasna-note"><strong>Quyền riêng tư & giấy phép:</strong> ClipViet không nhận tệp video, không chạy job GPU trên server, không yêu cầu license code và không lưu thông tin kích hoạt. Jasna có mã nguồn AGPL-3.0; model và dependency có thể có điều khoản riêng. Đây là trang tích hợp quy trình và liên kết tải chính thức, không sao chép mã nguồn, model weights hoặc tài sản nhị phân của Jasna vào ClipViet. Hãy tuân thủ quyền sở hữu nội dung, quyền riêng tư, điều khoản của nguồn video và luật áp dụng.</p>
+    <p class="jasna-note"><strong>Lưu ý chất lượng:</strong> Không có bộ lọc trình duyệt nào biến nguồn video độ phân giải thấp thành chi tiết thật. Jasna xử lý cục bộ bằng model; hãy kiểm tra kết quả thực tế và tránh công bố chất lượng đầu ra cao hơn khả năng nguồn.</p>
+  </main>
+</body>
+</html>

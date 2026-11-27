@@ -78,7 +78,7 @@ let requestSequence = 0;
 let totalPages = 0;
 let totalResults = 0;
 let pageSize = 30;
-const API_BASE = "";
+const API_BASE = "https://clipviet-catalog-readonly-preview.huynhthuongg2505-f9b.workers.dev";
 
 // Real, openly licensed fallback used only when the catalog API is empty or unavailable.
 // Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.
@@ -156,7 +156,7 @@ function render() {
             : payload.rightsGate?.providerApproved === true
               ? "Nguồn đã được duyệt nhưng hiện chưa có video nào có hồ sơ quyền hợp lệ."
               : "Chưa có video được duyệt quyền hiển thị. Danh mục sẽ tự cập nhật khi hồ sơ nguồn và từng video được phê duyệt.";
-        renderOpenLicenseCatalog(reason);
+        showCatalogUnavailable(reason + " · Không thay thế bằng catalog bên thứ ba.");
         setMenuApiStatus("CHƯA CÓ VIDEO ĐỦ ĐIỀU KIỆN QUYỀN HIỂN THỊ", "warning");
         return;
       }
@@ -217,7 +217,7 @@ function render() {
       if (loadingState) loadingState.hidden = true;
       if (apiErrorState) { apiErrorState.hidden = false; apiErrorState.textContent = "Không thể tải danh mục video: " + error.message + ". Hãy thử tải lại sau."; }
       setMenuApiStatus("API DANH MỤC CHƯA KHẢ DỤNG · " + error.message, "error");
-      renderOpenLicenseCatalog("API AppleCMS chưa khả dụng; đang chuyển sang danh mục phim mở có giấy phép Creative Commons đã xác minh.");
+      showCatalogUnavailable("API AppleCMS chưa khả dụng: " + error.message + ". Không thay thế bằng catalog khác.");
     });
 }
 

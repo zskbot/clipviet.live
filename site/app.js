@@ -81,23 +81,6 @@ let pageSize = 30;
 const API_BASE = "";
 // Preview-only recovery: keep the original AppleCMS Worker as the sole catalog source.
 
-// Real, openly licensed fallback used only when the catalog API is empty or unavailable.
-// Tears of Steel — Blender Foundation; CC BY 3.0, attribution required.
-const sampleVideo = {
-  id: "tears-of-steel-open-movie",
-  title: "Tears of Steel",
-  category: "Phim ngắn khoa học viễn tưởng",
-  year: 2012,
-  duration: "12 phút",
-  rating: "Mọi lứa tuổi",
-  description: "Video mẫu có thể phát để kiểm thử trình phát ClipViet. © Blender Foundation; được cấp phép CC BY 3.0. Giữ nguyên nội dung và credit cuối phim.",
-  poster: "https://i.ytimg.com/vi/OHOpb2fS-cM/hqdefault.jpg",
-  videoUrl: "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4",
-  originalUrl: "https://www.youtube.com/watch?v=OHOpb2fS-cM",
-  sourceName: "Blender Foundation",
-  isSample: true
-};
-
 function setMenuApiStatus(message, state = "info") {
   const status = $("#menu-api-status");
   if (status) {
@@ -355,7 +338,7 @@ function renderFeatured() {
     return;
   }
   const video = featuredVideos[featuredIndex % featuredVideos.length];
-  const playbackAllowed = (video.playbackEnabled === true && video.playbackRightsApproved === true) || (video.isSample === true && video.rightsVerified === true && Boolean(video.videoUrl));
+  const playbackAllowed = video.playbackEnabled === true && video.playbackRightsApproved === true;
   $("#featured-watch").disabled = !playbackAllowed;
   $("#featured-watch").hidden = !playbackAllowed;
   if (playButton) playButton.hidden = !playbackAllowed;
@@ -364,14 +347,10 @@ function renderFeatured() {
   image.alt = video.title || "Video nổi bật";
   image.onerror = () => { image.src = "./poster-fallback.svg"; };
   $("#featured-title").textContent = video.title || "Video nổi bật";
-  $("#featured-meta").textContent = video.isSample
-    ? "PHIM MỞ · " + (video.license || "CREATIVE COMMONS") + " · " + (video.sourceName || "BLENDER FOUNDATION")
-    : [video.year, video.duration, video.country, video.category, video.licenseLabel].filter(Boolean).join(" · ");
+  $("#featured-meta").textContent = [video.year, video.duration, video.country, video.category, video.licenseLabel].filter(Boolean).join(" · ");
   $("#featured-description").textContent = video.description || "Khám phá video đang được quan tâm trên ClipViet.";
   $("#featured-index").textContent = String(featuredIndex + 1).padStart(2, "0");
-  featuredRoot.querySelector(".eyebrow").textContent = video.isSample
-    ? "VIDEO MẪU CÓ GIẤY PHÉP / OPEN MOVIE"
-    : "CLIPVIET / MỚI CẬP NHẬT";
+  featuredRoot.querySelector(".eyebrow").textContent = "CLIPVIET / MỚI CẬP NHẬT";
   $("#featured-open").onclick = () => openDetail(video);
   const startPlayback = () => {
     if (featuredTimer) clearInterval(featuredTimer);
@@ -388,9 +367,8 @@ function showCatalogUnavailable(message) {
   count.textContent = "0 VIDEO ĐƯỢC DUYỆT QUYỀN";
   empty.hidden = false;
   empty.textContent = message;
-  // Keep the AppleCMS catalog blocked, but provide a separate, clearly labeled
-  // licensed open-movie demo so the featured player always has a real Play path.
-  setFeaturedVideos(openLicensedVideos);
+  // Catalog metadata remains visible; no demo media is injected without an approved playback grant.
+  setFeaturedVideos([]);
   renderPagination(0);
   activeFiltersRoot.replaceChildren();
   activeFiltersRoot.hidden = true;
@@ -398,82 +376,12 @@ function showCatalogUnavailable(message) {
   if (note) note.textContent = message + " · TRÌNH PHÁT MẪU DÙNG PHIM MỞ CÓ GIẤY PHÉP; KHÔNG MỞ KHÓA APPLECMS.";
 }
 
-const openLicensedVideos = [
-  {
-    id: "tears-of-steel-open-movie", title: "Tears of Steel", category: "Phim ngắn · Khoa học viễn tưởng",
-    year: 2012, duration: "12 phút", rating: "Mọi lứa tuổi",
-    description: "Phim ngắn khoa học viễn tưởng do Blender Foundation sản xuất. Giấy phép CC BY 3.0; giữ nguyên credit cuối phim.",
-    poster: "https://i.ytimg.com/vi/OHOpb2fS-cM/hqdefault.jpg",
-    videoUrl: "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4",
-    originalUrl: "https://mango.blender.org/about/",
-    sourceName: "Blender Foundation", license: "CC BY 3.0",
-    attribution: "(CC) Blender Foundation · mango.blender.org",
-    licenseUrl: "https://creativecommons.org/licenses/by/3.0/", isSample: true, rightsVerified: true
-  },
-  {
-    id: "big-buck-bunny-open-movie", title: "Big Buck Bunny", category: "Hoạt hình · Hài",
-    year: 2008, duration: "10 phút", rating: "Mọi lứa tuổi",
-    description: "Phim hoạt hình mở của Blender Foundation. Giấy phép CC BY 3.0; phải ghi công Blender Foundation.",
-    poster: "https://peach.blender.org/wp-content/uploads/title_anouncement.jpg",
-    videoUrl: "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4",
-    originalUrl: "https://peach.blender.org/about/",
-    sourceName: "Blender Foundation", license: "CC BY 3.0",
-    attribution: "© copyright 2008, Blender Foundation / www.bigbuckbunny.org",
-    licenseUrl: "https://creativecommons.org/licenses/by/3.0/", isSample: true, rightsVerified: true
-  },
-  {
-    id: "elephants-dream-open-movie", title: "Elephants Dream", category: "Hoạt hình · Giả tưởng",
-    year: 2006, duration: "11 phút", rating: "Mọi lứa tuổi",
-    description: "Phim open movie đầu tiên của Blender Foundation. Giấy phép CC BY 2.5; cần ghi công chủ sở hữu.",
-    poster: "./poster-fallback.svg",
-    videoUrl: "https://download.blender.org/ED/elephantsdream-720-h264-st-aac.mov",
-    originalUrl: "https://orange.blender.org/",
-    sourceName: "Blender Foundation", license: "CC BY 2.5",
-    attribution: "(c) copyright 2006, Blender Foundation / Netherlands Media Art Institute / www.elephantsdream.org",
-    licenseUrl: "https://creativecommons.org/licenses/by/2.5/", isSample: true, rightsVerified: true
-  }
-];
-
-function renderOpenLicenseCatalog(reason) {
-  grid.replaceChildren();
-  setFeaturedVideos(openLicensedVideos);
-  for (const video of openLicensedVideos) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "video-card";
-    card.innerHTML = '<div class="poster"><img loading="lazy" alt=""><span class="poster-label"></span></div><div class="card-info"><h3></h3><p></p></div>';
-    const img = card.querySelector("img");
-    img.src = video.poster || "./poster-fallback.svg";
-    img.alt = video.title;
-    img.addEventListener("error", () => { img.src = "./poster-fallback.svg"; }, { once: true });
-    card.querySelector(".poster-label").textContent = video.license;
-    card.querySelector("h3").textContent = video.title;
-    card.querySelector(".card-info p").textContent = video.year + " · " + video.sourceName + " · " + video.license;
-    card.addEventListener("click", () => openDetail(video));
-    grid.append(card);
-  }
-  count.textContent = openLicensedVideos.length + " PHIM MỞ · ĐÃ KIỂM TRA GIẤY PHÉP";
-  empty.hidden = true;
-  renderPagination(0);
-  activeFiltersRoot.replaceChildren();
-  activeFiltersRoot.hidden = true;
-  const note = document.querySelector(".data-note");
-  if (note) note.textContent = reason + " · DANH MỤC PHIM MỞ ĐỘC LẬP · APPLECMS VẪN BỊ CHẶN CHO ĐẾN KHI ĐƯỢC DUYỆT.";
-  setMenuApiStatus("ĐANG HIỂN THỊ " + openLicensedVideos.length + " PHIM MỞ CÓ GIẤY PHÉP · APPLECMS CHỜ DUYỆT", "success");
-}
-
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;
   const blocked = /underage|minor|loli|shota|school\s?(girl|boy|student)|teen\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
   const safeItems = items.filter((video) => !blocked.test([video.title, video.category, video.description, video.genre].filter(Boolean).join(" ")));
-  const playableItems = safeItems.filter((video) =>
-    (video.isSample === true && video.rightsVerified === true && Boolean(video.videoUrl)) ||
-    (video.playbackEnabled === true && video.playbackRightsApproved === true)
-  );
-  // Metadata-only AppleCMS rows must never masquerade as playable. Keep the
-  // catalog visible, and use a separately licensed Blender open movie in the
-  // featured player until an item has a verified playback grant.
-  featuredVideos = playableItems.length ? playableItems : openLicensedVideos;
+  const playableItems = safeItems.filter((video) => video.playbackEnabled === true && video.playbackRightsApproved === true && Boolean(video.videoUrl || video.video_url || video.hlsUrl || video.hls_url));
+  featuredVideos = playableItems;
   featuredVideos.sort((a, b) => (b.trendingScore - a.trendingScore) || (b.views - a.views) || (b.playCount - a.playCount) || (Number(b.year || 0) - Number(a.year || 0)));
   featuredIndex = 0;
   renderFeatured();
@@ -494,19 +402,9 @@ function openDetail(video) {
   detail.querySelector("h2").textContent = video.title;
   detail.querySelector(".description").textContent = video.description || "";
   detail.querySelector(".meta").textContent = [video.year, video.duration, video.rating, video.country].filter(Boolean).join(" · ");
-  detail.querySelector(".detail-source").textContent = video.isSample
-    ? "Nguồn: " + (video.sourceName || "Open Movie") + " · " + (video.license || "Creative Commons") + " · " + (video.attribution || "") + " · " + (video.licenseUrl || "")
-    : video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) + " · " + (video.licenseLabel || "Metadata only") + " · " + (video.sourceUrl || "") : "Bản ghi demo.";
+  detail.querySelector(".detail-source").textContent = video.apiManaged ? "Nguồn: " + (video.sourceName || video.sourceId) + " · " + (video.licenseLabel || "Metadata only") + " · " + (video.sourceUrl || "") : "Nguồn video";
   if (video.apiManaged && video.playbackRightsApproved !== true) {
     detail.querySelector(".detail-source").textContent += " · Chỉ hiển thị metadata; phát bị khóa cho đến khi xác minh quyền phân phối.";
-  }
-  if (video.isSample && video.videoUrl) {
-    const link = detail.querySelector(".watch-link");
-    link.hidden = false;
-    link.href = video.videoUrl;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "PHÁT VIDEO GỐC ↗";
   }
   if (video.apiManaged && video.sourceId && video.id && video.playbackEnabled === true && video.playbackRightsApproved === true) {
     const link = detail.querySelector(".watch-link");

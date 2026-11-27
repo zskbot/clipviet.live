@@ -131,7 +131,7 @@ function render() {
     .then((payload) => {
       if (sequence !== requestSequence) return;
       const rawRows = Array.isArray(payload.items) ? payload.items : [];
-      const excludedAgeLabel = /under[\\s_-]*age|minor|loli|shota|school[\\s_-]*(?:girl|boy|student)|teen[\\s_-]*(?:girl|boy)|học[\\s_-]*sinh|nữ[\\s_-]*sinh|nam[\\s_-]*sinh|thiếu[\\s_-]*niên|vị[\\s_-]*thành[\\s_-]*niên/i;
+      const excludedAgeLabel = /under[\s_-]*age|minor|loli|shota|school[\s_-]*(?:girl|boy|student)|teen[\s_-]*(?:girl|boy)|học[\s_-]*sinh|nữ[\s_-]*sinh|nam[\s_-]*sinh|thiếu[\s_-]*niên|vị[\s_-]*thành[\s_-]*niên/i;
       const rows = rawRows.filter((item) => item.rightsVerified === true && item.rightsStatus === "APPROVED" &&
         Number.isFinite(Date.parse(item.rightsExpiresAt)) && Date.parse(item.rightsExpiresAt) > Date.now() &&
         !excludedAgeLabel.test([item.title, item.categoryName, item.description, item.actors, item.director].filter(Boolean).join(" ")));
@@ -387,7 +387,7 @@ function renderSampleVideo(reason) {
 
 function setFeaturedVideos(items) {
   if (!featuredRoot) return;
-  const blocked = /underage|minor|loli|shota|school\\s?(girl|boy|student)|teen\\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
+  const blocked = /underage|minor|loli|shota|school\s?(girl|boy|student)|teen\s?(girl|boy)|học sinh|nữ sinh|nam sinh|thiếu nhi/i;
   featuredVideos = items.filter((video) => !blocked.test([video.title, video.category, video.description, video.genre].filter(Boolean).join(" ")));
   featuredVideos.sort((a, b) => (b.trendingScore - a.trendingScore) || (b.views - a.views) || (b.playCount - a.playCount) || (Number(b.year || 0) - Number(a.year || 0)));
   featuredIndex = 0;

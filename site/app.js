@@ -325,7 +325,7 @@ function renderFeatured() {
     return;
   }
   const video = featuredVideos[featuredIndex % featuredVideos.length];
-  const playbackAllowed = video.playbackEnabled === true && video.playbackRightsApproved === true;
+  const playbackAllowed = (video.playbackEnabled === true && video.playbackRightsApproved === true) || (video.isSample === true && video.rightsVerified === true && Boolean(video.videoUrl));
   $("#featured-watch").disabled = !playbackAllowed;
   $("#featured-watch").hidden = !playbackAllowed;
   if (playButton) playButton.hidden = !playbackAllowed;

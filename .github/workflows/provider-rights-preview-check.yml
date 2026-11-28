@@ -9,6 +9,9 @@ on:
       - "tests/provider-registry-rights-migration.test.mjs"
       - "scripts/import-licensed-catalog.mjs"
       - "tests/licensed-catalog-import.test.mjs"
+      - "scripts/normalize-source-intake.mjs"
+      - "tests/source-intake-normalizer.test.mjs"
+      - "docs/source-review/**"
       - ".github/workflows/provider-rights-preview-check.yml"
   workflow_dispatch:
 
@@ -24,7 +27,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check adapter syntax
-        run: node --check lib/maccms-provider.mjs
-      - name: Run provider adapter, rights migration, and licensed import tests
-        run: node --test tests/maccms-provider.test.mjs tests/provider-registry-rights-migration.test.mjs tests/licensed-catalog-import.test.mjs
+      - name: Check adapter and intake syntax
+        run: |
+          node --check lib/maccms-provider.mjs
+          node --check scripts/normalize-source-intake.mjs
+      - name: Run provider, rights, licensed import, and source intake tests
+        run: node --test tests/maccms-provider.test.mjs tests/provider-registry-rights-migration.test.mjs tests/licensed-catalog-import.test.mjs tests/source-intake-normalizer.test.mjs

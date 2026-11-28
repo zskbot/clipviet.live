@@ -53,7 +53,7 @@ Canonicalization used the PR normalizer rules: HTTPS only, lowercase host, remov
 
 ## Evidence comparison
 
-The Clipform response summary currently shows 3 completed submissions. All three self-declare a written distribution licence. That is a declaration, not independent evidence. The connector redacts the long-text answers containing source URLs, official documentation URLs, licence scope, and evidence URLs; therefore the exact documents cannot be examined from the connector output.
+The latest Clipform response summary shows **4 completed submissions**. All four self-declare a written distribution licence. This is a declaration, not independent evidence. The connector redacts the long-text answers containing source URLs, official documentation URLs, licence scope, and evidence URLs; therefore the exact documents cannot be examined from the connector output. The 4-submission count corrects the earlier report.
 
 For all 31 candidates:
 - Official provider identity: **not verified**

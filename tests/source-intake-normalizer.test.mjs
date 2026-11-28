@@ -1,4 +1,7 @@
 import test from "node:test";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { buildSourceIntake, normalizeSourceUrl, classifySourceUrl } from "../scripts/normalize-source-intake.mjs";
 
@@ -42,4 +45,24 @@ test("quarantines malformed or unsafe URLs without fetching them", () => {
   assert.equal(result.source_count, 0);
   assert.equal(result.rejected_count, 2);
   assert.equal(result.sources.length, 0);
+});
+
+
+test("source candidate manifest contains 26 websites and 5 API candidates, all fail-closed", async () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const manifest = JSON.parse(await readFile(resolve(here, "../docs/source-review/clipform-source-candidates.json"), "utf8"));
+  assert.equal(manifest.summary.website_candidates, 26);
+  assert.equal(manifest.summary.applecms_api_candidates, 5);
+  assert.equal(manifest.summary.total, 31);
+  assert.equal(manifest.summary.duplicate_count, 0);
+  assert.equal(manifest.records.length, 31);
+  assert.equal(new Set(manifest.records.map((record) => record.url)).size, 31);
+  for (const record of manifest.records) {
+    assert.equal(record.intake_status, "PENDING_REVIEW");
+    assert.equal(record.rights_status, "PENDING");
+    assert.equal(record.metadata_ingest_allowed, false);
+    assert.equal(record.playback_enabled, false);
+    assert.equal(record.published, false);
+    assert.equal(record.rights_evidence_status, "NOT_PROVIDED");
+  }
 });

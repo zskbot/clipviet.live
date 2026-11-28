@@ -19,13 +19,12 @@ export function normalizeSourceUrl(raw) {
 
   if (url.protocol !== "https:") throw new Error("Only HTTPS source URLs are accepted");
   if (url.username || url.password) throw new Error("URLs containing credentials are not accepted");
-  if (url.hash) url.hash = "";
+  url.hash = "";
 
   for (const key of url.searchParams.keys()) {
     if (SECRET_QUERY_KEY.test(key)) throw new Error("URL contains a secret-like query parameter");
   }
 
-  // Remove tracking parameters only; retain functional parameters such as sort/type/page.
   for (const key of [...url.searchParams.keys()]) {
     if (/^(utm_.+|fbclid|gclid)$/i.test(key)) url.searchParams.delete(key);
   }
@@ -47,6 +46,7 @@ export function buildSourceIntake(inputText, submittedAt = new Date().toISOStrin
   const seen = new Set();
   const sources = [];
   const rejected = [];
+  let duplicateCount = 0;
 
   for (let index = 0; index < lines.length; index += 1) {
     const raw = lines[index].trim();
@@ -54,7 +54,10 @@ export function buildSourceIntake(inputText, submittedAt = new Date().toISOStrin
     try {
       const normalizedUrl = normalizeSourceUrl(raw);
       if (!normalizedUrl) continue;
-      if (seen.has(normalizedUrl)) continue;
+      if (seen.has(normalizedUrl)) {
+        duplicateCount += 1;
+        continue;
+      }
       seen.add(normalizedUrl);
       const id = createHash("sha256").update(normalizedUrl).digest("hex").slice(0, 16);
       sources.push({
@@ -81,7 +84,7 @@ export function buildSourceIntake(inputText, submittedAt = new Date().toISOStrin
     schema_version: 1,
     generated_at: submittedAt,
     source_count: sources.length,
-    duplicate_count: lines.filter((line, i) => line.trim() && sources.some((item) => item.source_url === (() => { try { return normalizeSourceUrl(line); } catch { return null; } })()) && lines.indexOf(line) !== i).length,
+    duplicate_count: duplicateCount,
     rejected_count: rejected.length,
     approved_count: 0,
     published_count: 0,

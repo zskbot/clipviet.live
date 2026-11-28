@@ -48,3 +48,119 @@ For each provider, obtain a documented and authorized API contract with:
 - pagination, rate limits, cache policy, regions and takedown contact.
 
 Store credentials only as Cloudflare Worker secrets. Keep public browser requests read-only. Enable a provider or title only after the rights registry approves it.
+
+
+## Additional source batch supplied on 2026-11-28
+
+The following URLs were supplied for possible ClipViet integration. They are recorded as **unverified candidates only**. No page crawling, API requests, catalog extraction, media download, embedding, proxying, or playback has been performed.
+
+### Website pages
+
+- https://hsex.men/list-1.htm
+- https://hsex.men/list-1000.htm
+- https://hsex.men/list-1.htm?sort=hot
+- https://sexonline.blog
+- https://sexvn.co/sex-trung-quoc
+- https://buomtv.biz
+- https://buomtv.biz/video
+- https://buomtv.biz/latest/all
+- https://buomtv.biz/discover/movie-category
+- https://buomtv.biz/category/bo-suu-tap-phim-sex-nong-bong/85?type=long
+- https://buomtv.biz/category/jav-vietsub/3?type=long
+- https://buomtv.biz/category/phim-sex-trung-quoc/4?type=long
+- https://xnhau.plus
+- https://xnhau.plus/the-loai/
+- https://xnhau.plus/channels/
+- https://xnhau.plus/clip-sex-moi/
+- https://viet69.be
+- https://viet69.be/bai-viet/
+- https://viet69.be/tag/clip/
+- https://viet69.be/tag/clip/all
+- https://javhay.onl/vi-vn/
+- https://3lg7zcu3.garymorgan3490.icu
+- https://tb7nri7d.91tao.us.ci
+- https://1dwa60ri.taopian91.us.ci
+- https://b8rwrbxc.shanxiuyigdd.icu
+- https://www.91taopian.com
+
+### AppleCMS / MacCMS-style API candidates
+
+These endpoint-shaped URLs were supplied by the user. Their path format alone does not establish that the endpoints are official, stable, authorized, or licensed for redistribution.
+
+- https://api.souavzy.vip/api.php/provide/vod/
+- https://apiyutu.com/api.php/provide/vod/
+- https://lbapi9.com/api.php/provide/vod/
+- https://slapibf.com/api.php/provide/vod/
+- https://jipinvip1.com/api.php/provide/vod/
+
+Environment variable names supplied for a future server-side Preview configuration:
+
+- `APPLECMS_SOUAVZY_URL`
+- `APPLECMS_APIYUTU_URL`
+- `APPLECMS_LBAPI9_URL`
+- `APPLECMS_SLAPIBF_URL`
+- `APPLECMS_JIPINVIP1_URL`
+
+These are endpoint URLs, not secrets. Do not add API keys/tokens to the repository or browser bundle. Do not assume any endpoint is approved just because its URL is configured.
+
+### Review gate for this batch
+
+- Initial state: `PENDING_REVIEW`; `rights_status=PENDING`; `playback_enabled=0`.
+- API contract: require provider-owned documentation, authentication scope, pagination/rate limits, field schema, CORS/player rules and allowed media hosts.
+- Rights: require written distribution/embedding permission, per-title license evidence, territories, expiry, performer age/consent verification, and takedown contact/process.
+- Technical validation after authorization: bounded health checks against documented endpoints, schema-only metadata validation, rate-limited pagination, stable-ID deduplication, and quarantine of incomplete records.
+- No endpoint may be polled, crawled, indexed, or used to create public catalog entries until its provider authorization and applicable rights review are recorded.
+- A source webpage or metadata API response is not a media license. Metadata discovery does not authorize copying, rehosting, proxying, or public playback.
+- The supplied Preview URL `https://dc7e4ff9.clipviet-live-independent-preview.pages.dev/?utm_source=chatgpt.com` is a test destination only, not a provider or source of video records.
+
+
+
+## Additional source batch supplied on 2026-11-28 (batch 2)
+
+The following four host URLs were supplied as possible sources. They are recorded as unverified website candidates only. Automated inspection could not retrieve their page contents in this review session; therefore no API, catalog, ownership, authorization, or playback capability is confirmed. No crawling, media extraction, download, embedding, proxying, or playback has been performed.
+
+- https://hlm076la.shanxiuyigdd.icu/
+- https://9ntvm7ib.taopian.us.ci/
+- https://r5tbokbu.jeffreyhale6664.icu/
+- https://npb0vh4u.garymorgan3490.icu/
+
+### Review gate
+
+- Initial state: `PENDING_REVIEW`; `rights_status=PENDING`; `playback_enabled=0`.
+- Require provider-owned API documentation and written permission covering the exact intended use, territories, duration, and individual titles before any ingestion or playback integration.
+- Treat these hostnames as website URLs, not API endpoints or direct HLS/MP4 media URLs. Do not infer AppleCMS compatibility from the domain or path.
+- Do not poll, crawl, index, scrape, proxy, download, or publish content until authorization and rights review are documented.
+
+
+## Source-specific verification: www.91taopian.com (2026-11-28)
+
+### Current findings
+
+- Submitted URL: `https://www.91taopian.com`.
+- Classification: website/homepage candidate only; it is not an API endpoint or a direct HLS/MP4 URL.
+- Official provider API documentation: not located in the available review.
+- Provider-issued API credentials or authentication instructions: not supplied or verified.
+- Written permission for catalog ingestion, embedding, redistribution, and territories: not supplied as documentary evidence.
+- Stable content identifiers, metadata schema, pagination, rate limits, and media-host allowlist: not verified.
+- Per-title rights/age/consent records: not verified.
+- Registry state must remain `PENDING_REVIEW`; `rights_status=PENDING`; `playback_enabled=0`.
+
+A public third-party IPTV configuration found during research mentions a similarly named Taopian API host. It is not provider-owned documentation and does not establish that it belongs to 91taopian.com. Do not use that host, infer an API path, or configure it as this provider's endpoint.
+
+### Authentication setup — secure Preview procedure
+
+Authentication cannot be correctly configured until the provider supplies its official API contract. Do not guess whether it uses a bearer token, API key, signed request, cookie, or no authentication.
+
+When the provider supplies the contract:
+
+1. Verify the document is published or confirmed by the provider and that it explicitly authorizes ClipViet's intended metadata and playback use.
+2. Record the exact API base URL, auth scheme, required headers/signature inputs, credential scope, token expiry/rotation rules, and permitted IP/hostnames in the provider review record.
+3. Add credentials only in the isolated Cloudflare Worker **Preview** environment as encrypted secrets, using names derived from the verified integration contract. Never commit credentials, paste them into chat, expose them to browser JavaScript, or copy Production secrets into Preview.
+4. Implement a server-side adapter with fixed documented paths, strict HTTPS host allowlisting, bounded timeouts, rate limits, schema validation, redacted diagnostics, and no arbitrary URL forwarding.
+5. Run a read-only authentication/health check and a metadata-schema check against a provider-authorized test record. Do not request or expose media bytes during metadata validation.
+6. Require source-level written distribution rights and per-title rights evidence before any title can be published or played. Keep playback disabled until the registry's existing database guards accept the complete evidence.
+7. Rotate/revoke test credentials after validation if the provider requires it; record the rotation date without recording the secret value.
+
+### Current implementation decision
+
+No provider credential field, endpoint, adapter, or playback switch is being fabricated for this domain. This avoids storing a credential against an unverified service and avoids accidentally treating an unrelated third-party API as the official 91taopian integration. Existing Preview-only rights gates remain authoritative.

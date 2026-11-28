@@ -11,6 +11,7 @@ on:
       - "tests/licensed-catalog-import.test.mjs"
       - "scripts/normalize-source-intake.mjs"
       - "tests/source-intake-normalizer.test.mjs"
+      - "docs/source-review/**"
       - ".github/workflows/provider-rights-preview-check.yml"
   workflow_dispatch:
 
